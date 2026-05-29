@@ -290,33 +290,16 @@ export function BriefingErrorBoundary({ children }) {
 
 ### Tailwind CSS Configuration
 
-```typescript
-// tailwind.config.ts
-import type { Config } from 'tailwindcss';
+```css
+/* app/globals.css */
+@import "tailwindcss";
 
-const config: Config = {
-  content: [
-    './app/**/*.{ts,tsx}',
-    './components/**/*.{ts,tsx}',
-  ],
-  theme: {
-    extend: {
-      colors: {
-        briefing: {
-          primary: '#2563eb',
-          success: '#16a34a',
-          warning: '#d97706',
-          error: '#dc2626',
-        },
-      },
-    },
-  },
-  plugins: [
-    require('@tailwindcss/typography'),
-  ],
-};
-
-export default config;
+@theme {
+  --color-briefing-primary: #2563eb;
+  --color-briefing-success: #16a34a;
+  --color-briefing-warning: #d97706;
+  --color-briefing-error: #dc2626;
+}
 ```
 
 ### Component Styling Pattern

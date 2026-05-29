@@ -16,8 +16,7 @@ co-located AGENT.md files alongside the code they govern.
 
 | Rule | Behaviour |
 |---|---|
-| Plan mode | Required for any task with 3+ steps or architectural decisions |
-| Plan mode | Required for any epic/task — check `docs/jira-tickets-json/*.json` for details |
+| Plan mode | Required for tasks with 3+ steps, architectural decisions, or any epic/task — check `docs/jira-tickets-json/*.json` for details |
 | Edge cases | During implementation, you MUST review the `Description` field in the relevant JSON and implement any associated edge cases or fail-safes |
 | Task log | Write plan to `docs/tasks/todo.md` before any implementation |
 | Verify plan | Check in before starting — do not build on an unconfirmed plan |
@@ -81,13 +80,8 @@ co-located AGENT.md files alongside the code they govern.
 | Reference implementations | docs/example-code/ | MVP 1 |
 | Frontend Rules | frontend/AGENT.md | MVP 1 |
 | Backend & LangGraph Rules | backend/AGENT.md | MVP 1 |
+| Backend agent directory layout | backend/AGENT.md | MVP 2–5 |
 | Prompt Versioning & Contracts | prompts/AGENT.md | MVP 1 |
-| Task Agent | backend/agents/task/AGENT.md | MVP 2 |
-| Calendar Agent | backend/agents/calendar/AGENT.md | MVP 2 |
-| Focus Agent | backend/agents/focus/AGENT.md | MVP 2 |
-| Critic Agent | backend/agents/critic/AGENT.md | MVP 3 |
-| Security Agent | backend/agents/security/AGENT.md | MVP 5 |
-| Orchestrator Agent | backend/agents/orchestrator/AGENT.md | MVP 2 |
 | CI/CD & Infrastructure | infrastructure/AGENT.md | MVP 1 |
 | Docker multi-stage build | Dockerfile, nginx.conf, supervisord.conf | MVP 1 |
 
@@ -107,29 +101,7 @@ co-located AGENT.md files alongside the code they govern.
 
 ## Agent Communication Protocol
 
-All inter-agent communication follows this envelope schema:
-
-```json
-{
-  "agent_id": "calendar",
-  "canonical_role": "tool_operator",
-  "status": "success|failure|escalated",
-  "result": { /* agent-specific payload */ },
-  "metadata": {
-    "execution_ms": 110,
-    "tokens_used": 50,
-    "model_used": "openai/gpt-4o-mini",
-    "prompt_version": "v1.5.0",
-    "trace_id": "abc123",
-    "data_classification": "confidential_pii"
-  },
-  "escalation": {
-    "reason": "security_violation_detected|max_retries_exceeded|timeout",
-    "target_agent": "orchestrator",
-    "context": "Additional debugging context"
-  }
-}
-```
+All inter-agent communication uses the standardized `AgentResultEnvelope`. See `backend/schemas/envelope.py`, `docs/ARCHITECTURE.md`, and `backend/AGENT.md`.
 
 ---
 
@@ -137,40 +109,10 @@ All inter-agent communication follows this envelope schema:
 
 | Cursor Agent | Scope | Rules File | Order |
 |---|---|---|---|
-| **Coding Agent** | Implements endpoints, LangGraph, and prompt injection defense logic | `.cursor/rules/coding.mdc` | 1st |
-| **Refactor Agent** | Tightens schema validation and enforces output sanitization layers | `.cursor/rules/refactor.mdc` | 2nd |
-| **Testing Agent** | Enforces OWASP GenAI boundary tests (simulating injection attacks) | `.cursor/rules/testing.mdc` | 3rd |
-| **Documentation Agent** | Maintains domain `AGENT.md` and OWASP checklists | `.cursor/rules/docs.mdc` | 4th |
-
----
-
-## Pre-Flight Checklist
-
-Before starting implementation, verify:
-
-- [ ] Read this file completely (AGENT.md)
-- [ ] Read `docs/EXECUTION-RULES.md`
-- [ ] Read `docs/tasks/checkpoint.md` for current state
-- [ ] Read `docs/tasks/lessons.md` for past learnings
-- [ ] Verify epic JSON exists in `docs/jira-tickets-json/`
-- [ ] Create epic branch before any code changes
-
----
-
-## Epic Workflow
-
-For each epic, follow this sequence:
-
-```
-1. Create branch: git checkout -b epic/E{n}-{description}
-2. Coding Agent: Implement all tasks from JSON
-3. Refactor Agent: Review code quality and patterns
-4. Testing Agent: Add tests, ensure coverage
-5. Docs Agent: Update documentation
-6. Merge: PR to main after all checks pass
-```
-
-See `.cursor/rules/coding.mdc` for detailed workflow documentation.
+| **Coding Agent** | Endpoints, LangGraph, prompt injection defense | `.cursor/rules/coding.mdc` | 1st |
+| **Refactor Agent** | Schema validation, output sanitization | `.cursor/rules/refactor.mdc` | 2nd |
+| **Testing Agent** | OWASP GenAI boundary tests | `.cursor/rules/testing.mdc` | 3rd |
+| **Documentation Agent** | AGENT.md and OWASP checklists | `.cursor/rules/docs.mdc` | 4th |
 
 ---
 

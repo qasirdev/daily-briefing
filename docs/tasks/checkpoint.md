@@ -6,10 +6,10 @@
 
 ## Current State
 
-- **Epic:** Not started
-- **Branch:** N/A
+- **Epic:** Not started (pre-kickoff doc alignment complete)
+- **Branch:** N/A (ready for `epic/E1-project-scaffold` on kickoff)
 - **Current Task:** N/A
-- **Task Status:** ready_to_start
+- **Task Status:** ready_for_db_e1_kickoff
 
 ---
 

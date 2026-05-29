@@ -37,7 +37,7 @@ This represents the enterprise-hardened specification for the AI Daily Briefing 
 
 | Layer | Technology | Version |
 |---|---|---|
-| **Frontend** | Next.js (App Router) | 15.x |
+| **Frontend** | Next.js (App Router) | 16.x |
 | **React** | React with Server Components | 19.x |
 | **Backend** | FastAPI | 0.115+ |
 | **Python** | Python (managed by uv) | 3.12+ |
@@ -236,7 +236,7 @@ daily-briefing/
 | ID | Vulnerability | Mitigation | Status |
 |---|---|---|---|
 | LLM01 | Prompt Injection | Critic Agent scanning, input sanitization | Specified |
-| LLM02 | Insecure Output | DOMPurify (FE), Bleach (BE), Orchestrator-as-Presenter | Specified |
+| LLM02 | Insecure Output | DOMPurify (FE), nh3 (BE), Orchestrator-as-Presenter | Specified |
 | LLM03 | Training Data Poisoning | N/A (no custom training) | N/A |
 | LLM04 | Model DoS | Token budgets, circuit breakers, rate limiting | Specified |
 | LLM05 | Supply Chain | Dependency scanning, lockfile pinning | Specified |

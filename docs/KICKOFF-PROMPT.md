@@ -198,4 +198,4 @@ Fix before proceeding. Never move to next task with failing tests.
 
 ---
 
-*Kick-off Prompt — Version 1.5.0 — May 2026*
+*Kick-off Prompt — Version 1.6.0 — May 2026*

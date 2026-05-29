@@ -87,7 +87,7 @@ AgentResultEnvelope(
 
 - Sub-agents return **strict JSON only**
 - Only the Orchestrator synthesizes final markdown
-- All output passes through sanitization (Bleach backend, DOMPurify frontend)
+- All output passes through sanitization (nh3 backend, DOMPurify frontend)
 - Orchestrator composes degraded responses when components fail
 
 ---

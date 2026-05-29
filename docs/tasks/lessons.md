@@ -9,6 +9,7 @@
 | Date | Mistake Pattern | Root Cause | Rule to Prevent Recurrence |
 |---|---|---|---|
 | 2026-05-29 | Example: Hardcoded API key in source | Forgot to use environment variable | Always use `pydantic-settings` for secrets; never commit `.env` |
+| 2026-05-30 | Pre-kickoff doc alignment | Version/path/library conflicts across specs | Run PRE-KICKOFF-ALIGNMENT before KICKOFF-PROMPT |
 
 ---
 

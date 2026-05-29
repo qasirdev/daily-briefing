@@ -84,8 +84,8 @@ The security documentation MUST include:
 
 | ID | Vulnerability | Status | Mitigation | Test Coverage |
 |---|---|---|---|---|
-| LLM01 | Prompt Injection | ✅ Mitigated | Critic Agent scanning | `test_injection.py` |
-| LLM02 | Insecure Output | ✅ Mitigated | DOMPurify + Bleach | `test_sanitization.py` |
+| LLM01 | Prompt Injection | ⬜ Specified | Critic Agent scanning | `test_injection.py` |
+| LLM02 | Insecure Output | ⬜ Specified | DOMPurify + nh3 | `test_sanitization.py` |
 | ... | ... | ... | ... | ... |
 ```
 
