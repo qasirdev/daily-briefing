@@ -1,0 +1,68 @@
+{
+  "DB-E3": [
+    {
+      "Issue id": "DB-021",
+      "Summary": "Critic Agent Implementation",
+      "Issue Type": "Task",
+      "Description": "Create backend/agents/critic/ with Critic Agent for quality and safety review.\n\nIMPLEMENTATION DETAILS:\n- Create backend/agents/critic/__init__.py\n- Create backend/agents/critic/AGENT.md with role definition\n- Create backend/agents/critic/node.py: critic_agent_node() async function\n- Review Focus Agent output for coherence and quality\n- Implement max 2-cycle revision loop\n- If quality insufficient after 2 cycles: accept degraded or escalate\n- Call prompt injection detector on all external data\n- Return AgentResultEnvelope with review in result field\n\nEFFORT: M (5 hours)\nPROJECT AREA: Backend\nDEPENDENCIES: DB-015, DB-009\n\nTESTING CRITERIA:\n- Node returns valid AgentResultEnvelope\n- Revision loop limited to 2 cycles\n- Quality issues trigger revision request\n- Security violations trigger immediate escalation\n\nEDGE CASES:\n- First review passes: return immediately, no revision\n- Max revisions reached: accept with warning or escalate\n- Injection detected: status=escalated, reason=security_violation_detected",
+      "Labels": "backend,agents,critic,mvp3",
+      "Parent": "DB-E3"
+    },
+    {
+      "Issue id": "DB-022",
+      "Summary": "Prompt Injection Detector",
+      "Issue Type": "Task",
+      "Description": "Create backend/security/injection.py with PromptInjectionDetector class.\n\nIMPLEMENTATION DETAILS:\n- Create backend/security/__init__.py\n- Create backend/security/injection.py: PromptInjectionDetector class\n- Implement regex-based pattern matching for known injection signatures\n- Patterns: 'ignore previous', 'disregard training', 'debug mode', '[[SYSTEM]]', '<|im_start|>', '```system'\n- Return InjectionDetectionResult with is_suspicious, matched_pattern, confidence\n- Log all detections with trace_id for security audit\n- Integrate with Critic Agent for all external data scanning\n\nEFFORT: M (4 hours)\nPROJECT AREA: Backend\nDEPENDENCIES: DB-006\n\nTESTING CRITERIA:\n- All known patterns detected\n- False positive rate < 1%\n- Detection logged with full context\n- Clean text passes without flag\n\nEDGE CASES:\n- Case insensitive matching\n- Patterns split across lines\n- Unicode variants of characters",
+      "Labels": "backend,security,mvp3",
+      "Parent": "DB-E3"
+    },
+    {
+      "Issue id": "DB-023",
+      "Summary": "Dead Letter Queue (DLQ) Implementation",
+      "Issue Type": "Task",
+      "Description": "Create DLQ routing for failed agent executions and unrecoverable errors.\n\nIMPLEMENTATION DETAILS:\n- Create backend/schemas/dlq.py: DLQEvent model\n- Create backend/graph/dlq_handler.py: dlq_handler_node() function\n- Store failed envelopes in PostgreSQL via MCP insert tool\n- Include: request_id, user_id, agent_id, reason, full envelope, timestamp\n- Add retry_count and retried_at fields for retry tracking\n- Create GET /api/v1/dlq endpoint for viewing failed events (admin only)\n- Create POST /api/v1/dlq/{id}/retry for manual retry\n\nEFFORT: M (5 hours)\nPROJECT AREA: Backend\nDEPENDENCIES: DB-011, DB-017\n\nTESTING CRITERIA:\n- Failed events persisted to database\n- DLQ events queryable via API\n- Retry creates new briefing attempt\n- Security violations never retried\n\nEDGE CASES:\n- DLQ insert fails: log error, don't crash graph\n- Retry of security violation: reject with 403\n- Retry limit exceeded: mark as permanently failed",
+      "Labels": "backend,dlq,mvp3",
+      "Parent": "DB-E3"
+    },
+    {
+      "Issue id": "DB-024",
+      "Summary": "OpenTelemetry Integration",
+      "Issue Type": "Task",
+      "Description": "Add OpenTelemetry tracing to all agents and MCP calls.\n\nIMPLEMENTATION DETAILS:\n- Add opentelemetry-api, opentelemetry-sdk, opentelemetry-exporter-otlp to dependencies\n- Create backend/telemetry.py: configure_telemetry() function\n- Create tracer: trace.get_tracer('daily-briefing')\n- Wrap agent nodes with spans: agent.{agent_id}.execute\n- Wrap MCP calls with spans: mcp.{server}.{tool}\n- Wrap LLM calls with spans: llm.{model}.generate\n- Propagate trace_id through graph state\n- Export spans to OTLP endpoint (OTEL_EXPORTER_OTLP_ENDPOINT)\n\nEFFORT: M (5 hours)\nPROJECT AREA: Backend\nDEPENDENCIES: DB-018\n\nTESTING CRITERIA:\n- Spans created for all operations\n- trace_id consistent across span hierarchy\n- Spans exported to collector\n- Latency recorded accurately\n\nEDGE CASES:\n- OTLP endpoint unavailable: log warning, continue without tracing\n- Span context lost: generate new trace_id with warning\n- High cardinality: don't include user data in span attributes",
+      "Labels": "backend,observability,otel,mvp3",
+      "Parent": "DB-E3"
+    },
+    {
+      "Issue id": "DB-025",
+      "Summary": "Prometheus Metrics Exporter",
+      "Issue Type": "Task",
+      "Description": "Add Prometheus metrics endpoint with custom application metrics.\n\nIMPLEMENTATION DETAILS:\n- Add prometheus-client to dependencies\n- Create backend/metrics.py: define all custom metrics\n- Metrics: briefing_generation_duration_seconds (Histogram), agent_execution_duration_seconds (Histogram), llm_tokens_used_total (Counter), mcp_call_duration_seconds (Histogram), dlq_events_total (Counter), security_violations_total (Counter)\n- Mount /metrics endpoint on FastAPI app\n- Instrument agent nodes with timing decorators\n- Record token usage after each LLM call\n\nEFFORT: M (4 hours)\nPROJECT AREA: Backend\nDEPENDENCIES: DB-024\n\nTESTING CRITERIA:\n- /metrics returns Prometheus format\n- All custom metrics present\n- Histogram buckets appropriate for expected latencies\n- Counter values accurate\n\nEDGE CASES:\n- Metrics endpoint should not require auth\n- High cardinality labels avoided (no user_id)\n- Metrics survive app restart (not persistent)",
+      "Labels": "backend,observability,prometheus,mvp3",
+      "Parent": "DB-E3"
+    },
+    {
+      "Issue id": "DB-026",
+      "Summary": "Structured Logging with trace_id",
+      "Issue Type": "Task",
+      "Description": "Enhance structlog configuration with trace_id correlation and log levels.\n\nIMPLEMENTATION DETAILS:\n- Update backend/logging_config.py with full structlog configuration\n- Add processors: add_log_level, TimeStamper(fmt='iso'), StackInfoRenderer, JSONRenderer\n- Bind trace_id from request context to all log entries\n- Create log context manager for agent execution\n- Configure log levels: DEBUG for dev, INFO for prod\n- Add security logger for injection detection events\n- Mask PII before logging (email, phone patterns)\n\nEFFORT: S (3 hours)\nPROJECT AREA: Backend\nDEPENDENCIES: DB-006\n\nTESTING CRITERIA:\n- All logs include trace_id\n- JSON format correct\n- PII masked in output\n- Security events logged separately\n\nEDGE CASES:\n- Missing trace_id: generate new one with warning\n- Log level configurable via APP_DEBUG\n- Large payloads truncated before logging",
+      "Labels": "backend,observability,logging,mvp3",
+      "Parent": "DB-E3"
+    },
+    {
+      "Issue id": "DB-027",
+      "Summary": "Frontend ObservabilityBadge Component",
+      "Issue Type": "Task",
+      "Description": "Create ObservabilityBadge component to display execution metrics.\n\nIMPLEMENTATION DETAILS:\n- Create frontend/components/ObservabilityBadge.tsx\n- Display: execution_ms, tokens_used, model_used, status\n- Add expandable section for per-agent breakdown\n- Use appropriate icons for each metric\n- Style with Tailwind CSS\n- Add tooltip with detailed information\n- Handle missing metadata gracefully\n\nEFFORT: S (2 hours)\nPROJECT AREA: Frontend\nDEPENDENCIES: DB-007\n\nTESTING CRITERIA:\n- Badge renders with all metrics\n- Expandable section works\n- Tooltips accessible\n- Missing data shows placeholder\n\nEDGE CASES:\n- Zero tokens: display '0' not empty\n- Very long model name: truncate with ellipsis\n- Degraded status: show warning color",
+      "Labels": "frontend,observability,mvp3",
+      "Parent": "DB-E3"
+    },
+    {
+      "Issue id": "DB-028",
+      "Summary": "BriefingDashboard Component",
+      "Issue Type": "Task",
+      "Description": "Create main BriefingDashboard component with sanitized markdown rendering.\n\nIMPLEMENTATION DETAILS:\n- Create frontend/components/BriefingDashboard.tsx\n- Props: briefing (string), status, metadata, onRetry\n- Install and configure DOMPurify for HTML sanitization\n- Render sanitized markdown with prose styling\n- Show degraded alert when status='degraded'\n- Add retry button for degraded/failed states\n- Include ObservabilityBadge at bottom\n- Add loading skeleton state\n\nEFFORT: M (4 hours)\nPROJECT AREA: Frontend\nDEPENDENCIES: DB-027\n\nTESTING CRITERIA:\n- Markdown rendered correctly\n- XSS blocked by sanitization\n- Degraded alert visible\n- Retry triggers callback\n\nEDGE CASES:\n- Empty briefing: show placeholder message\n- Script tags in content: stripped by DOMPurify\n- Very long content: scrollable container",
+      "Labels": "frontend,components,mvp3",
+      "Parent": "DB-E3"
+    }
+  ]
+}

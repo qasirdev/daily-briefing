@@ -1,0 +1,195 @@
+---
+description: Rules for the Coding Agent — FastAPI, LangGraph, Next.js, MCP, Prompt Injection Defense
+globs: ["**/*.py", "**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"]
+alwaysApply: false
+---
+
+# Coding Agent Rules — AI Daily Briefing Assistant
+
+## Scope
+
+This rule set governs all implementation work across the backend (Python), frontend (TypeScript/React), and MCP integrations.
+
+---
+
+## Backend Standards (Python 3.12+)
+
+### Framework & Dependencies
+- **Runtime**: Python 3.12+ managed exclusively by `uv` (not pip/poetry)
+- **API Framework**: FastAPI 0.115+ with Pydantic v2.8+ for all request/response models
+- **Async Runtime**: `uvicorn` with `--workers` set via environment variable
+- **LLM Orchestration**: `langgraph>=0.4.0` for stateful multi-agent graphs
+- **LLM SDK**: `openai>=1.40.0` compatible (OpenRouter primary, LiteLLM for local fallback)
+- **Retry Logic**: `tenacity>=9.0.0` with exponential backoff for all external API calls
+- **Validation**: Pydantic v2 `model_validator` for complex cross-field validation
+
+### Code Patterns
+```python
+# REQUIRED: All LangGraph nodes return AgentResultEnvelope
+from backend.schemas import AgentResultEnvelope
+
+async def task_agent_node(state: GraphState) -> AgentResultEnvelope:
+    """Task Agent — Doer role. Read-only PostgreSQL MCP access."""
+    # Implementation must validate inputs via Pydantic before processing
+    # Must emit OpenTelemetry spans for observability
+    # Must return structured envelope, never raw strings
+```
+
+### Error Handling
+- Never catch generic `Exception` — catch specific exception types
+- All MCP failures must be logged with `trace_id` and routed to DLQ
+- Use `structlog` for all logging (JSON structured output)
+
+---
+
+## Frontend Standards (TypeScript/React)
+
+### Framework & Dependencies
+- **Framework**: Next.js 16.x with App Router (no Pages Router)
+- **React**: React 19.x with Server Components by default (leverage `use`, `useTransition`, `useOptimistic`, `useActionState`)
+- **Styling**: Tailwind CSS 4.x with design tokens in `tailwind.config.ts`
+- **State**: Server Components for data; Client Components only for interactivity
+- **Validation**: `zod>=3.23.0` for runtime schema validation
+
+### Code Patterns
+```typescript
+// REQUIRED: Type-safe API responses
+interface BriefingResponse {
+  status: 'success' | 'failure' | 'degraded';
+  briefing: string;
+  metadata: {
+    execution_ms: number;
+    tokens_used: number;
+    model_used: string;
+  };
+}
+
+// REQUIRED: Sanitize all markdown before rendering
+import DOMPurify from 'dompurify';
+const sanitizedContent = DOMPurify.sanitize(briefing);
+```
+
+### Component Requirements
+| Component | Purpose | Security Consideration |
+|---|---|---|
+| `BriefingDashboard.tsx` | Primary view | Sanitize markdown before render |
+| `ObservabilityBadge.tsx` | Shows execution metrics | Display only, no user input |
+| `ConsentPromptModal.tsx` | JIT OAuth consent | Never cache tokens client-side |
+
+---
+
+## MCP Integration Rules
+
+### PostgreSQL MCP
+- Use `list_tables`, `query`, `insert` tools — never build custom ORM wrappers
+- All queries must include `user_id` parameter for RLS enforcement
+- Write operations require explicit transaction handling
+
+### Google Calendar MCP  
+- Outbound requests restricted to `*.googleapis.com` domains (SSRF prevention)
+- Token refresh handled by MCP server, not application code
+- All calendar data treated as untrusted (potential prompt injection vector)
+
+---
+
+## Prompt Injection Defense
+
+### Input Sanitization Pipeline
+1. **Detection**: Lightweight classifier scans for injection signatures ("ignore previous", "system:", "```", etc.)
+2. **Quarantine**: Flagged inputs logged with `security_violation_detected` reason
+3. **Escalation**: Orchestrator routes to DLQ — never retry security failures
+
+### Code Implementation
+```python
+# REQUIRED: Validate external inputs before LLM processing
+from backend.security import PromptInjectionDetector
+
+detector = PromptInjectionDetector()
+if detector.is_suspicious(calendar_event.description):
+    return AgentResultEnvelope(
+        status="failure",
+        escalation=EscalationPayload(
+            reason="security_violation_detected",
+            context=f"Injection signature in event: {calendar_event.id}"
+        )
+    )
+```
+
+---
+
+## Secrets & Configuration
+
+- **Never** hardcode secrets — inject via environment variables at runtime
+- Use `pydantic-settings>=2.5.0` for validated configuration
+- `.env.example` must document all required variables with safe defaults
+- Secrets in CI/CD: use GitHub Actions secrets or Azure Key Vault references
+
+---
+
+## Testing Integration
+
+- Every new endpoint requires corresponding `pytest-asyncio` test
+- Every new React component requires Vitest test with ARIA assertions
+- Prompt injection defense requires adversarial test cases
+
+---
+
+## Epic Workflow (Agent Execution Order)
+
+When implementing an epic, follow this sequence:
+
+### 1. Branch Creation
+```bash
+git checkout -b epic/E{n}-{short-description}
+# Example: git checkout -b epic/E1-project-scaffold
+```
+
+### 2. Coding Agent Phase
+- Read all tasks from `docs/jira-tickets-json/DB-E{n}-*.json`
+- Update `docs/tasks/todo.md` with implementation plan
+- Implement each task following IMPLEMENTATION DETAILS
+- Handle all EDGE CASES listed in task description
+- Commit after each logical unit of work
+
+### 3. Refactor Agent Phase (handoff)
+- Run after all Coding Agent tasks complete
+- Review for Pydantic schema tightness
+- Check for code duplication
+- Ensure AgentResultEnvelope consistency
+- Verify output sanitization
+
+### 4. Testing Agent Phase (handoff)
+- Add tests matching `test_requirements` in task JSON
+- Run pytest with coverage
+- Add adversarial security tests
+- Ensure 80% backend / 75% frontend coverage
+
+### 5. Docs Agent Phase (handoff)
+- Update relevant AGENT.md files
+- Update docs/PLAN.md with completion status
+- Capture learnings in docs/learning/
+- Update CHANGELOG if applicable
+
+### 6. Merge Criteria
+- [ ] All tasks in epic marked done
+- [ ] All tests pass (`pytest`, `vitest`)
+- [ ] Linting passes (`ruff`, `eslint`)
+- [ ] Type checking passes (`mypy --strict`, `tsc`)
+- [ ] `docs/tasks/todo.md` updated with review section
+- [ ] `docs/PLAN.md` shows epic as ✅ Completed
+- [ ] PR approved and merged to main
+
+### 7. Context Checkpoint (Long Sessions)
+
+When context reaches ~75% capacity during epic implementation:
+
+1. Write checkpoint to `docs/tasks/checkpoint.md`
+2. Commit WIP: `git commit -m "WIP: checkpoint at DB-{nnn}"`
+3. Document next steps clearly
+4. New session reads checkpoint and continues
+
+See `docs/EXECUTION-RULES.md` Section 8 for full protocol.
+
+---
+
+*Coding Agent Rules — Version 1.5.0 — May 2026*

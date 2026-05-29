@@ -1,0 +1,84 @@
+{
+  "DB-E1": [
+    {
+      "Issue id": "DB-001",
+      "Summary": "Monorepo Init with Root AGENT.md",
+      "Issue Type": "Task",
+      "Description": "Create the daily-briefing/ root directory with required base files and AGENT.md index.\n\nIMPLEMENTATION DETAILS:\n- Create pyproject.toml with uv-managed dependencies (fastapi>=0.115.0, pydantic>=2.8.0, langgraph>=0.4.0, uvicorn>=0.32.0, structlog>=24.4.0, openai>=1.40.0, httpx>=0.28.0)\n- Create .env.example documenting all required env vars (OPENROUTER_API_KEY, LOCAL_LLM_ENABLED, LOCAL_LLM_BASE_URL, DATABASE_URL, POSTGRES_MCP_HOST, CALENDAR_MCP_HOST, OTEL_EXPORTER_OTLP_ENDPOINT, JWT_SECRET_KEY, APP_ENV, APP_DEBUG)\n- Create .gitignore covering node_modules, .env, __pycache__, .next, .venv, .uv\n- Create root README.md with project overview and quickstart\n- Verify AGENT.md already exists with workflow rules table\n\nEFFORT: S (2 hours)\nPROJECT AREA: Infrastructure\nDEPENDENCIES: None\n\nTESTING CRITERIA:\n- All files present at repo root\n- .gitignore covers all generated artifacts\n- .env.example lists every variable used across the full stack\n- pyproject.toml valid and uv sync succeeds\n\nEDGE CASES:\n- Ensure no secrets committed even accidentally\n- AGENT.md must remain under 150 lines — index only",
+      "Labels": "scaffold,infrastructure,mvp1",
+      "Parent": "DB-E1"
+    },
+    {
+      "Issue id": "DB-002",
+      "Summary": "Multi-Stage Dockerfile",
+      "Issue Type": "Task",
+      "Description": "Create Dockerfile with multi-stage build for frontend (Next.js) and backend (FastAPI) in a single container.\n\nIMPLEMENTATION DETAILS:\n- Stage 1 (frontend-builder): FROM node:22-alpine, WORKDIR /app/frontend, COPY package*.json, RUN npm ci --frozen-lockfile, COPY frontend/, RUN npm run build\n- Stage 2 (backend-builder): FROM python:3.12-slim, WORKDIR /app, RUN pip install uv, COPY pyproject.toml uv.lock, RUN uv sync --frozen --no-dev\n- Stage 3 (production): FROM python:3.12-slim, install nginx and supervisor, COPY --from=frontend-builder, COPY --from=backend-builder, COPY nginx.conf and supervisord.conf, EXPOSE 80\n- CMD: /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf\n\nEFFORT: M (4 hours)\nPROJECT AREA: Infrastructure\nDEPENDENCIES: DB-001\n\nTESTING CRITERIA:\n- docker build completes without errors\n- Container starts and health check passes\n- Both frontend (/) and backend (/api/health) accessible\n\nEDGE CASES:\n- .next/standalone must include static files copy step\n- Use --frozen-lockfile to ensure reproducible builds",
+      "Labels": "docker,infrastructure,mvp1",
+      "Parent": "DB-E1"
+    },
+    {
+      "Issue id": "DB-003",
+      "Summary": "Nginx Reverse Proxy Configuration",
+      "Issue Type": "Task",
+      "Description": "Create nginx.conf routing / to Next.js and /api/* to FastAPI.\n\nIMPLEMENTATION DETAILS:\n- events {} block required\n- http > server listens on port 80\n- location /: proxy_pass http://127.0.0.1:3000; proxy_http_version 1.1; set Upgrade, Connection, Host, X-Real-IP headers\n- location /api/: proxy_pass http://127.0.0.1:8000; proxy_http_version 1.1; set Host, X-Real-IP, X-Forwarded-For headers; proxy_read_timeout 120s\n- location /health: proxy_pass http://127.0.0.1:8000/health\n- include /etc/nginx/mime.types\n\nEFFORT: S (2 hours)\nPROJECT AREA: Infrastructure\nDEPENDENCIES: DB-002\n\nTESTING CRITERIA:\n- Static assets and SSR responses served via port 80\n- API calls proxied to FastAPI without 502 errors\n- /health endpoint reachable and returns 200\n\nEDGE CASES:\n- Do NOT use try_files — Next.js standalone is a Node server\n- Upgrade/Connection headers required for WebSocket support",
+      "Labels": "nginx,infrastructure,mvp1",
+      "Parent": "DB-E1"
+    },
+    {
+      "Issue id": "DB-004",
+      "Summary": "Supervisord Process Manager",
+      "Issue Type": "Task",
+      "Description": "Create supervisord.conf to manage nginx, uvicorn, and Next.js processes.\n\nIMPLEMENTATION DETAILS:\n- [supervisord] section: nodaemon=true, logfile=/dev/null, logfile_maxbytes=0\n- [program:nginx]: command=/usr/sbin/nginx -g 'daemon off;', priority=10, autorestart=true\n- [program:fastapi]: command=uv run uvicorn backend.main:app --host 0.0.0.0 --port 8000, directory=/app, priority=20, autorestart=true\n- [program:nextjs]: command=node server.js, directory=/app/frontend/.next/standalone, priority=30, autorestart=true\n- Environment variables passed via environment= directive\n\nEFFORT: S (2 hours)\nPROJECT AREA: Infrastructure\nDEPENDENCIES: DB-002, DB-003\n\nTESTING CRITERIA:\n- All three processes start and stay running\n- Process restarts automatically on crash\n- Logs visible via docker logs\n\nEDGE CASES:\n- Priority order: nginx first (10), then FastAPI (20), then Next.js (30)\n- nodaemon=true required for Docker foreground process",
+      "Labels": "supervisor,infrastructure,mvp1",
+      "Parent": "DB-E1"
+    },
+    {
+      "Issue id": "DB-005",
+      "Summary": "docker-compose.yml for Local Dev",
+      "Issue Type": "Task",
+      "Description": "Create docker-compose.yml for local development orchestration.\n\nIMPLEMENTATION DETAILS:\n- services.app: build context=. dockerfile=Dockerfile\n- ports: '80:80'\n- env_file: .env\n- restart: unless-stopped\n- healthcheck: test: curl -f http://localhost/health; interval: 30s; timeout: 10s; retries: 3\n- Optional services.postgres for local MCP testing\n\nEFFORT: S (1 hour)\nPROJECT AREA: Infrastructure\nDEPENDENCIES: DB-004\n\nTESTING CRITERIA:\n- docker-compose up starts cleanly\n- App accessible at http://localhost\n- Health check passes within 90 seconds\n\nEDGE CASES:\n- Port 80 may be in use locally — document alternative in README\n- .env file must exist before docker-compose up",
+      "Labels": "docker,infrastructure,mvp1",
+      "Parent": "DB-E1"
+    },
+    {
+      "Issue id": "DB-006",
+      "Summary": "FastAPI Backend Scaffold",
+      "Issue Type": "Task",
+      "Description": "Create backend/main.py with FastAPI application, health endpoint, and structured logging.\n\nIMPLEMENTATION DETAILS:\n- Create backend/__init__.py\n- Create backend/main.py: FastAPI app with lifespan context manager\n- Create backend/settings.py: pydantic-settings BaseSettings with all env vars\n- Implement GET /health returning {status: 'healthy', version: APP_VERSION}\n- Implement GET /api/v1/briefing/generate placeholder (returns 501 Not Implemented)\n- Configure structlog for JSON logging with trace_id\n- Add CORS middleware for frontend origin\n\nEFFORT: M (3 hours)\nPROJECT AREA: Backend\nDEPENDENCIES: DB-001\n\nTESTING CRITERIA:\n- uvicorn starts without errors\n- /health returns 200 with JSON body\n- Structured logs output as JSON\n- CORS headers present on responses\n\nEDGE CASES:\n- Settings validation fails fast on missing required env vars\n- Health endpoint must not require authentication",
+      "Labels": "backend,fastapi,mvp1",
+      "Parent": "DB-E1"
+    },
+    {
+      "Issue id": "DB-007",
+      "Summary": "Next.js Frontend Scaffold",
+      "Issue Type": "Task",
+      "Description": "Create frontend/ with Next.js 15, App Router, and standalone output configuration.\n\nIMPLEMENTATION DETAILS:\n- npx create-next-app@latest frontend --typescript --tailwind --app --src-dir=false\n- Configure next.config.ts: output: 'standalone', reactStrictMode: true\n- Create app/page.tsx: placeholder dashboard with 'Daily Briefing' heading\n- Create app/layout.tsx: root layout with metadata\n- Create components/ directory structure\n- Add Tailwind CSS configuration with custom theme\n\nEFFORT: M (3 hours)\nPROJECT AREA: Frontend\nDEPENDENCIES: DB-001\n\nTESTING CRITERIA:\n- npm run build produces .next/standalone directory\n- node server.js starts without errors\n- Dashboard loads at http://localhost:3000\n\nEDGE CASES:\n- output: 'standalone' required — do NOT use 'export'\n- .next/static must be copied alongside standalone output",
+      "Labels": "frontend,nextjs,mvp1",
+      "Parent": "DB-E1"
+    },
+    {
+      "Issue id": "DB-008",
+      "Summary": "LangGraph Orchestration Scaffold",
+      "Issue Type": "Task",
+      "Description": "Create backend/graph/ with LangGraph state definition and basic graph structure.\n\nIMPLEMENTATION DETAILS:\n- Create backend/graph/__init__.py\n- Create backend/graph/state.py: BriefingGraphState TypedDict with user_id, request_id, trace_id, agent results, status\n- Create backend/graph/builder.py: build_briefing_graph() function returning compiled StateGraph\n- Create backend/graph/nodes.py: placeholder node functions for orchestrator, task, calendar, focus, critic\n- Initial graph: START -> orchestrator -> END (minimal flow)\n\nEFFORT: M (4 hours)\nPROJECT AREA: Backend\nDEPENDENCIES: DB-006\n\nTESTING CRITERIA:\n- Graph compiles without errors\n- graph.ainvoke() executes and returns state\n- State schema validates correctly\n\nEDGE CASES:\n- Use TypedDict for state, not dataclass\n- All node functions must be async",
+      "Labels": "backend,langgraph,mvp1",
+      "Parent": "DB-E1"
+    },
+    {
+      "Issue id": "DB-009",
+      "Summary": "AgentResultEnvelope Schema",
+      "Issue Type": "Task",
+      "Description": "Create backend/schemas/ with Pydantic models for AgentResultEnvelope and related types.\n\nIMPLEMENTATION DETAILS:\n- Create backend/schemas/__init__.py\n- Create backend/schemas/envelope.py: AgentResultEnvelope, ExecutionMetadata, EscalationPayload\n- Use Pydantic v2 with ConfigDict(strict=True, frozen=True, extra='forbid')\n- Add field validators for agent_id pattern, token limits, trace_id format\n- Export all schemas from __init__.py\n\nEFFORT: S (2 hours)\nPROJECT AREA: Backend\nDEPENDENCIES: DB-006\n\nTESTING CRITERIA:\n- All models validate correctly with test data\n- Invalid data raises ValidationError\n- Models are immutable (frozen=True)\n\nEDGE CASES:\n- canonical_role must be Literal type with exact values\n- data_classification must be Literal type",
+      "Labels": "backend,pydantic,mvp1",
+      "Parent": "DB-E1"
+    },
+    {
+      "Issue id": "DB-010",
+      "Summary": "GitHub Actions CI Pipeline",
+      "Issue Type": "Task",
+      "Description": "Create .github/workflows/ci.yml with linting, type checking, and test jobs.\n\nIMPLEMENTATION DETAILS:\n- Trigger on push to main and pull_request\n- Job 1 (backend): setup-python, uv sync, ruff check, mypy --strict, pytest\n- Job 2 (frontend): setup-node, npm ci, npm run lint, npm run build\n- Job 3 (docker): docker build (no push)\n- Job 4 (workflow-docs): check docs/tasks/todo.md and lessons.md exist and are non-empty\n- Cache uv and npm dependencies\n\nEFFORT: M (3 hours)\nPROJECT AREA: Infrastructure\nDEPENDENCIES: DB-006, DB-007\n\nTESTING CRITERIA:\n- All jobs pass on clean codebase\n- Failed lint/type check fails the PR\n- Docker build completes successfully\n\nEDGE CASES:\n- Use actions/cache for faster builds\n- workflow-docs job must check correct path (docs/tasks/)",
+      "Labels": "cicd,github,mvp1",
+      "Parent": "DB-E1"
+    }
+  ]
+}

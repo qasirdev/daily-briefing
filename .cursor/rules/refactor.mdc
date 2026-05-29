@@ -1,0 +1,253 @@
+---
+description: Rules for the Refactor Agent — Pydantic schemas, strict typing, sanitization, technical debt
+globs: ["**/*.py", "**/*.ts", "**/*.tsx"]
+alwaysApply: false
+---
+
+# Refactor Agent Rules — AI Daily Briefing Assistant
+
+## Scope
+
+This rule set governs all refactoring activities including schema tightening, type safety improvements, code deduplication, output sanitization enforcement, and technical debt reduction.
+
+---
+
+## Pydantic v2 Schema Standards
+
+### Schema Validation Requirements
+- **Version**: Pydantic v2.8.0+ exclusively (no v1 compatibility mode)
+- **Strict Mode**: Enable `strict=True` on all models processing external input
+- **Coercion**: Disable implicit type coercion for security-sensitive fields
+
+### Required Schema Patterns
+
+```python
+from pydantic import BaseModel, Field, ConfigDict, model_validator
+from typing import Literal
+from datetime import datetime
+
+class AgentResultEnvelope(BaseModel):
+    """Canonical envelope for all inter-agent communication."""
+    
+    model_config = ConfigDict(
+        strict=True,
+        frozen=True,  # Immutable after creation
+        extra="forbid",  # Reject unexpected fields
+    )
+    
+    agent_id: str = Field(..., min_length=1, max_length=50, pattern=r"^[a-z_]+$")
+    canonical_role: Literal["doer", "planner", "critic", "tool_operator", "supervisor"]
+    status: Literal["success", "failure", "escalated"]
+    result: dict | None = None
+    metadata: "ExecutionMetadata"
+    escalation: "EscalationPayload | None" = None
+    
+    @model_validator(mode="after")
+    def validate_escalation_required(self) -> "AgentResultEnvelope":
+        if self.status == "escalated" and self.escalation is None:
+            raise ValueError("Escalation payload required when status is 'escalated'")
+        return self
+
+
+class ExecutionMetadata(BaseModel):
+    """Execution telemetry attached to every agent response."""
+    
+    model_config = ConfigDict(strict=True, frozen=True)
+    
+    execution_ms: int = Field(..., ge=0, le=300_000)  # Max 5 minutes
+    tokens_used: int = Field(..., ge=0, le=128_000)
+    model_used: str = Field(..., min_length=1)
+    prompt_version: str = Field(..., pattern=r"^v\d+\.\d+\.\d+$")
+    trace_id: str = Field(..., min_length=32, max_length=64)
+    data_classification: Literal["public", "internal", "confidential", "confidential_pii"]
+```
+
+### Anti-Patterns to Refactor
+
+| Anti-Pattern | Refactor To |
+|---|---|
+| `dict` return type from agents | `AgentResultEnvelope` typed return |
+| `Any` type annotations | Specific types or `TypeVar` bounds |
+| `Optional[X]` for nullable | `X | None` (Python 3.10+ union) |
+| `class Config:` (Pydantic v1) | `model_config = ConfigDict(...)` |
+| `validator` decorator (v1) | `field_validator` or `model_validator` |
+
+---
+
+## TypeScript Strict Typing
+
+### Configuration Requirements
+```json
+// tsconfig.json — Required settings
+{
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitAny": true,
+    "noImplicitReturns": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true
+  }
+}
+```
+
+### Interface Standards
+
+```typescript
+// REQUIRED: Exhaustive discriminated unions for API responses
+type BriefingStatus = 'success' | 'failure' | 'degraded';
+
+interface BriefingResponse {
+  readonly status: BriefingStatus;
+  readonly briefing: string;
+  readonly metadata: ExecutionMetadata;
+  readonly escalation?: EscalationPayload;
+}
+
+// REQUIRED: Zod schemas for runtime validation
+import { z } from 'zod';
+
+const briefingResponseSchema = z.object({
+  status: z.enum(['success', 'failure', 'degraded']),
+  briefing: z.string(),
+  metadata: executionMetadataSchema,
+  escalation: escalationPayloadSchema.optional(),
+});
+
+type BriefingResponse = z.infer<typeof briefingResponseSchema>;
+```
+
+---
+
+## Output Sanitization Enforcement
+
+### Backend Sanitization Rules
+- Orchestrator is the **ONLY** agent that produces user-facing markdown
+- Sub-agents (Task, Calendar, Focus, Critic) return **strict JSON only**
+- All strings destined for UI must pass through `html.escape()` or equivalent
+
+```python
+# REQUIRED: Sanitization layer in Orchestrator
+import html
+from markdown import markdown
+import nh3
+
+ALLOWED_TAGS = ["p", "h1", "h2", "h3", "ul", "ol", "li", "strong", "em", "code", "pre"]
+ALLOWED_ATTRIBUTES = {}
+
+def sanitize_for_ui(raw_markdown: str) -> str:
+    """Sanitize markdown before sending to frontend."""
+    # Convert markdown to HTML
+    html_content = markdown(raw_markdown)
+    # Strip dangerous tags/attributes
+    clean_html = nh3.clean(html_content, tags=ALLOWED_TAGS, attributes=ALLOWED_ATTRIBUTES)
+    return clean_html
+```
+
+### Frontend Sanitization Rules
+- **Never** use `dangerouslySetInnerHTML` without DOMPurify
+- All API responses validated with Zod before rendering
+- User-generated content double-escaped
+
+```typescript
+// REQUIRED: DOMPurify for any HTML rendering
+import DOMPurify from 'dompurify';
+
+function BriefingContent({ html }: { html: string }) {
+  const sanitized = DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: ['p', 'h1', 'h2', 'h3', 'ul', 'ol', 'li', 'strong', 'em', 'code', 'pre'],
+    ALLOWED_ATTR: [],
+  });
+  
+  return <div dangerouslySetInnerHTML={{ __html: sanitized }} />;
+}
+```
+
+---
+
+## Code Deduplication Targets
+
+### LLM Routing Consolidation
+- All LLM calls must go through `backend/llm/router.py`
+- No direct `openai.ChatCompletion.create()` calls in agent nodes
+- Router handles: model selection, fallback, rate limiting, telemetry
+
+```python
+# CONSOLIDATED: Single LLM router
+from backend.llm.router import LLMRouter
+
+router = LLMRouter(
+    primary="openrouter/openai/gpt-4o-mini",
+    fallback="local/llama-3-8b",
+    max_retries=3,
+    token_budget=4096,
+)
+
+response = await router.generate(
+    messages=[...],
+    agent_id="focus",
+    trace_id=state.trace_id,
+)
+```
+
+### Prompt Loading Consolidation
+- All prompts loaded from `prompts/` directory via `PromptLoader`
+- No inline prompt strings in Python code
+- Hot-reload support without server restart
+
+```python
+# CONSOLIDATED: Prompt loader utility
+from backend.prompts import PromptLoader
+
+loader = PromptLoader(prompts_dir="prompts/")
+
+system_prompt = loader.load("focus/system.md", version="v1.5.0")
+guardrails = loader.load("focus/guardrails.md", version="v1.5.0")
+```
+
+---
+
+## AgentResultEnvelope Preservation
+
+During any refactoring:
+
+1. **Never** change the `AgentResultEnvelope` schema without updating all consumers
+2. **Always** run full integration test suite after envelope changes
+3. **Version** envelope changes in `CHANGELOG.md` with migration notes
+4. **Ensure** OpenTelemetry trace correlation is preserved through refactors
+
+---
+
+## Technical Debt Checklist
+
+| Area | Indicator | Action |
+|---|---|---|
+| Type Coverage | `mypy --strict` errors > 0 | Fix all type errors |
+| Duplication | Similar code in 3+ locations | Extract to shared utility |
+| Complexity | Function > 50 lines | Split into smaller functions |
+| Dependencies | Unused imports | Remove and update `pyproject.toml` |
+| Tests | Coverage < 80% | Add missing test cases |
+| Documentation | Public API without docstring | Add docstrings |
+
+---
+
+## Epic Workflow Position
+
+The Refactor Agent runs **after Coding Agent** completes all tasks in an epic:
+
+1. ✅ Coding Agent — Implementation complete
+2. **🔄 Refactor Agent — You are here**
+3. ⬜ Testing Agent — Next
+4. ⬜ Docs Agent — Final
+
+### Handoff Checklist
+
+Before handing off to Testing Agent:
+- [ ] All Pydantic models use `strict=True`
+- [ ] No duplicate LLM routing code
+- [ ] Output sanitization applied consistently
+- [ ] AgentResultEnvelope schema preserved
+- [ ] Type coverage at 100% (mypy --strict passes)
+
+---
+
+*Refactor Agent Rules — Version 1.5.0 — May 2026*

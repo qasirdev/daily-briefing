@@ -1,0 +1,68 @@
+{
+  "DB-E4": [
+    {
+      "Issue id": "DB-029",
+      "Summary": "Agentic Consent Data Model",
+      "Issue Type": "Task",
+      "Description": "Create consent record schema and database table for time-bounded authorization.\n\nIMPLEMENTATION DETAILS:\n- Create backend/schemas/consent.py: ConsentRecord, ConsentRequest, ConsentAuditLog models\n- Fields: id, user_id, service, scope, consent_type (session/time_bounded/recurring), granted_at, expires_at, times_used, revoked_at\n- Create database migration for consent_records table\n- Add unique constraint on (user_id, service)\n- Create consent_audit_log table for compliance\n- Add indexes on user_id and expires_at for query performance\n\nEFFORT: M (4 hours)\nPROJECT AREA: Backend\nDEPENDENCIES: DB-011\n\nTESTING CRITERIA:\n- Models validate correctly\n- Database migration runs cleanly\n- Unique constraint enforced\n- Audit log captures all events\n\nEDGE CASES:\n- Duplicate consent: update existing record\n- Expired consent: query filters by expires_at\n- Revoked consent: soft delete with revoked_at",
+      "Labels": "backend,consent,mvp4",
+      "Parent": "DB-E4"
+    },
+    {
+      "Issue id": "DB-030",
+      "Summary": "Consent Management API",
+      "Issue Type": "Task",
+      "Description": "Create consent management endpoints for granting, viewing, and revoking consent.\n\nIMPLEMENTATION DETAILS:\n- Create backend/api/v1/consent.py router\n- POST /api/v1/consent: grant consent with service, scope, ttl_hours\n- GET /api/v1/consent: list active consents for user\n- DELETE /api/v1/consent/{id}: revoke consent\n- Calculate expires_at from ttl_hours (default 4 hours for calendar)\n- Log all consent operations to audit table\n- Return ConsentRecord in response\n\nEFFORT: M (4 hours)\nPROJECT AREA: Backend\nDEPENDENCIES: DB-029\n\nTESTING CRITERIA:\n- Grant creates consent record\n- List returns only active (non-expired, non-revoked)\n- Revoke sets revoked_at\n- Audit log captures all operations\n\nEDGE CASES:\n- Grant for existing service: update expires_at\n- Revoke non-existent: return 404\n- List with no consents: return empty array",
+      "Labels": "backend,consent,api,mvp4",
+      "Parent": "DB-E4"
+    },
+    {
+      "Issue id": "DB-031",
+      "Summary": "ConsentPromptModal Component",
+      "Issue Type": "Task",
+      "Description": "Create frontend modal for JIT (Just-In-Time) consent prompts.\n\nIMPLEMENTATION DETAILS:\n- Create frontend/components/ConsentPromptModal.tsx\n- Props: request (ConsentRequest), onGrant, onDeny, isLoading\n- Display: service name, requested scopes, suggested TTL\n- Allow user to select TTL: 'This briefing only', '1 hour', '4 hours', '24 hours'\n- Call POST /api/v1/consent on grant\n- Trigger OAuth redirect for Google Calendar\n- Show loading state during OAuth flow\n- Accessible: keyboard navigation, ARIA labels\n\nEFFORT: M (4 hours)\nPROJECT AREA: Frontend\nDEPENDENCIES: DB-030\n\nTESTING CRITERIA:\n- Modal renders with correct content\n- TTL selection works\n- Grant triggers API call\n- Deny closes modal without action\n\nEDGE CASES:\n- OAuth popup blocked: show instruction\n- OAuth error: show error message\n- Multiple scopes: list all clearly",
+      "Labels": "frontend,consent,mvp4",
+      "Parent": "DB-E4"
+    },
+    {
+      "Issue id": "DB-032",
+      "Summary": "Orchestrator Consent Handling",
+      "Issue Type": "Task",
+      "Description": "Update Orchestrator to handle consent_required escalations from Calendar Agent.\n\nIMPLEMENTATION DETAILS:\n- Update backend/agents/orchestrator/node.py\n- Check for consent_required escalation in calendar_result\n- Pause graph execution when consent required\n- Return partial response with awaiting_consent status\n- Include consent_request in response for frontend\n- Resume graph after consent granted (via new request)\n- Store partial state for resume (optional checkpointing)\n\nEFFORT: M (4 hours)\nPROJECT AREA: Backend\nDEPENDENCIES: DB-017, DB-029\n\nTESTING CRITERIA:\n- Consent required pauses graph\n- Response includes consent_request\n- New request after consent succeeds\n- Partial state preserved correctly\n\nEDGE CASES:\n- Consent denied: return degraded briefing without calendar\n- Consent expires mid-graph: re-request\n- Multiple services need consent: batch requests",
+      "Labels": "backend,consent,orchestrator,mvp4",
+      "Parent": "DB-E4"
+    },
+    {
+      "Issue id": "DB-033",
+      "Summary": "Local LLM Fallback Configuration",
+      "Issue Type": "Task",
+      "Description": "Configure Local LLM fallback in LLMRouter for privacy-sensitive data.\n\nIMPLEMENTATION DETAILS:\n- Update backend/settings.py with LOCAL_LLM_ENABLED, LOCAL_LLM_BASE_URL, LOCAL_LLM_MODEL_ID\n- Update backend/llm/router.py with fallback logic\n- Fallback triggers: rate limit (429), timeout, PII data classification\n- Local LLM uses OpenAI-compatible API (llama.cpp server)\n- Track fallback events in metrics (llm_fallback_total counter)\n- Document supported models in docs/LOCAL-LLM.md\n\nEFFORT: M (4 hours)\nPROJECT AREA: Backend\nDEPENDENCIES: DB-016\n\nTESTING CRITERIA:\n- Fallback triggered on rate limit\n- Fallback triggered on timeout\n- PII forces local LLM\n- Fallback metrics recorded\n\nEDGE CASES:\n- Local LLM disabled: no fallback, raise error\n- Local LLM unavailable: raise error with context\n- Both fail: aggregate error message",
+      "Labels": "backend,llm,local,mvp4",
+      "Parent": "DB-E4"
+    },
+    {
+      "Issue id": "DB-034",
+      "Summary": "User Preferences Learning Loop",
+      "Issue Type": "Task",
+      "Description": "Implement learner feedback loop for user preference extraction.\n\nIMPLEMENTATION DETAILS:\n- Create backend/schemas/preferences.py: UserPreference model\n- Create user_preferences table via migration\n- Create POST /api/v1/preferences/feedback endpoint\n- Accept: briefing_id, edited_content\n- Orchestrator analyzes delta between original and edited\n- Extract preference (e.g., 'prefers morning deep work')\n- Store preference with confidence score\n- Inject preferences into Focus Agent context on subsequent runs\n\nEFFORT: L (6 hours)\nPROJECT AREA: Backend\nDEPENDENCIES: DB-017\n\nTESTING CRITERIA:\n- Feedback endpoint accepts edits\n- Preference extracted from delta\n- Preferences loaded for next briefing\n- Confidence scores reasonable\n\nEDGE CASES:\n- No edits: don't extract preference\n- Conflicting preferences: keep highest confidence\n- User deletes preference: remove from context",
+      "Labels": "backend,learning,preferences,mvp4",
+      "Parent": "DB-E4"
+    },
+    {
+      "Issue id": "DB-035",
+      "Summary": "Data Export Endpoint",
+      "Issue Type": "Task",
+      "Description": "Create data export endpoint for GDPR compliance.\n\nIMPLEMENTATION DETAILS:\n- Create backend/api/v1/export.py router\n- GET /api/v1/export: export all user data as JSON\n- Include: user profile, preferences, tasks, briefing history, consent records, DLQ events\n- Rate limit: 5 requests per hour\n- Support format parameter: json (default), csv\n- Async generation for large exports\n- Return download URL for async exports\n\nEFFORT: M (4 hours)\nPROJECT AREA: Backend\nDEPENDENCIES: DB-034, DB-029\n\nTESTING CRITERIA:\n- Export includes all data categories\n- JSON format valid\n- Rate limit enforced\n- Large export handled async\n\nEDGE CASES:\n- No data: return empty structure\n- Export in progress: return existing job status\n- CSV format: flatten nested objects",
+      "Labels": "backend,gdpr,export,mvp4",
+      "Parent": "DB-E4"
+    },
+    {
+      "Issue id": "DB-036",
+      "Summary": "Consent Dashboard Page",
+      "Issue Type": "Task",
+      "Description": "Create settings page with consent management dashboard.\n\nIMPLEMENTATION DETAILS:\n- Create frontend/app/settings/page.tsx\n- Fetch active consents from GET /api/v1/consent\n- Display consent cards with service, scope, granted_at, expires_at\n- Add revoke button on each card\n- Show usage count (times_used)\n- Add link to export data\n- Responsive layout with Tailwind\n\nEFFORT: M (4 hours)\nPROJECT AREA: Frontend\nDEPENDENCIES: DB-030, DB-031\n\nTESTING CRITERIA:\n- Consents displayed correctly\n- Revoke removes consent\n- Export link works\n- Empty state handled\n\nEDGE CASES:\n- No consents: show empty state message\n- Many consents: scrollable list\n- Revoke confirmation: show dialog first",
+      "Labels": "frontend,consent,settings,mvp4",
+      "Parent": "DB-E4"
+    }
+  ]
+}

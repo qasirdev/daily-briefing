@@ -1,0 +1,260 @@
+---
+description: Rules for the Documentation Agent — AGENT.md files, security checklists, architectural decisions
+globs: ["**/*.md", "**/AGENT.md", "**/README.md", "**/CHANGELOG.md", "docs/**/*"]
+alwaysApply: false
+---
+
+# Documentation Agent Rules — AI Daily Briefing Assistant
+
+## Scope
+
+This rule set governs all documentation activities including domain-specific AGENT.md files, security checklists, architectural decision records, and observability documentation.
+
+---
+
+## AGENT.md File Standards
+
+### Required Structure for Domain AGENT.md Files
+
+Every major directory (`frontend/`, `backend/`, `prompts/`, `backend/agents/*/`) MUST have an `AGENT.md` with this structure:
+
+```markdown
+# [Component Name] — AI Daily Briefing Assistant
+
+## Scope
+Brief description of what this directory/component governs.
+
+## Role Definition (for agent directories)
+| Attribute | Value |
+|---|---|
+| Canonical Role | [Doer/Planner/Critic/Tool Operator/Supervisor] |
+| Input Schema | Link to Pydantic model |
+| Output Schema | Link to AgentResultEnvelope fields used |
+| Token Budget | Input/Output limits |
+| Tools/MCP Access | List of permitted tools |
+
+## Rules
+Numbered list of specific, actionable rules for this component.
+
+## Dependencies
+Table of key dependencies with version constraints.
+
+## Integration Points
+How this component connects to others.
+
+## Security Considerations
+Component-specific security notes.
+```
+
+### AGENT.md Location Matrix
+
+| Location | Purpose | MVP |
+|---|---|---|
+| `/AGENT.md` | Root index, workflow rules | MVP 1 |
+| `/frontend/AGENT.md` | Next.js component rules | MVP 1 |
+| `/backend/AGENT.md` | FastAPI/LangGraph rules | MVP 1 |
+| `/prompts/AGENT.md` | Prompt versioning rules | MVP 1 |
+| `/backend/agents/task/AGENT.md` | Task Agent spec | MVP 2 |
+| `/backend/agents/calendar/AGENT.md` | Calendar Agent spec | MVP 2 |
+| `/backend/agents/focus/AGENT.md` | Focus Agent spec | MVP 2 |
+| `/backend/agents/critic/AGENT.md` | Critic Agent spec | MVP 3 |
+| `/backend/agents/orchestrator/AGENT.md` | Orchestrator spec | MVP 2 |
+| `/infrastructure/AGENT.md` | CI/CD and deployment rules | MVP 1 |
+
+---
+
+## Security Documentation Standards
+
+### docs/SECURITY.md Requirements
+
+The security documentation MUST include:
+
+1. **OWASP GenAI Top 10 Checklist** — Status of each vulnerability mitigation
+2. **Threat Model** — Mermaid diagram of attack surfaces
+3. **Authentication & Authorization** — OAuth flows, token lifecycle
+4. **Prompt Injection Defense** — Detection patterns, quarantine process
+5. **Data Classification** — What data flows where, PII handling
+6. **Cryptographic Standards** — Algorithms used, key management
+7. **Incident Response** — Security event escalation process
+
+### OWASP Checklist Format
+
+```markdown
+## OWASP GenAI Top 10 Compliance
+
+| ID | Vulnerability | Status | Mitigation | Test Coverage |
+|---|---|---|---|---|
+| LLM01 | Prompt Injection | ✅ Mitigated | Critic Agent scanning | `test_injection.py` |
+| LLM02 | Insecure Output | ✅ Mitigated | DOMPurify + Bleach | `test_sanitization.py` |
+| ... | ... | ... | ... | ... |
+```
+
+---
+
+## Observability Documentation Standards
+
+### docs/OBSERVABILITY.md Requirements
+
+1. **Metrics Registry** — All custom metrics with descriptions
+2. **Trace Propagation** — How trace_id flows through the system
+3. **Alert Rules** — Prometheus/Grafana alert definitions
+4. **SLOs** — Service Level Objectives with error budgets
+5. **Dashboard Links** — References to monitoring dashboards
+
+### Metrics Documentation Format
+
+```markdown
+## Custom Metrics Registry
+
+| Metric Name | Type | Labels | Description |
+|---|---|---|---|
+| `briefing_generation_duration_seconds` | Histogram | `status`, `agent` | Time to generate briefing |
+| `llm_tokens_used_total` | Counter | `model`, `agent` | Tokens consumed by LLM calls |
+| `mcp_call_duration_seconds` | Histogram | `server`, `tool` | MCP tool call latency |
+| `dlq_events_total` | Counter | `reason`, `agent` | Dead letter queue entries |
+```
+
+---
+
+## Architectural Decision Records (ADRs)
+
+### When to Create an ADR
+
+Create an ADR in `docs/adr/` when:
+- Choosing between competing technologies
+- Making irreversible architectural decisions
+- Establishing patterns that affect multiple components
+- Changing existing architectural decisions
+
+### ADR Template
+
+```markdown
+# ADR-NNN: [Decision Title]
+
+## Status
+[Proposed | Accepted | Deprecated | Superseded by ADR-XXX]
+
+## Context
+What is the issue that we're seeing that motivates this decision?
+
+## Decision
+What is the change that we're proposing and/or doing?
+
+## Consequences
+What becomes easier or more difficult to do because of this change?
+
+## Alternatives Considered
+What other options were evaluated?
+```
+
+---
+
+## Changelog Standards
+
+### CHANGELOG.md Format (Keep a Changelog)
+
+```markdown
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Added
+- New Calendar Agent with SSRF defense (#123)
+
+### Changed
+- Updated AgentResultEnvelope to include data_classification field (#124)
+
+### Fixed
+- Prompt injection detection false positives in Focus Agent (#125)
+
+### Security
+- Implemented OWASP LLM01 mitigations (#126)
+
+## [1.5.0] - 2026-05-15
+
+### Added
+- Initial multi-agent orchestration with LangGraph
+```
+
+---
+
+## Documentation Quality Checklist
+
+Before completing documentation updates:
+
+| Check | Description |
+|---|---|
+| ✅ Accuracy | All code references match actual implementation |
+| ✅ Completeness | All required sections present |
+| ✅ Currency | Version numbers and dates are current |
+| ✅ Links | All internal links resolve correctly |
+| ✅ Examples | Code examples are syntactically correct |
+| ✅ Diagrams | Mermaid diagrams render correctly |
+| ✅ Consistency | Terminology matches glossary |
+
+---
+
+## Knowledge Capture Process
+
+When introducing new techniques or patterns:
+
+1. **Document in `docs/learning/`** — Create a dated `.md` file
+2. **Link from relevant AGENT.md** — Add reference to the learning
+3. **Update lessons.md** — Add entry to `docs/tasks/lessons.md`
+4. **Consider ADR** — If architectural, create formal ADR
+
+```markdown
+# docs/learning/2026-05-prompt-injection-defense.md
+
+## Summary
+Implemented Critic Agent prompt injection scanning using pattern matching.
+
+## Technique
+- Lightweight regex-based detection
+- False positive rate: <1%
+- Detection rate: >95% for known patterns
+
+## Code Reference
+`backend/security/injection_detector.py`
+
+## Related
+- ADR-007: Prompt Injection Defense Strategy
+- Issue #126
+```
+
+---
+
+## Epic Workflow Position
+
+The Docs Agent runs **last** after all other agents complete:
+
+1. ✅ Coding Agent — Implementation complete
+2. ✅ Refactor Agent — Code quality verified
+3. ✅ Testing Agent — Tests passing
+4. **🔄 Docs Agent — You are here (final)**
+
+### Handoff Checklist (Pre-Merge)
+
+Before epic can be merged to main:
+- [ ] All new agents have AGENT.md files
+- [ ] docs/PLAN.md updated with ✅ status
+- [ ] docs/tasks/todo.md Review section completed
+- [ ] Any learnings captured in docs/learning/
+- [ ] CHANGELOG.md updated (if applicable)
+- [ ] README.md updated (if user-facing changes)
+
+### Post-Merge Tasks
+
+After PR merged to main:
+- [ ] Update docs/tasks/todo.md Completed Epics table
+- [ ] Archive completed task plan
+- [ ] Prepare template for next epic
+
+---
+
+*Documentation Agent Rules — Version 1.5.0 — May 2026*

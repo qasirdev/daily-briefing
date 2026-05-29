@@ -1,0 +1,84 @@
+{
+  "DB-E2": [
+    {
+      "Issue id": "DB-011",
+      "Summary": "PostgreSQL MCP Client",
+      "Issue Type": "Task",
+      "Description": "Create backend/mcp/postgres.py with PostgreSQL MCP client for Task Agent access.\n\nIMPLEMENTATION DETAILS:\n- Create backend/mcp/__init__.py\n- Create backend/mcp/client.py: base MCPClient class with call_tool() method\n- Create backend/mcp/postgres.py: PostgresMCPClient extending MCPClient\n- Implement tools: list_tables, query, insert\n- Add connection config via settings (POSTGRES_MCP_HOST, POSTGRES_MCP_PORT)\n- Implement query validation to prevent SQL injection\n- Enforce RLS by requiring user_id parameter on all queries\n\nEFFORT: M (5 hours)\nPROJECT AREA: Backend\nDEPENDENCIES: DB-006\n\nTESTING CRITERIA:\n- MCP client connects to server\n- list_tables returns available tables\n- query executes and returns results\n- Invalid SQL rejected before execution\n\nEDGE CASES:\n- Connection timeout: raise MCPTimeoutError after 30s\n- Query timeout: raise MCPTimeoutError after 30s\n- RLS bypass attempt: reject queries without user_id",
+      "Labels": "backend,mcp,postgres,mvp2",
+      "Parent": "DB-E2"
+    },
+    {
+      "Issue id": "DB-012",
+      "Summary": "Google Calendar MCP Client",
+      "Issue Type": "Task",
+      "Description": "Create backend/mcp/calendar.py with Google Calendar MCP client for Calendar Agent access.\n\nIMPLEMENTATION DETAILS:\n- Create backend/mcp/calendar.py: CalendarMCPClient extending MCPClient\n- Implement tools: list_calendars, get_events\n- Add connection config via settings (CALENDAR_MCP_HOST, CALENDAR_MCP_PORT)\n- Implement SSRF defense: allowlist only *.googleapis.com domains\n- Handle consent_required response by raising MCPConsentRequired exception\n- Parse event data into structured CalendarEvent model\n\nEFFORT: M (5 hours)\nPROJECT AREA: Backend\nDEPENDENCIES: DB-011\n\nTESTING CRITERIA:\n- MCP client connects to server\n- get_events returns today's events\n- Consent required handled gracefully\n- SSRF attempt blocked and logged\n\nEDGE CASES:\n- Token expired: raise MCPConsentRequired\n- Rate limited: retry with backoff\n- Invalid calendar_id: return empty list, not error",
+      "Labels": "backend,mcp,calendar,mvp2",
+      "Parent": "DB-E2"
+    },
+    {
+      "Issue id": "DB-013",
+      "Summary": "Task Agent Implementation",
+      "Issue Type": "Task",
+      "Description": "Create backend/agents/task/ with Task Agent LangGraph node.\n\nIMPLEMENTATION DETAILS:\n- Create backend/agents/__init__.py\n- Create backend/agents/task/__init__.py\n- Create backend/agents/task/AGENT.md with role definition\n- Create backend/agents/task/node.py: task_agent_node() async function\n- Fetch pending tasks via PostgreSQL MCP query tool\n- Sort tasks by priority (high/medium/low) and due_date\n- Return AgentResultEnvelope with tasks list in result field\n- Handle MCP timeout by escalating to orchestrator\n\nEFFORT: M (4 hours)\nPROJECT AREA: Backend\nDEPENDENCIES: DB-011, DB-009\n\nTESTING CRITERIA:\n- Node returns valid AgentResultEnvelope\n- Tasks sorted correctly by priority\n- MCP timeout triggers escalation\n- Empty task list handled gracefully\n\nEDGE CASES:\n- No tasks: return empty list, status=success\n- MCP timeout: status=escalated, reason=mcp_timeout\n- Invalid task data: validate with Pydantic, skip invalid rows",
+      "Labels": "backend,agents,task,mvp2",
+      "Parent": "DB-E2"
+    },
+    {
+      "Issue id": "DB-014",
+      "Summary": "Calendar Agent Implementation",
+      "Issue Type": "Task",
+      "Description": "Create backend/agents/calendar/ with Calendar Agent LangGraph node.\n\nIMPLEMENTATION DETAILS:\n- Create backend/agents/calendar/__init__.py\n- Create backend/agents/calendar/AGENT.md with role definition\n- Create backend/agents/calendar/node.py: calendar_agent_node() async function\n- Fetch today's events via Google Calendar MCP get_events tool\n- Parse events into structured format (id, summary, start, end, attendees)\n- Return AgentResultEnvelope with events list in result field\n- Handle consent_required by escalating to orchestrator\n\nEFFORT: M (4 hours)\nPROJECT AREA: Backend\nDEPENDENCIES: DB-012, DB-009\n\nTESTING CRITERIA:\n- Node returns valid AgentResultEnvelope\n- Events include all required fields\n- Consent required triggers escalation\n- Empty calendar handled gracefully\n\nEDGE CASES:\n- No events: return empty list, status=success\n- Consent expired: status=escalated, reason=consent_required\n- Event without end time: default to 30 min after start",
+      "Labels": "backend,agents,calendar,mvp2",
+      "Parent": "DB-E2"
+    },
+    {
+      "Issue id": "DB-015",
+      "Summary": "Focus Agent Implementation",
+      "Issue Type": "Task",
+      "Description": "Create backend/agents/focus/ with Focus Agent LangGraph node.\n\nIMPLEMENTATION DETAILS:\n- Create backend/agents/focus/__init__.py\n- Create backend/agents/focus/AGENT.md with role definition\n- Create backend/agents/focus/node.py: focus_agent_node() async function\n- Load prompts from prompts/focus/ directory (system.md, skills.md, guardrails.md)\n- Build message list with instruction hierarchy (system > user data)\n- Call LLM via LLMRouter with token budget enforcement\n- Parse LLM response into structured plan JSON\n- Return AgentResultEnvelope with plan in result field\n\nEFFORT: L (6 hours)\nPROJECT AREA: Backend\nDEPENDENCIES: DB-013, DB-014, DB-009\n\nTESTING CRITERIA:\n- Node returns valid AgentResultEnvelope\n- Plan includes time blocks with tasks\n- Token budget enforced\n- Instruction hierarchy prevents injection\n\nEDGE CASES:\n- Token budget exceeded: status=escalated, reason=token_budget_exceeded\n- LLM timeout: retry once, then escalate\n- Empty context (no tasks/events): generate minimal plan",
+      "Labels": "backend,agents,focus,llm,mvp2",
+      "Parent": "DB-E2"
+    },
+    {
+      "Issue id": "DB-016",
+      "Summary": "LLM Router with Fallback",
+      "Issue Type": "Task",
+      "Description": "Create backend/llm/router.py with LLMRouter class for model selection and fallback.\n\nIMPLEMENTATION DETAILS:\n- Create backend/llm/__init__.py\n- Create backend/llm/router.py: LLMRouter class\n- Primary provider: OpenRouter (OPENROUTER_API_KEY, OPENROUTER_BASE_URL)\n- Fallback provider: Local LLM (LOCAL_LLM_ENABLED, LOCAL_LLM_BASE_URL)\n- Implement generate() method with automatic fallback on rate limit/timeout\n- Track tokens used and enforce budget limits\n- Support force_local flag for PII data classification\n- Return LLMResponse with content, model_used, tokens, latency\n\nEFFORT: M (5 hours)\nPROJECT AREA: Backend\nDEPENDENCIES: DB-006\n\nTESTING CRITERIA:\n- Primary provider called first\n- Fallback triggered on rate limit (429)\n- Fallback triggered on timeout\n- Token usage tracked correctly\n\nEDGE CASES:\n- Both providers fail: raise LLMError\n- PII classification: force local LLM\n- Local LLM disabled: skip fallback, raise error",
+      "Labels": "backend,llm,mvp2",
+      "Parent": "DB-E2"
+    },
+    {
+      "Issue id": "DB-017",
+      "Summary": "Orchestrator Agent Implementation",
+      "Issue Type": "Task",
+      "Description": "Create backend/agents/orchestrator/ with Orchestrator Agent as supervisor.\n\nIMPLEMENTATION DETAILS:\n- Create backend/agents/orchestrator/__init__.py\n- Create backend/agents/orchestrator/AGENT.md with role definition\n- Create backend/agents/orchestrator/node.py: orchestrator_node() async function\n- Implement routing logic: determine which agents to invoke based on state\n- Implement presentation logic: synthesize final markdown from agent results\n- Handle escalations: route to appropriate handler or DLQ\n- Handle consent_required: return partial result with consent request\n- Sanitize final output with Bleach before returning\n\nEFFORT: L (8 hours)\nPROJECT AREA: Backend\nDEPENDENCIES: DB-013, DB-014, DB-015, DB-009\n\nTESTING CRITERIA:\n- Orchestrator routes to correct agents\n- Final markdown is sanitized\n- Escalations handled without crash\n- Consent request surfaced correctly\n\nEDGE CASES:\n- All agents succeed: status=success\n- Some agents fail: status=degraded, partial briefing\n- All agents fail: status=failure, route to DLQ",
+      "Labels": "backend,agents,orchestrator,mvp2",
+      "Parent": "DB-E2"
+    },
+    {
+      "Issue id": "DB-018",
+      "Summary": "Full LangGraph Wiring",
+      "Issue Type": "Task",
+      "Description": "Wire all agents into the LangGraph state machine with conditional edges.\n\nIMPLEMENTATION DETAILS:\n- Update backend/graph/builder.py with full graph structure\n- Add nodes: orchestrator_route, task_agent, calendar_agent, focus_agent, critic_agent, orchestrator_present\n- Add conditional edges: orchestrator routes to parallel task+calendar, then focus, then critic\n- Implement should_circuit_break() for token budget and retry limits\n- Add dlq_handler node for escalated results\n- Compile graph with checkpointing support\n\nEFFORT: M (5 hours)\nPROJECT AREA: Backend\nDEPENDENCIES: DB-017\n\nTESTING CRITERIA:\n- Full graph executes end-to-end\n- Parallel execution of task+calendar agents\n- Circuit breaker triggers on budget exceeded\n- DLQ handler receives escalated results\n\nEDGE CASES:\n- Agent throws exception: catch and convert to escalation\n- Graph timeout: circuit break after 60s total\n- Partial failure: continue with available results",
+      "Labels": "backend,langgraph,mvp2",
+      "Parent": "DB-E2"
+    },
+    {
+      "Issue id": "DB-019",
+      "Summary": "Briefing API Endpoint",
+      "Issue Type": "Task",
+      "Description": "Implement POST /api/v1/briefing/generate endpoint with full graph invocation.\n\nIMPLEMENTATION DETAILS:\n- Update backend/api/v1/briefing.py with generate endpoint\n- Add rate limiting: 10 requests per minute per IP\n- Create BriefingRequest schema (optional date parameter)\n- Create BriefingResponse schema (status, briefing, metadata)\n- Invoke graph with initial state from request\n- Return appropriate status codes (200 success, 202 partial, 500 error)\n- Include trace_id in response headers\n\nEFFORT: M (4 hours)\nPROJECT AREA: Backend\nDEPENDENCIES: DB-018\n\nTESTING CRITERIA:\n- Endpoint returns valid BriefingResponse\n- Rate limiting enforced (429 on exceed)\n- trace_id present in response headers\n- Degraded state returns 200 with degraded status\n\nEDGE CASES:\n- Graph timeout: return 504 Gateway Timeout\n- All agents fail: return 200 with failure status and error message\n- Consent required: return 200 with awaiting_consent status",
+      "Labels": "backend,api,mvp2",
+      "Parent": "DB-E2"
+    },
+    {
+      "Issue id": "DB-020",
+      "Summary": "Prompt Files for All Agents",
+      "Issue Type": "Task",
+      "Description": "Create all 6 prompt files for each agent in prompts/ directory.\n\nIMPLEMENTATION DETAILS:\n- Create prompts/task/ with CONTRACT.md, CHANGELOG.md, system.md, skills.md, tools.md, guardrails.md\n- Create prompts/calendar/ with all 6 files\n- Create prompts/focus/ with all 6 files\n- Create prompts/critic/ with all 6 files\n- Create prompts/orchestrator/ with all 6 files\n- Use XML format for prompt sections\n- Include instruction hierarchy enforcement in guardrails.md\n- Version all prompts as v1.5.0\n\nEFFORT: L (6 hours)\nPROJECT AREA: Prompts\nDEPENDENCIES: None\n\nTESTING CRITERIA:\n- All 5 agent directories have all 6 files\n- XML sections are well-formed\n- CONTRACT.md includes token budgets\n- guardrails.md includes injection defense\n\nEDGE CASES:\n- Prompt files must be loadable at runtime without errors\n- XML tags must be balanced and properly nested",
+      "Labels": "prompts,mvp2",
+      "Parent": "DB-E2"
+    }
+  ]
+}

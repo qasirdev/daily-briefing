@@ -1,0 +1,68 @@
+{
+  "DB-E6": [
+    {
+      "Issue id": "DB-045",
+      "Summary": "Docker Image Signing with Cosign",
+      "Issue Type": "Task",
+      "Description": "Configure GitHub Actions to sign Docker images with cosign keyless signing.\n\nIMPLEMENTATION DETAILS:\n- Add cosign to CI workflow\n- Use GitHub OIDC for keyless signing (no private keys to manage)\n- Sign after push to registry: cosign sign --yes {image}@{digest}\n- Add verification step: cosign verify --certificate-identity-regexp=.* --certificate-oidc-issuer=https://token.actions.githubusercontent.com\n- Store signature in same registry as image\n- Document verification command in infrastructure/AGENT.md\n- Workflow permissions: id-token: write, contents: read, packages: write\n\nEFFORT: M (4 hours)\nPROJECT AREA: Infrastructure\nDEPENDENCIES: DB-010\n\nTESTING CRITERIA:\n- Image signed after build\n- Signature verifiable with cosign\n- OIDC identity matches GitHub Actions\n- Unsigned images rejected in production\n\nEDGE CASES:\n- Signing failure: fail the build\n- Registry doesn't support signatures: document workaround\n- Verify command documented clearly",
+      "Labels": "infrastructure,security,docker,mvp6",
+      "Parent": "DB-E6"
+    },
+    {
+      "Issue id": "DB-046",
+      "Summary": "Production Environment Configuration",
+      "Issue Type": "Task",
+      "Description": "Create production environment configuration with secure defaults.\n\nIMPLEMENTATION DETAILS:\n- Create .env.production.example with all production variables\n- APP_ENV=production, APP_DEBUG=false\n- Configure secure cookie settings\n- Configure CORS for production domain\n- Set appropriate rate limits for production load\n- Configure log level to INFO\n- Document all production-specific settings in docs/ENGINEERING-STANDARDS.md\n\nEFFORT: S (2 hours)\nPROJECT AREA: Infrastructure\nDEPENDENCIES: DB-006\n\nTESTING CRITERIA:\n- Production config validates without errors\n- Debug mode disabled\n- Secure defaults enforced\n- Documentation complete\n\nEDGE CASES:\n- Missing required var: fail fast with clear error\n- Invalid value: validation error with guidance",
+      "Labels": "infrastructure,production,mvp6",
+      "Parent": "DB-E6"
+    },
+    {
+      "Issue id": "DB-047",
+      "Summary": "Health Check and Readiness Probes",
+      "Issue Type": "Task",
+      "Description": "Implement comprehensive health and readiness endpoints for production deployment.\n\nIMPLEMENTATION DETAILS:\n- GET /health: basic liveness check (returns 200 if app is running)\n- GET /health/ready: readiness check (verifies MCP connections, LLM availability)\n- Include: database connectivity, MCP server status, LLM provider status\n- Return structured response: {status, checks: [{name, status, latency_ms}]}\n- Use for Kubernetes/Container Apps probes\n- Timeout individual checks at 5 seconds\n\nEFFORT: S (3 hours)\nPROJECT AREA: Backend\nDEPENDENCIES: DB-006, DB-011, DB-016\n\nTESTING CRITERIA:\n- /health always returns 200 if app running\n- /health/ready fails if dependency down\n- Response includes check details\n- Timeouts enforced\n\nEDGE CASES:\n- Partial failure: return 200 with degraded status\n- Check timeout: report as unhealthy\n- Don't cache health results",
+      "Labels": "backend,production,health,mvp6",
+      "Parent": "DB-E6"
+    },
+    {
+      "Issue id": "DB-048",
+      "Summary": "Graceful Shutdown Handler",
+      "Issue Type": "Task",
+      "Description": "Implement graceful shutdown for SIGTERM handling in production.\n\nIMPLEMENTATION DETAILS:\n- Register signal handlers for SIGTERM and SIGINT\n- On signal: stop accepting new requests\n- Wait for in-flight requests to complete (max 30 seconds)\n- Close MCP connections gracefully\n- Close database connection pool\n- Flush pending telemetry\n- Exit with code 0 on clean shutdown\n- Log shutdown sequence with timing\n\nEFFORT: S (2 hours)\nPROJECT AREA: Backend\nDEPENDENCIES: DB-006, DB-011\n\nTESTING CRITERIA:\n- SIGTERM triggers graceful shutdown\n- In-flight requests complete\n- Connections closed properly\n- Exit code 0 on success\n\nEDGE CASES:\n- Long-running request: wait up to 30s then force close\n- Connection close fails: log and continue\n- Double signal: force immediate exit",
+      "Labels": "backend,production,shutdown,mvp6",
+      "Parent": "DB-E6"
+    },
+    {
+      "Issue id": "DB-049",
+      "Summary": "SLO Definition and Monitoring",
+      "Issue Type": "Task",
+      "Description": "Define Service Level Objectives and create monitoring dashboards.\n\nIMPLEMENTATION DETAILS:\n- Define SLOs in docs/OBSERVABILITY.md:\n  - Availability: 99.5% success rate\n  - Latency P50: < 3s, P95: < 10s, P99: < 30s\n  - Error rate: < 0.5%\n- Create Prometheus recording rules for SLO metrics\n- Create Grafana dashboard JSON (or document queries)\n- Define error budget calculation\n- Create alert rules for SLO breach\n\nEFFORT: M (4 hours)\nPROJECT AREA: Infrastructure\nDEPENDENCIES: DB-025\n\nTESTING CRITERIA:\n- SLOs documented clearly\n- Recording rules produce expected metrics\n- Alerts fire on breach\n- Dashboard shows SLO status\n\nEDGE CASES:\n- Missing data: handle gracefully in queries\n- First hour: don't alert (insufficient data)\n- Error budget exhausted: escalation documented",
+      "Labels": "infrastructure,observability,slo,mvp6",
+      "Parent": "DB-E6"
+    },
+    {
+      "Issue id": "DB-050",
+      "Summary": "Production Alert Rules",
+      "Issue Type": "Task",
+      "Description": "Create Prometheus alert rules for production monitoring.\n\nIMPLEMENTATION DETAILS:\n- Create infrastructure/alerting/rules.yml\n- Critical alerts: HighErrorRate (>5% for 5min), SecurityViolationSpike (>5 in 10min)\n- Warning alerts: HighLatency (P95 >15s for 10min), DLQGrowing (>100 for 30min)\n- Info alerts: LocalLLMFallback (>10% for 15min)\n- Configure alertmanager routing (or document integration)\n- Document runbooks for each alert in infrastructure/AGENT.md\n\nEFFORT: M (4 hours)\nPROJECT AREA: Infrastructure\nDEPENDENCIES: DB-049\n\nTESTING CRITERIA:\n- Alert rules valid YAML\n- Alerts fire on test conditions\n- Severity levels appropriate\n- Runbooks present\n\nEDGE CASES:\n- Flapping alerts: add for clause\n- Alert storm: group related alerts\n- Silent hours: document procedure",
+      "Labels": "infrastructure,observability,alerting,mvp6",
+      "Parent": "DB-E6"
+    },
+    {
+      "Issue id": "DB-051",
+      "Summary": "End-to-End Integration Tests",
+      "Issue Type": "Task",
+      "Description": "Create end-to-end tests for critical user journeys.\n\nIMPLEMENTATION DETAILS:\n- Create backend/tests/e2e/ directory\n- test_briefing_flow.py: full briefing generation flow\n- test_consent_flow.py: consent grant, use, revoke cycle\n- test_degraded_mode.py: graceful degradation scenarios\n- test_security_scenarios.py: injection attempts blocked\n- Use test fixtures with mocked MCP servers\n- Run in CI after unit tests pass\n\nEFFORT: L (6 hours)\nPROJECT AREA: Testing\nDEPENDENCIES: DB-041\n\nTESTING CRITERIA:\n- All critical paths covered\n- Tests run in CI\n- Mocked dependencies stable\n- Reasonable execution time (<5 min)\n\nEDGE CASES:\n- Flaky tests: add retry logic\n- Long tests: mark as slow, run separately\n- State cleanup between tests",
+      "Labels": "testing,e2e,mvp6",
+      "Parent": "DB-E6"
+    },
+    {
+      "Issue id": "DB-052",
+      "Summary": "Production README and Deployment Guide",
+      "Issue Type": "Task",
+      "Description": "Create comprehensive deployment documentation.\n\nIMPLEMENTATION DETAILS:\n- Update README.md with production deployment section\n- Create infrastructure/DEPLOYMENT.md with step-by-step guide\n- Document: prerequisites, environment setup, deployment commands\n- Document: rollback procedure, scaling guidance\n- Document: monitoring setup, alert response\n- Include architecture diagram\n- Add troubleshooting section with common issues\n\nEFFORT: M (4 hours)\nPROJECT AREA: Documentation\nDEPENDENCIES: DB-046, DB-050\n\nTESTING CRITERIA:\n- All steps executable\n- Prerequisites listed completely\n- Rollback tested and documented\n- Troubleshooting covers common issues\n\nEDGE CASES:\n- Different cloud providers: document variations\n- First deployment vs update: separate sections\n- Emergency procedures documented",
+      "Labels": "documentation,production,mvp6",
+      "Parent": "DB-E6"
+    }
+  ]
+}

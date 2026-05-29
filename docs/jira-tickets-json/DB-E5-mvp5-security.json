@@ -1,0 +1,68 @@
+{
+  "DB-E5": [
+    {
+      "Issue id": "DB-037",
+      "Summary": "OWASP GenAI Top 10 Audit",
+      "Issue Type": "Task",
+      "Description": "Conduct security audit against OWASP GenAI Top 10 and document compliance status.\n\nIMPLEMENTATION DETAILS:\n- Review each OWASP GenAI vulnerability (LLM01-LLM10)\n- Document current mitigation status in docs/SECURITY.md\n- Identify gaps requiring implementation\n- Create test cases for each applicable vulnerability\n- Update compliance matrix with test coverage links\n- Add security checklist to PR template\n\nEFFORT: M (4 hours)\nPROJECT AREA: Security\nDEPENDENCIES: DB-022\n\nTESTING CRITERIA:\n- All 10 vulnerabilities assessed\n- Compliance matrix complete\n- Test cases identified for each\n- Gaps documented with remediation plan\n\nEDGE CASES:\n- N/A vulnerabilities: document why not applicable\n- Partial mitigation: note remaining risk",
+      "Labels": "security,owasp,audit,mvp5",
+      "Parent": "DB-E5"
+    },
+    {
+      "Issue id": "DB-038",
+      "Summary": "Output Sanitization Layer",
+      "Issue Type": "Task",
+      "Description": "Implement comprehensive output sanitization in Orchestrator using Bleach.\n\nIMPLEMENTATION DETAILS:\n- Create backend/security/sanitization.py\n- Define ALLOWED_TAGS: p, h1-h6, ul, ol, li, strong, em, code, pre, blockquote, hr, br\n- Define ALLOWED_ATTRIBUTES: {} (none by default)\n- Create sanitize_markdown() function using Bleach\n- Integrate into Orchestrator presentation step\n- Log any stripped content for security audit\n- Add sanitization to all agent outputs before aggregation\n\nEFFORT: S (3 hours)\nPROJECT AREA: Backend\nDEPENDENCIES: DB-017\n\nTESTING CRITERIA:\n- Script tags stripped\n- Allowed tags preserved\n- Attributes removed\n- Logging captures stripped content\n\nEDGE CASES:\n- Nested malicious tags\n- Unicode encoding attacks\n- Markdown code blocks preserved",
+      "Labels": "backend,security,sanitization,mvp5",
+      "Parent": "DB-E5"
+    },
+    {
+      "Issue id": "DB-039",
+      "Summary": "Token Budget Circuit Breaker",
+      "Issue Type": "Task",
+      "Description": "Implement hard circuit breaker for token budget enforcement.\n\nIMPLEMENTATION DETAILS:\n- Define token budgets per agent in constants: Task=3000, Calendar=3000, Focus=6000, Critic=5000\n- Define hard limit multiplier: 2x (e.g., Focus hard limit = 12000)\n- Create should_circuit_break() function checking total_tokens against limits\n- Integrate into LangGraph conditional edges\n- On circuit break: immediately route to DLQ with reason=token_budget_exceeded\n- Track budget metrics: token_budget_utilization gauge\n\nEFFORT: M (4 hours)\nPROJECT AREA: Backend\nDEPENDENCIES: DB-018, DB-023\n\nTESTING CRITERIA:\n- Budget tracked accurately\n- 2x limit triggers circuit break\n- DLQ entry created\n- Metric reflects utilization\n\nEDGE CASES:\n- Budget exceeded mid-generation: stop and return partial\n- Multiple agents exceed: aggregate for total\n- Reset on new request",
+      "Labels": "backend,security,circuit-breaker,mvp5",
+      "Parent": "DB-E5"
+    },
+    {
+      "Issue id": "DB-040",
+      "Summary": "Rate Limiting Middleware",
+      "Issue Type": "Task",
+      "Description": "Implement per-endpoint rate limiting with slowapi.\n\nIMPLEMENTATION DETAILS:\n- Add slowapi to dependencies\n- Configure limiter with Redis backend (or in-memory for dev)\n- Limits: /api/v1/briefing/generate = 10/min, /api/v1/export = 5/hour, /api/v1/* = 60/min\n- Return 429 with Retry-After header on exceed\n- Exempt /health and /metrics from limiting\n- Log rate limit violations with IP and endpoint\n\nEFFORT: S (3 hours)\nPROJECT AREA: Backend\nDEPENDENCIES: DB-006\n\nTESTING CRITERIA:\n- 429 returned on limit exceed\n- Retry-After header present\n- Health endpoint not limited\n- Limits per-IP not global\n\nEDGE CASES:\n- Redis unavailable: fall back to in-memory\n- Distributed environment: Redis required\n- IPv6 addresses handled correctly",
+      "Labels": "backend,security,rate-limiting,mvp5",
+      "Parent": "DB-E5"
+    },
+    {
+      "Issue id": "DB-041",
+      "Summary": "Security Test Suite",
+      "Issue Type": "Task",
+      "Description": "Create comprehensive security test suite for OWASP GenAI vulnerabilities.\n\nIMPLEMENTATION DETAILS:\n- Create backend/tests/security/ directory\n- test_injection.py: adversarial prompt injection tests\n- test_sanitization.py: XSS and output validation tests\n- test_rate_limits.py: rate limiting enforcement tests\n- test_pii_masking.py: PII detection and masking tests\n- test_mcp_security.py: MCP SSRF and permission tests\n- test_agent_scope.py: agent boundary enforcement tests\n- Add security tests to CI pipeline\n\nEFFORT: L (8 hours)\nPROJECT AREA: Testing\nDEPENDENCIES: DB-022, DB-038, DB-040\n\nTESTING CRITERIA:\n- All OWASP vectors covered\n- Tests run in CI\n- Failure blocks merge\n- Coverage report generated\n\nEDGE CASES:\n- Tests must not make external calls\n- Mock MCP servers for security tests\n- Include edge case payloads",
+      "Labels": "testing,security,owasp,mvp5",
+      "Parent": "DB-E5"
+    },
+    {
+      "Issue id": "DB-042",
+      "Summary": "PII Detection and Masking",
+      "Issue Type": "Task",
+      "Description": "Implement PII detection for logging and external API calls.\n\nIMPLEMENTATION DETAILS:\n- Create backend/security/pii.py: PIIDetector class\n- Detect patterns: email, phone, SSN, credit card\n- Create mask_pii() function replacing detected PII with placeholders\n- Integrate with structlog processor for automatic masking\n- Integrate with LLMRouter to mask before external API calls when data_classification=confidential_pii\n- Add PII detection to AgentResultEnvelope validation\n\nEFFORT: M (4 hours)\nPROJECT AREA: Backend\nDEPENDENCIES: DB-026\n\nTESTING CRITERIA:\n- Common PII patterns detected\n- Masked before logging\n- Masked before external LLM (optional based on classification)\n- False positives minimized\n\nEDGE CASES:\n- International phone formats\n- Partial matches (don't mask)\n- Performance impact minimal",
+      "Labels": "backend,security,pii,mvp5",
+      "Parent": "DB-E5"
+    },
+    {
+      "Issue id": "DB-043",
+      "Summary": "MCP SSRF Defense",
+      "Issue Type": "Task",
+      "Description": "Implement SSRF defense for Calendar MCP outbound requests.\n\nIMPLEMENTATION DETAILS:\n- Create backend/security/ssrf.py: SSRFValidator class\n- Define allowlist: ['*.googleapis.com']\n- Validate all outbound URLs before request\n- Block private IP ranges (10.x, 172.16.x, 192.168.x, 127.x)\n- Block non-HTTP(S) schemes\n- Integrate into Calendar MCP client\n- Log blocked requests as security events\n\nEFFORT: S (3 hours)\nPROJECT AREA: Backend\nDEPENDENCIES: DB-012\n\nTESTING CRITERIA:\n- Allowed domains pass\n- Private IPs blocked\n- Invalid schemes blocked\n- Security events logged\n\nEDGE CASES:\n- DNS rebinding: validate resolved IP\n- Redirect chains: follow and validate each\n- IPv6 private ranges",
+      "Labels": "backend,security,ssrf,mvp5",
+      "Parent": "DB-E5"
+    },
+    {
+      "Issue id": "DB-044",
+      "Summary": "Security Prompt (prompts/security/)",
+      "Issue Type": "Task",
+      "Description": "Create dedicated security prompt directory with injection defense guardrails.\n\nIMPLEMENTATION DETAILS:\n- Create prompts/security/CONTRACT.md with security critic role\n- Create prompts/security/system.md with security persona\n- Create prompts/security/guardrails.md with instruction hierarchy enforcement\n- Document all injection patterns to watch for\n- Define escalation protocol for detected threats\n- Version as v1.5.0\n\nEFFORT: S (2 hours)\nPROJECT AREA: Prompts\nDEPENDENCIES: DB-020\n\nTESTING CRITERIA:\n- All files present\n- Injection patterns documented\n- Instruction hierarchy clear\n- Integrates with Critic Agent\n\nEDGE CASES:\n- New injection patterns: document update process\n- False positive handling documented",
+      "Labels": "prompts,security,mvp5",
+      "Parent": "DB-E5"
+    }
+  ]
+}

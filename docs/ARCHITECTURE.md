@@ -1,0 +1,299 @@
+# System Architecture — AI Daily Briefing Assistant
+
+**Version:** 1.5.0 | **Last Updated:** May 2026
+
+---
+
+## Overview
+
+The AI Daily Briefing Assistant is deployed via a **Single Docker Container** topology to minimize orchestration overhead while retaining enterprise scalability patterns. The system orchestrates multiple AI agents to generate personalized daily briefings from tasks and calendar data.
+
+---
+
+## Deployment Topology
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     Single Docker Container                      │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │                      supervisord                           │  │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────┐   │  │
+│  │  │   nginx     │  │  uvicorn    │  │  next.js        │   │  │
+│  │  │  (reverse   │  │  (FastAPI)  │  │  (standalone)   │   │  │
+│  │  │   proxy)    │  │             │  │                 │   │  │
+│  │  └──────┬──────┘  └──────┬──────┘  └────────┬────────┘   │  │
+│  │         │                │                   │            │  │
+│  │         │    /api/*      │       /*          │            │  │
+│  │         └────────────────┴───────────────────┘            │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                              │                                   │
+│  ┌───────────────────────────┴───────────────────────────────┐  │
+│  │                     MCP Clients                            │  │
+│  │  ┌─────────────────┐      ┌─────────────────────────────┐ │  │
+│  │  │ PostgreSQL MCP  │      │     Google Calendar MCP     │ │  │
+│  │  │ (localhost TCP) │      │     (localhost TCP)         │ │  │
+│  │  └─────────────────┘      └─────────────────────────────┘ │  │
+│  └───────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
+          │                              │
+          ▼                              ▼
+┌─────────────────┐           ┌─────────────────────┐
+│   PostgreSQL    │           │   Google APIs       │
+│   (external)    │           │   (googleapis.com)  │
+└─────────────────┘           └─────────────────────┘
+```
+
+---
+
+## Component Stack
+
+| Layer | Technology | Version | Purpose |
+|---|---|---|---|
+| **Reverse Proxy** | Nginx | 1.27.x | Route `/api` to FastAPI, `/` to Next.js |
+| **Process Manager** | Supervisord | 4.2.x | Manage child processes, handle restarts |
+| **Frontend** | Next.js | 16.x | App Router, Server Components, React 19 (Hooks: use, useTransition, useOptimistic, useActionState) |
+| **Backend** | FastAPI | 0.115.x | REST API, WebSocket support |
+| **Python Runtime** | Python | 3.12+ | Managed by `uv` |
+| **Orchestration** | LangGraph | 0.4.x | Stateful multi-agent graphs |
+| **Validation** | Pydantic | 2.8.x | Request/Response schemas |
+| **MCP Protocol** | MCP SDK | 1.x | Model Context Protocol clients |
+
+---
+
+## Multi-Agent Orchestration (LangGraph)
+
+The system operates on a rigorous supervisor-worker pattern with defined roles:
+
+```
+                    ┌─────────────────────────────┐
+                    │        User Request         │
+                    └──────────────┬──────────────┘
+                                   ▼
+                    ┌─────────────────────────────┐
+                    │     Orchestrator Agent      │
+                    │  (Supervisor + Presenter)   │
+                    └──────────────┬──────────────┘
+                                   │
+           ┌───────────────────────┼───────────────────────┐
+           ▼                       ▼                       ▼
+┌─────────────────────┐ ┌─────────────────────┐ ┌─────────────────────┐
+│    Task Agent       │ │   Calendar Agent    │ │    Focus Agent      │
+│      (Doer)         │ │  (Tool Operator)    │ │     (Planner)       │
+│                     │ │                     │ │                     │
+│ PostgreSQL MCP      │ │ Google Calendar MCP │ │    LLM Only         │
+│ Read-only scope     │ │ SSRF defense        │ │ Instruction hierarchy│
+└─────────┬───────────┘ └─────────┬───────────┘ └─────────┬───────────┘
+          │                       │                       │
+          └───────────────────────┼───────────────────────┘
+                                  ▼
+                    ┌─────────────────────────────┐
+                    │       Critic Agent          │
+                    │   (Safety + Quality)        │
+                    │                             │
+                    │ Max 2-cycle revision loop   │
+                    │ Prompt injection scanning   │
+                    └──────────────┬──────────────┘
+                                   │
+                    ┌──────────────┴──────────────┐
+                    ▼                             ▼
+         ┌─────────────────┐           ┌─────────────────┐
+         │    Success      │           │    Failure      │
+         │                 │           │                 │
+         │ Orchestrator    │           │ Route to DLQ    │
+         │ presents final  │           │ Degraded UI     │
+         │ markdown        │           │                 │
+         └─────────────────┘           └─────────────────┘
+```
+
+---
+
+## Agent Role Definitions
+
+### 1. Orchestrator (Supervisor + Presenter)
+
+| Attribute | Value |
+|---|---|
+| **Canonical Role** | Supervisor + Presenter |
+| **Responsibilities** | Route requests, manage state, synthesize final markdown |
+| **Input** | User briefing request |
+| **Output** | `AgentResultEnvelope` with user-facing briefing |
+| **Tools/MCP** | None (coordinates other agents) |
+| **Security** | Only component that produces user-facing content |
+
+### 2. Task Agent (Doer)
+
+| Attribute | Value |
+|---|---|
+| **Canonical Role** | Doer |
+| **Responsibilities** | Read and prioritize tasks from database |
+| **Input** | User context, date range |
+| **Output** | `AgentResultEnvelope` with task list JSON |
+| **Tools/MCP** | PostgreSQL MCP (read-only) |
+| **Security** | RLS enforced, read-only database access |
+
+### 3. Calendar Agent (Tool Operator)
+
+| Attribute | Value |
+|---|---|
+| **Canonical Role** | Tool Operator |
+| **Responsibilities** | Fetch today's calendar events |
+| **Input** | User context, date |
+| **Output** | `AgentResultEnvelope` with events JSON |
+| **Tools/MCP** | Google Calendar MCP |
+| **Security** | Strict allowlist, SSRF defense, JIT consent |
+
+### 4. Focus Agent (Planner)
+
+| Attribute | Value |
+|---|---|
+| **Canonical Role** | Planner |
+| **Responsibilities** | Generate time-blocked work plan |
+| **Input** | Aggregated tasks + events context |
+| **Output** | `AgentResultEnvelope` with plan JSON |
+| **Tools/MCP** | LLM only (no external tools) |
+| **Security** | Instruction hierarchy enforced |
+
+### 5. Critic Agent (Critic)
+
+| Attribute | Value |
+|---|---|
+| **Canonical Role** | Critic (Safety + Quality) |
+| **Responsibilities** | Review outputs for coherence, safety violations |
+| **Input** | Aggregated agent outputs |
+| **Output** | `AgentResultEnvelope` with review/approval |
+| **Tools/MCP** | LLM only |
+| **Security** | Final output gatekeeper, prompt injection detector |
+
+---
+
+## Data Flow Sequence
+
+```
+┌────────┐     ┌─────────────┐     ┌────────────┐     ┌──────────────┐
+│ Client │────▶│   Nginx     │────▶│  FastAPI   │────▶│  LangGraph   │
+└────────┘     └─────────────┘     └────────────┘     └──────┬───────┘
+                                                              │
+                                   ┌──────────────────────────┤
+                                   ▼                          ▼
+                            ┌────────────┐            ┌────────────┐
+                            │ Task Agent │            │ Cal Agent  │
+                            └─────┬──────┘            └─────┬──────┘
+                                  │                         │
+                                  ▼                         ▼
+                            ┌────────────┐            ┌────────────┐
+                            │ Postgres   │            │ Google API │
+                            │ MCP        │            │ MCP        │
+                            └────────────┘            └────────────┘
+```
+
+---
+
+## State Management
+
+### LangGraph State Schema
+
+```python
+class BriefingGraphState(TypedDict):
+    """Shared state across the agent graph."""
+    
+    # Request context
+    user_id: str
+    request_id: str
+    trace_id: str
+    requested_at: datetime
+    
+    # Agent outputs (accumulated)
+    task_result: AgentResultEnvelope | None
+    calendar_result: AgentResultEnvelope | None
+    focus_result: AgentResultEnvelope | None
+    critic_result: AgentResultEnvelope | None
+    
+    # Execution tracking
+    current_agent: str
+    revision_count: int
+    total_tokens: int
+    
+    # Final output
+    final_briefing: str | None
+    status: Literal["pending", "success", "failure", "degraded"]
+```
+
+---
+
+## Error Handling & Resilience
+
+### Circuit Breaker Pattern
+
+| Condition | Action |
+|---|---|
+| Token budget exceeded (2x limit) | Immediate termination, route to DLQ |
+| MCP timeout (>30s) | Retry once, then route to DLQ |
+| Critic rejects after 2 cycles | Accept degraded output or route to DLQ |
+| Prompt injection detected | Immediate termination, no retry, security log |
+
+### Dead Letter Queue (DLQ)
+
+Failed requests are persisted for analysis and optional retry:
+
+```sql
+CREATE TABLE dlq_events (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    request_id UUID NOT NULL,
+    user_id UUID NOT NULL,
+    agent_id VARCHAR(50) NOT NULL,
+    reason VARCHAR(100) NOT NULL,
+    envelope JSONB NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    retried_at TIMESTAMPTZ,
+    retry_count INTEGER DEFAULT 0
+);
+```
+
+---
+
+## Security Architecture
+
+See `docs/SECURITY.md` for comprehensive security documentation.
+
+### Key Security Boundaries
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Trust Boundary                            │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │              Internal Agent Communication              │  │
+│  │                                                        │  │
+│  │  Task Agent ◄──► Orchestrator ◄──► Focus Agent       │  │
+│  │       ▲              ▲                                 │  │
+│  │       │              │                                 │  │
+│  │       ▼              ▼                                 │  │
+│  │  Critic Agent ◄──► Calendar Agent                     │  │
+│  │                                                        │  │
+│  └───────────────────────────────────────────────────────┘  │
+│                          │                                   │
+│  ════════════════════════╪═══════════════════════════════   │
+│         UNTRUSTED        │        UNTRUSTED                  │
+│                          ▼                                   │
+│  ┌──────────────────┐   ┌──────────────────────────────┐   │
+│  │ External LLM API │   │ Google Calendar (user data)  │   │
+│  │ (OpenRouter)     │   │ Potential injection vector   │   │
+│  └──────────────────┘   └──────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Deployment Checklist
+
+- [ ] Docker image built with multi-stage Dockerfile
+- [ ] Docker image signed in CI/CD pipeline
+- [ ] Environment variables validated at startup
+- [ ] PostgreSQL connection pool configured
+- [ ] MCP servers configured with security constraints
+- [ ] OpenTelemetry collector endpoint configured
+- [ ] Health check endpoints responding
+- [ ] Rate limiting middleware active
+
+---
+
+*Architecture Documentation — Version 1.5.0 — May 2026*
