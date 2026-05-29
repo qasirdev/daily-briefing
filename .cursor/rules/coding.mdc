@@ -47,7 +47,7 @@ async def task_agent_node(state: GraphState) -> AgentResultEnvelope:
 ### Framework & Dependencies
 - **Framework**: Next.js 16.x with App Router (no Pages Router)
 - **React**: React 19.x with Server Components by default (leverage `use`, `useTransition`, `useOptimistic`, `useActionState`)
-- **Styling**: Tailwind CSS 4.x with design tokens in `tailwind.config.ts`
+- **Styling**: Tailwind CSS 4.x with design tokens via CSS-first `@theme` in `app/globals.css`
 - **State**: Server Components for data; Client Components only for interactivity
 - **Validation**: `zod>=3.23.0` for runtime schema validation
 
@@ -177,7 +177,7 @@ git checkout -b epic/E{n}-{short-description}
 - [ ] Type checking passes (`mypy --strict`, `tsc`)
 - [ ] `docs/tasks/todo.md` updated with review section
 - [ ] `docs/PLAN.md` shows epic as ✅ Completed
-- [ ] PR approved and merged to main
+- [ ] PR approved and merged to `epic/autonomus-implementation`
 
 ### 7. Context Checkpoint (Long Sessions)
 

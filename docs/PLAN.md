@@ -162,7 +162,7 @@ For each epic:
 3. **Refactor:** Refactor Agent reviews and improves
 4. **Test:** Testing Agent adds coverage
 5. **Document:** Docs Agent updates AGENT.md files
-6. **Merge:** PR to main after all checks pass
+6. **Merge:** PR to `epic/autonomus-implementation` after all checks pass
 
 ---
 

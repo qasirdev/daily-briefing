@@ -51,7 +51,7 @@ Implement Epic DB-E1 (MVP 1: Project Scaffold) following the autonomous workflow
 6. After refactor: run Testing Agent checks and VERIFY the test suite passes (0 failures)
 7. After testing: run Docs Agent updates
 8. Update `docs/PLAN.md` with completion status
-9. Commit and prepare PR to main
+9. Commit and prepare PR to `epic/autonomus-implementation`
 
 ### Context Management
 - At ~75% context usage, write checkpoint to `docs/tasks/checkpoint.md`
@@ -198,4 +198,4 @@ Fix before proceeding. Never move to next task with failing tests.
 
 ---
 
-*Kick-off Prompt — Version 1.5.0 — May 2026*
+*Kick-off Prompt — Version 1.6.0 — May 2026*

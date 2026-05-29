@@ -6,9 +6,9 @@
 
 ## Current State
 
-- **Epic:** Not started
-- **Branch:** N/A
-- **Current Task:** N/A
+- **Epic:** Not started (pre-kickoff doc alignment complete — ready for DB-E1)
+- **Branch:** N/A (create `epic/E1-project-scaffold` at kickoff)
+- **Current Task:** DB-001 Monorepo Init
 - **Task Status:** ready_to_start
 
 ---

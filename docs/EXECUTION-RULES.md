@@ -87,7 +87,7 @@ AgentResultEnvelope(
 
 - Sub-agents return **strict JSON only**
 - Only the Orchestrator synthesizes final markdown
-- All output passes through sanitization (Bleach backend, DOMPurify frontend)
+- All output passes through sanitization (nh3 backend, DOMPurify frontend)
 - Orchestrator composes degraded responses when components fail
 
 ---
@@ -257,7 +257,7 @@ New session MUST:
 | 75% context | Write checkpoint |
 | Task complete | Update checkpoint |
 | Epic complete | Archive checkpoint to `docs/tasks/checkpoints/{epic-id}.md` |
-| Merge to main | Delete active checkpoint |
+| Merge to `epic/autonomus-implementation` | Delete active checkpoint |
 
 ---
 

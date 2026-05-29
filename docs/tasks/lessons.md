@@ -8,7 +8,7 @@
 
 | Date | Mistake Pattern | Root Cause | Rule to Prevent Recurrence |
 |---|---|---|---|
-| 2026-05-29 | Example: Hardcoded API key in source | Forgot to use environment variable | Always use `pydantic-settings` for secrets; never commit `.env` |
+| 2026-05-30 | Pre-kickoff doc alignment | Version conflicts (Next.js, nh3, /health), premature status markers | Standardize on Next.js 16, nh3, GET /health before running KICKOFF-PROMPT |
 
 ---
 
@@ -40,7 +40,7 @@
 
 | Session Date | Key Lessons Learned |
 |---|---|
-| 2026-05-29 | Initial project setup; established workflow patterns |
+| 2026-05-30 | Pre-kickoff standards alignment: Next.js 16, nh3, /health paths, status markers |
 
 ---
 

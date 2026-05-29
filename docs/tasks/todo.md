@@ -21,7 +21,7 @@
 
 ## Review Template
 
-> Complete this section when the epic is finished, before merging to main.
+> Complete this section when the epic is finished, before merging to epic/autonomus-implementation.
 
 ### What Was Built
 - 
