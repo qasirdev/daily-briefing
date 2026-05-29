@@ -288,7 +288,9 @@ export function BriefingErrorBoundary({ children }) {
 
 ## Styling Guidelines
 
-### Tailwind CSS Configuration
+### Tailwind CSS Configuration (v4 — CSS-first)
+
+Tailwind 4 uses `@import "tailwindcss"` and `@theme` in `app/globals.css` instead of `tailwind.config.ts`:
 
 ```css
 /* app/globals.css */
