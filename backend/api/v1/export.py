@@ -10,11 +10,11 @@ from typing import Literal
 
 from fastapi import APIRouter, Query, Request, Response
 
-from backend.api.v1.briefing import limiter
 from backend.consent.store import consent_store
 from backend.dlq.store import dlq_store
 from backend.preferences.store import preference_store
 from backend.schemas.dlq import DLQEventSummary
+from backend.security.rate_limit import limiter
 
 router = APIRouter(prefix="/api/v1/export", tags=["export"])
 

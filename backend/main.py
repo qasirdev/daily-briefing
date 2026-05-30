@@ -7,17 +7,15 @@ from uuid import uuid4
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from prometheus_client import make_asgi_app
-from slowapi import _rate_limit_exceeded_handler
-from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
-from backend.api.v1.briefing import limiter
 from backend.api.v1.briefing import router as briefing_router
 from backend.api.v1.consent import router as consent_router
 from backend.api.v1.dlq import router as dlq_router
 from backend.api.v1.export import router as export_router
 from backend.api.v1.preferences import router as preferences_router
 from backend.logging_config import bind_trace_id, configure_logging, get_logger
+from backend.security.rate_limit import register_rate_limiting
 from backend.settings import Settings, get_settings
 from backend.telemetry import configure_telemetry, trace_id_from_span
 
@@ -44,9 +42,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         version=resolved_settings.app_version,
         lifespan=lifespan,
     )
-    app.state.limiter = limiter
+    register_rate_limiting(app)
     app.state.settings = resolved_settings
-    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
     app.add_middleware(SlowAPIMiddleware)
 
     app.add_middleware(

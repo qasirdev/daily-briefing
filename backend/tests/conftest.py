@@ -1,6 +1,6 @@
 """Shared pytest fixtures."""
 
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Iterator
 
 import pytest
 from fastapi import FastAPI
@@ -8,6 +8,16 @@ from httpx import ASGITransport, AsyncClient
 
 from backend.main import create_app
 from backend.settings import Settings
+
+
+@pytest.fixture(autouse=True)
+def _reset_rate_limiter() -> Iterator[None]:
+    """Prevent rate-limit state leaking between tests."""
+    from backend.security.rate_limit import limiter
+
+    limiter.reset()
+    yield
+    limiter.reset()
 
 
 @pytest.fixture

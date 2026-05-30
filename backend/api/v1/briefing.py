@@ -9,8 +9,6 @@ from uuid import uuid4
 
 import structlog
 from fastapi import APIRouter, HTTPException, Request, status
-from slowapi import Limiter
-from slowapi.util import get_remote_address
 
 from backend.dependencies import build_llm_router, build_mcp_clients
 from backend.graph.builder import build_briefing_graph
@@ -24,11 +22,11 @@ from backend.schemas.briefing import (
 )
 from backend.schemas.consent import ConsentPromptRequest
 from backend.schemas.envelope import AgentResultEnvelope
+from backend.security.rate_limit import limiter
 from backend.settings import get_settings
 from backend.telemetry import start_async_span
 
 logger = structlog.get_logger()
-limiter = Limiter(key_func=get_remote_address)
 router = APIRouter(prefix="/api/v1/briefing", tags=["briefing"])
 
 _AGENT_KEYS = (

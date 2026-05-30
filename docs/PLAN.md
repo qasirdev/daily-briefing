@@ -116,7 +116,7 @@ Fresh autonomous kickoff only (not every "hi"): then read `docs/KICKOFF-PROMPT.m
 
 ---
 
-## MVP 5: Security Hardening ⬜
+## MVP 5: Security Hardening 🔄
 
 **Epic:** DB-E5  
 **Branch:** `epic/E5-security-hardening`  
@@ -124,14 +124,14 @@ Fresh autonomous kickoff only (not every "hi"): then read `docs/KICKOFF-PROMPT.m
 
 | Task ID | Summary | Status | Agent |
 |---|---|---|---|
-| DB-037 | OWASP GenAI Top 10 Audit | ⬜ | Coding |
-| DB-038 | Output Sanitization Layer | ⬜ | Coding |
-| DB-039 | Token Budget Circuit Breaker | ⬜ | Coding |
-| DB-040 | Rate Limiting Middleware | ⬜ | Coding |
-| DB-041 | Security Test Suite | ⬜ | Testing |
-| DB-042 | PII Detection and Masking | ⬜ | Coding |
-| DB-043 | MCP SSRF Defense | ⬜ | Coding |
-| DB-044 | Security Prompt (prompts/security/) | ⬜ | Coding |
+| DB-037 | OWASP GenAI Top 10 Audit | ✅ | Coding |
+| DB-038 | Output Sanitization Layer | ✅ | Coding |
+| DB-039 | Token Budget Circuit Breaker | ✅ | Coding |
+| DB-040 | Rate Limiting Middleware | ✅ | Coding |
+| DB-041 | Security Test Suite | ✅ | Testing |
+| DB-042 | PII Detection and Masking | ✅ | Coding |
+| DB-043 | MCP SSRF Defense | ✅ | Coding |
+| DB-044 | Security Prompt (prompts/security/) | ✅ | Coding |
 
 ---
 
@@ -162,9 +162,9 @@ Fresh autonomous kickoff only (not every "hi"): then read `docs/KICKOFF-PROMPT.m
 | MVP 2 | DB-E2 | 10 | 10 | 100% |
 | MVP 3 | DB-E3 | 8 | 8 | 100% |
 | MVP 4 | DB-E4 | 8 | 8 | 100% |
-| MVP 5 | DB-E5 | 8 | 0 | 0% |
+| MVP 5 | DB-E5 | 8 | 8 | 100% |
 | MVP 6 | DB-E6 | 8 | 0 | 0% |
-| **Total** | **6 Epics** | **52** | **36** | **69%** |
+| **Total** | **6 Epics** | **52** | **44** | **85%** |
 
 ---
 
