@@ -61,6 +61,17 @@ prompts/          Agent prompt contracts (MVP 2+)
 
 See [AGENT.md](./AGENT.md) for development workflow and [docs/PLAN.md](./docs/PLAN.md) for implementation progress.
 
+## Production Deployment
+
+1. Copy [`.env.production.example`](./.env.production.example) and configure secrets.
+2. Pull a **Cosign-signed** image from GHCR (see [infrastructure/DEPLOYMENT.md](./infrastructure/DEPLOYMENT.md)).
+3. Verify probes:
+   - Liveness: `GET /health`
+   - Readiness: `GET /health/ready`
+4. Load Prometheus rules from `infrastructure/monitoring/` and alerts from `infrastructure/alerting/rules.yml`.
+
+Full guide: [infrastructure/DEPLOYMENT.md](./infrastructure/DEPLOYMENT.md)
+
 ## License
 
 Private — internal use.
