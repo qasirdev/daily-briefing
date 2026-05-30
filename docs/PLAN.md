@@ -10,6 +10,21 @@ This document tracks the implementation progress across all 6 MVPs. Each epic fo
 
 ---
 
+## Session Start Rules
+
+When resuming a session (user says "hi"), read in this order:
+
+1. `docs/tasks/checkpoint.md`
+2. `docs/tasks/lessons.md`
+3. **`AGENT.md`** — root workflow index (@AGENT.md)
+4. **`docs/TOKEN-EFFICIENCY.md`** — context window rules (@docs/TOKEN-EFFICIENCY.md)
+5. `docs/PLAN.md` — this file
+6. `docs/EXECUTION-RULES.md`
+
+Fresh autonomous kickoff only (not every "hi"): then read `docs/KICKOFF-PROMPT.md`.
+
+---
+
 ## Status Legend
 
 | Symbol | Status |

@@ -16,6 +16,7 @@ co-located AGENT.md files alongside the code they govern.
 
 | Rule | Behaviour |
 |---|---|
+| Token usage | Follow `docs/TOKEN-EFFICIENCY.md` — read before `docs/KICKOFF-PROMPT.md` |
 | Plan mode | Required for any epic/task or task with 3+ steps — check `docs/jira-tickets-json/*.json` |
 | Edge cases | Review the `Description` field in the relevant JSON and implement associated fail-safes |
 | Task log | Write plan to `docs/tasks/todo.md` before any implementation |
@@ -71,6 +72,7 @@ co-located AGENT.md files alongside the code they govern.
 | Security & OWASP GenAI | docs/SECURITY.md | MVP 5 |
 | Final execution rules | docs/EXECUTION-RULES.md | MVP 1 |
 | Implementation progress | docs/PLAN.md | MVP 1 |
+| Token efficiency (context window) | docs/TOKEN-EFFICIENCY.md | MVP 1 |
 | Kick-off prompt | docs/KICKOFF-PROMPT.md | MVP 1 |
 | Context checkpoint | docs/tasks/checkpoint.md | MVP 1 |
 | Active task plan | docs/tasks/todo.md | MVP 1 |
