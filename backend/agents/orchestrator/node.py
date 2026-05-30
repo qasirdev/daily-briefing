@@ -66,7 +66,10 @@ def build_consent_prompt(state: BriefingGraphState) -> ConsentPromptRequest:
     else:
         scope = ["calendar.readonly"]
     ttl_raw = context_data.get("suggested_ttl_hours", DEFAULT_TTL_HOURS.get(service, 4))
-    ttl = int(ttl_raw) if isinstance(ttl_raw, (int, float, str)) else DEFAULT_TTL_HOURS.get(service, 4)
+    if isinstance(ttl_raw, (int, float, str)):
+        ttl = int(ttl_raw)
+    else:
+        ttl = DEFAULT_TTL_HOURS.get(service, 4)
 
     record_consent_request(mcp_server=service, outcome="requested")
     return ConsentPromptRequest(

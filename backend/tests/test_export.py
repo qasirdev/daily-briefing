@@ -18,7 +18,10 @@ async def test_export_json_includes_sections() -> None:
         ),
     )
     async with api_client() as client:
-        response = await client.get("/api/v1/export", params={"user_id": "user-1", "format": "json"})
+        response = await client.get(
+            "/api/v1/export",
+            params={"user_id": "user-1", "format": "json"},
+        )
     assert response.status_code == 200
     payload = response.json()
     assert payload["user_id"] == "user-1"
