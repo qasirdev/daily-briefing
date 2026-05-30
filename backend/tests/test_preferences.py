@@ -1,11 +1,10 @@
 """Tests for preference feedback."""
 
-from fastapi.testclient import TestClient
+import pytest
 
-from backend.main import create_app
 from backend.preferences.store import PreferenceStore, extract_preference
 from backend.schemas.preferences import PreferenceFeedbackRequest
-from backend.settings import Settings
+from backend.tests.http_client import api_client
 
 
 def test_no_preference_when_unchanged() -> None:
@@ -30,17 +29,18 @@ def test_extract_morning_preference() -> None:
     assert "morning" in pref.preference_text
 
 
-def test_feedback_endpoint() -> None:
-    client = TestClient(create_app(Settings()))
-    response = client.post(
-        "/api/v1/preferences/feedback",
-        json={
-            "user_id": "user-1",
-            "briefing_id": "brief-1",
-            "original_content": "Plan",
-            "edited_content": "Keep it shorter please",
-        },
-    )
+@pytest.mark.asyncio
+async def test_feedback_endpoint() -> None:
+    async with api_client() as client:
+        response = await client.post(
+            "/api/v1/preferences/feedback",
+            json={
+                "user_id": "user-1",
+                "briefing_id": "brief-1",
+                "original_content": "Plan",
+                "edited_content": "Keep it shorter please",
+            },
+        )
     assert response.status_code == 200
     payload = response.json()
     assert payload["extracted"] is True
