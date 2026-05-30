@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-PROMPTS_ROOT = Path(__file__).resolve().parents[2] / "prompts"
+PROMPTS_ROOT = Path(__file__).resolve().parents[1] / "prompts"
 
 
 def load_prompt_file(agent_id: str, filename: str) -> str:

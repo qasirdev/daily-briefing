@@ -8,7 +8,7 @@ from typing import Any, Literal
 import structlog
 
 from backend.graph.state import BriefingGraphState
-from backend.mcp.client import MCPTimeoutError
+from backend.mcp.client import MCPError, MCPTimeoutError
 from backend.mcp.postgres import PostgresMCPClient
 from backend.schemas.envelope import AgentResultEnvelope, EscalationPayload, ExecutionMetadata
 from backend.schemas.task import TaskRecord
@@ -102,6 +102,22 @@ async def task_agent_node(
                 reason="mcp_timeout",
                 target_agent="orchestrator",
                 context="PostgreSQL MCP query exceeded 30s timeout",
+            ),
+        )
+        return {"task_result": envelope, "current_agent": "task"}
+
+    except MCPError as exc:
+        execution_ms = int((time.perf_counter() - start) * 1000)
+        logger.warning("task_agent_mcp_error", trace_id=trace_id, error=str(exc))
+        envelope = _envelope(
+            status="escalated",
+            state=state,
+            result=None,
+            execution_ms=execution_ms,
+            escalation=EscalationPayload(
+                reason="unexpected_error",
+                target_agent="orchestrator",
+                context=str(exc),
             ),
         )
         return {"task_result": envelope, "current_agent": "task"}

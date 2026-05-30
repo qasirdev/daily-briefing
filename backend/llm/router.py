@@ -6,7 +6,7 @@ import time
 
 import httpx
 import structlog
-from openai import APIStatusError, AsyncOpenAI
+from openai import APIConnectionError, APIError, APIStatusError, AsyncOpenAI
 from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
 
 from backend.llm.models import LLMResponse
@@ -73,7 +73,7 @@ class LLMRouter:
                 max_tokens=output_budget,
                 trace_id=trace_id,
             )
-        except (LLMError, APIStatusError, httpx.HTTPError) as primary_error:
+        except (LLMError, APIStatusError, APIError, httpx.HTTPError) as primary_error:
             if self._fallback is None:
                 raise LLMError(str(primary_error)) from primary_error
             logger.warning(
@@ -128,6 +128,8 @@ class LLMRouter:
             )
         except httpx.TimeoutException as exc:
             raise LLMError("LLM request timed out") from exc
+        except APIConnectionError as exc:
+            raise LLMError("LLM connection error") from exc
 
         latency_ms = int((time.perf_counter() - start) * 1000)
         choice = completion.choices[0].message.content or ""

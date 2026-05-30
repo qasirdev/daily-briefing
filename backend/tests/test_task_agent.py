@@ -4,7 +4,7 @@ import pytest
 
 from backend.agents.task.node import task_agent_node
 from backend.graph.state import BriefingGraphState
-from backend.mcp.client import MCPTimeoutError
+from backend.mcp.client import MCPError, MCPTimeoutError
 from backend.mcp.postgres import PostgresMCPClient
 
 
@@ -56,6 +56,28 @@ async def test_task_agent_sorts_by_priority() -> None:
     tasks = envelope.result["tasks"]
     assert isinstance(tasks, list)
     assert tasks[0]["priority"] == "high"
+
+
+@pytest.mark.asyncio
+async def test_task_agent_escalates_on_mcp_connection_error() -> None:
+    state: BriefingGraphState = {"user_id": "u1", "trace_id": "c" * 32}
+
+    class FailingPostgres(FakePostgres):
+        async def query(
+            self,
+            *,
+            sql: str,
+            user_id: str,
+            params: dict[str, object] | None = None,
+        ) -> dict[str, object]:
+            raise MCPError("MCP transport error for 'query': All connection attempts failed")
+
+    result = await task_agent_node(state, FailingPostgres())
+    envelope = result["task_result"]
+    assert envelope is not None
+    assert envelope.status == "escalated"
+    assert envelope.escalation is not None
+    assert envelope.escalation.reason == "unexpected_error"
 
 
 @pytest.mark.asyncio

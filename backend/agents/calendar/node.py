@@ -10,7 +10,7 @@ import structlog
 
 from backend.graph.state import BriefingGraphState
 from backend.mcp.calendar import CalendarMCPClient
-from backend.mcp.client import MCPConsentRequired
+from backend.mcp.client import MCPConsentRequired, MCPError, MCPTimeoutError
 from backend.schemas.envelope import AgentResultEnvelope, EscalationPayload, ExecutionMetadata
 
 logger = structlog.get_logger()
@@ -94,3 +94,49 @@ async def calendar_agent_node(
             "consent_required": True,
             "consent_context": str(exc),
         }
+
+    except MCPTimeoutError as exc:
+        execution_ms = int((time.perf_counter() - start) * 1000)
+        logger.warning("calendar_agent_mcp_timeout", trace_id=trace_id, error=str(exc))
+        envelope = AgentResultEnvelope(
+            agent_id="calendar",
+            canonical_role="doer",
+            status="escalated",
+            escalation=EscalationPayload(
+                reason="mcp_timeout",
+                target_agent="orchestrator",
+                context=str(exc),
+            ),
+            metadata=ExecutionMetadata(
+                execution_ms=execution_ms,
+                tokens_used=0,
+                model_used="none",
+                prompt_version="v1.5.0",
+                trace_id=trace_id,
+                data_classification="internal",
+            ),
+        )
+        return {"calendar_result": envelope, "current_agent": "calendar"}
+
+    except MCPError as exc:
+        execution_ms = int((time.perf_counter() - start) * 1000)
+        logger.warning("calendar_agent_mcp_error", trace_id=trace_id, error=str(exc))
+        envelope = AgentResultEnvelope(
+            agent_id="calendar",
+            canonical_role="doer",
+            status="escalated",
+            escalation=EscalationPayload(
+                reason="unexpected_error",
+                target_agent="orchestrator",
+                context=str(exc),
+            ),
+            metadata=ExecutionMetadata(
+                execution_ms=execution_ms,
+                tokens_used=0,
+                model_used="none",
+                prompt_version="v1.5.0",
+                trace_id=trace_id,
+                data_classification="internal",
+            ),
+        )
+        return {"calendar_result": envelope, "current_agent": "calendar"}

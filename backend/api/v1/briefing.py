@@ -62,6 +62,20 @@ async def generate_briefing(request: Request, body: BriefingRequest) -> Briefing
             status_code=status.HTTP_504_GATEWAY_TIMEOUT,
             detail="Briefing generation timed out",
         ) from exc
+    except Exception as exc:
+        execution_ms = int((time.perf_counter() - started) * 1000)
+        logger.exception("briefing_generation_failed", trace_id=trace_id, error=str(exc))
+        return BriefingResponse(
+            status="failure",
+            briefing="",
+            metadata=BriefingMetadata(
+                trace_id=trace_id,
+                total_tokens=0,
+                execution_ms=execution_ms,
+                agents_invoked=[],
+            ),
+            consent_context=str(exc),
+        )
     finally:
         await mcp.close()
 
