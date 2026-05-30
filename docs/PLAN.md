@@ -36,7 +36,7 @@ Fresh autonomous kickoff only (not every "hi"): then read `docs/KICKOFF-PROMPT.m
 
 ---
 
-## MVP 1: Project Scaffold ⬜
+## MVP 1: Project Scaffold ✅
 
 **Epic:** DB-E1  
 **Branch:** `epic/E1-project-scaffold`  
@@ -44,16 +44,16 @@ Fresh autonomous kickoff only (not every "hi"): then read `docs/KICKOFF-PROMPT.m
 
 | Task ID | Summary | Status | Agent |
 |---|---|---|---|
-| DB-001 | Monorepo Init with Root AGENT.md | ⬜ | Coding |
-| DB-002 | Multi-Stage Dockerfile | ⬜ | Coding |
-| DB-003 | Nginx Reverse Proxy Configuration | ⬜ | Coding |
-| DB-004 | Supervisord Process Manager | ⬜ | Coding |
-| DB-005 | docker-compose.yml for Local Dev | ⬜ | Coding |
-| DB-006 | FastAPI Backend Scaffold | ⬜ | Coding |
-| DB-007 | Next.js Frontend Scaffold | ⬜ | Coding |
-| DB-008 | LangGraph Orchestration Scaffold | ⬜ | Coding |
-| DB-009 | AgentResultEnvelope Schema | ⬜ | Coding |
-| DB-010 | GitHub Actions CI Pipeline | ⬜ | Coding |
+| DB-001 | Monorepo Init with Root AGENT.md | ✅ | Coding |
+| DB-002 | Multi-Stage Dockerfile | ✅ | Coding |
+| DB-003 | Nginx Reverse Proxy Configuration | ✅ | Coding |
+| DB-004 | Supervisord Process Manager | ✅ | Coding |
+| DB-005 | docker-compose.yml for Local Dev | ✅ | Coding |
+| DB-006 | FastAPI Backend Scaffold | ✅ | Coding |
+| DB-007 | Next.js Frontend Scaffold | ✅ | Coding |
+| DB-008 | LangGraph Orchestration Scaffold | ✅ | Coding |
+| DB-009 | AgentResultEnvelope Schema | ✅ | Coding |
+| DB-010 | GitHub Actions CI Pipeline | ✅ | Coding |
 
 ---
 
@@ -158,13 +158,13 @@ Fresh autonomous kickoff only (not every "hi"): then read `docs/KICKOFF-PROMPT.m
 
 | MVP | Epic | Tasks | Completed | Progress |
 |---|---|---|---|---|
-| MVP 1 | DB-E1 | 10 | 0 | 0% |
+| MVP 1 | DB-E1 | 10 | 10 | 100% |
 | MVP 2 | DB-E2 | 10 | 0 | 0% |
 | MVP 3 | DB-E3 | 8 | 0 | 0% |
 | MVP 4 | DB-E4 | 8 | 0 | 0% |
 | MVP 5 | DB-E5 | 8 | 0 | 0% |
 | MVP 6 | DB-E6 | 8 | 0 | 0% |
-| **Total** | **6 Epics** | **52** | **0** | **0%** |
+| **Total** | **6 Epics** | **52** | **10** | **19%** |
 
 ---
 
