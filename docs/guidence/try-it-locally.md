@@ -1,6 +1,6 @@
 # Try It Locally — AI Daily Briefing Assistant
 
-**Version:** 1.1.0 | **Last Updated:** May 2026
+**Version:** 1.2.0 | **Last Updated:** May 2026
 
 This guide walks through running the project on your machine: backend only, frontend only, or the full Docker stack.
 
@@ -58,13 +58,61 @@ Expected:
 
 ### Generate a briefing (MVP 2+)
 
+Start the backend first (see [§2 Backend](#2-backend-fastapi--langgraph)), then:
+
 ```bash
 curl -X POST http://127.0.0.1:8000/api/v1/briefing/generate \
   -H "Content-Type: application/json" \
   -d '{"user_id":"user-1"}'
 ```
 
-Response includes `X-Trace-Id` in headers. For live task/calendar data, PostgreSQL and Google Calendar MCP servers must be running on the ports in `.env`. Without them, the graph may return a degraded or empty briefing depending on agent errors.
+Response includes `X-Trace-Id` in headers.
+
+#### After pulling code changes
+
+If you previously saw `Internal Server Error`, restart uvicorn so it loads the latest code (`--reload` may not always pick up every change):
+
+```bash
+# Stop the running server (Ctrl+C), then:
+uv sync --all-extras
+uv run uvicorn backend.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+Retry the briefing request:
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/v1/briefing/generate \
+  -H "Content-Type: application/json" \
+  -d '{"user_id":"user-1"}'
+```
+
+#### Expected without MCP / LLM (local smoke test)
+
+If PostgreSQL MCP (`5433`), Calendar MCP (`5434`), and OpenRouter are **not** running, a **200** response with `"status": "degraded"` is normal — not a failure:
+
+```json
+{
+  "status": "degraded",
+  "briefing": "<h1>Daily Briefing</h1><p><strong>Note:</strong> Some components were degraded.</p>",
+  "metadata": {
+    "trace_id": "...",
+    "total_tokens": 0,
+    "execution_ms": 1700,
+    "agents_invoked": ["task", "calendar", "focus", "critic", "orchestrator"]
+  },
+  "consent_context": null
+}
+```
+
+#### Full briefing (live data)
+
+For tasks, calendar events, and an LLM-generated focus plan you need:
+
+| Dependency | `.env` / setup |
+|---|---|
+| PostgreSQL MCP | Running on `POSTGRES_MCP_HOST:POSTGRES_MCP_PORT` (default `localhost:5433`) |
+| Google Calendar MCP | Running on `CALENDAR_MCP_HOST:CALENDAR_MCP_PORT` (default `localhost:5434`) |
+| Focus agent LLM | `OPENROUTER_API_KEY` set, **or** `LOCAL_LLM_ENABLED=true` with a local OpenAI-compatible server at `LOCAL_LLM_BASE_URL` |
 
 ### Run tests
 
@@ -247,6 +295,14 @@ kill <PID>
 ```
 
 Or run on another port: `--port 8001`.
+
+### `Internal Server Error` on briefing generate (legacy)
+
+Older builds returned **500** when MCP servers were unreachable. Current MVP 2 code returns **200 `degraded`** instead. If you still see 500:
+
+1. Pull latest `epic/E2-core-agents` (or merged integration branch).
+2. Restart uvicorn — see [After pulling code changes](#after-pulling-code-changes).
+3. Check the uvicorn terminal for the stack trace (often `MCP transport error` or missing prompt files).
 
 ### Briefing returns degraded / empty content
 
