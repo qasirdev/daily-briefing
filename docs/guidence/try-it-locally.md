@@ -1,6 +1,6 @@
 # Try It Locally — AI Daily Briefing Assistant
 
-**Version:** 1.2.0 | **Last Updated:** May 2026
+**Version:** 1.3.0 | **Last Updated:** May 2026
 
 This guide walks through running the project on your machine: backend only, frontend only, or the full Docker stack.
 
@@ -32,6 +32,8 @@ Edit `.env` as needed:
 - **`OPENROUTER_API_KEY`** — required for the Focus agent LLM calls (MVP 2+). Leave empty only if you are testing health checks or mocked flows.
 - **`LOCAL_LLM_ENABLED=true`** — optional fallback when OpenRouter is unavailable.
 - **`POSTGRES_MCP_*` / `CALENDAR_MCP_*`** — MCP server host/port (defaults: `5433` and `5434`).
+- **`ADMIN_API_KEY`** — required for DLQ admin endpoints (MVP 3+). See [Local notes (MVP 3+)](#local-notes-mvp-3).
+- **`OTEL_EXPORTER_OTLP_ENDPOINT`** — optional OpenTelemetry collector (default `http://localhost:4317`).
 
 ---
 
@@ -134,7 +136,15 @@ npm ci
 npm run dev
 ```
 
-Open http://localhost:3000 for the dashboard placeholder.
+Open http://localhost:3000 — the dashboard calls the briefing API and shows the rendered briefing with an observability badge.
+
+If the backend runs on a non-default host or port, create `frontend/.env.local`:
+
+```bash
+NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000
+```
+
+Default (when unset): `http://127.0.0.1:8000`.
 
 Production-style build (standalone output):
 
@@ -315,11 +325,62 @@ Ensure `CORS_ORIGINS` in `.env` includes your frontend origin (default includes 
 
 ---
 
+## Local notes (MVP 3+)
+
+Epic **DB-E3** adds observability endpoints and a frontend dashboard. Use these when running `epic/E3-observability` or a branch that includes MVP 3.
+
+### DLQ admin API
+
+Set `ADMIN_API_KEY` in `.env` (see `.env.example`). Without it, DLQ routes return **503**.
+
+```bash
+# List failed agent events
+curl http://127.0.0.1:8000/api/v1/dlq \
+  -H "X-Admin-Key: dev-admin-key-change-in-production"
+
+# Retry a failed event (security violations are rejected with 403)
+curl -X POST http://127.0.0.1:8000/api/v1/dlq/{event_id}/retry \
+  -H "X-Admin-Key: dev-admin-key-change-in-production"
+```
+
+Replace the header value with your `ADMIN_API_KEY`.
+
+### Prometheus metrics
+
+Scrape application metrics from:
+
+```bash
+curl http://127.0.0.1:8000/metrics/
+```
+
+Use the trailing slash — `/metrics` may redirect. No auth required.
+
+Expected custom metrics include `briefing_generation_duration_seconds`, `agent_execution_duration_seconds`, `llm_tokens_used_total`, `mcp_call_duration_seconds`, `dlq_events_total`, and `security_violations_total`.
+
+### Frontend → backend
+
+The home page (`frontend/app/page.tsx`) POSTs to `/api/v1/briefing/generate` and renders the response in `BriefingDashboard` with `ObservabilityBadge`.
+
+| Setup | Action |
+|---|---|
+| Backend on `127.0.0.1:8000` | No extra config — defaults work |
+| Backend on another port | Set `NEXT_PUBLIC_API_BASE_URL` in `frontend/.env.local` |
+| CORS errors in browser | Add frontend origin to `CORS_ORIGINS` in root `.env` |
+
+Restart `npm run dev` after changing `frontend/.env.local`.
+
+### OpenTelemetry (optional)
+
+Tracing exports to `OTEL_EXPORTER_OTLP_ENDPOINT` when a collector is running. If the collector is down, the app logs a warning and continues without tracing.
+
+---
+
 ## Quick reference
 
 | Mode | Command | URL |
 |---|---|---|
 | Backend | `uv run uvicorn backend.main:app --reload --host 127.0.0.1 --port 8000` | http://127.0.0.1:8000 |
+| Metrics | `curl http://127.0.0.1:8000/metrics/` | http://127.0.0.1:8000/metrics/ |
 | Frontend | `cd frontend && npm run dev` | http://localhost:3000 |
 | Docker | `docker compose up --build` | http://localhost |
 
