@@ -3,13 +3,12 @@
 from unittest.mock import AsyncMock
 
 import pytest
-from fastapi.testclient import TestClient
 
 from backend.dlq.store import DLQStore
-from backend.main import create_app
 from backend.schemas.dlq import DLQEvent
 from backend.schemas.envelope import AgentResultEnvelope, ExecutionMetadata
 from backend.settings import Settings
+from backend.tests.http_client import api_client
 
 
 @pytest.fixture
@@ -54,35 +53,38 @@ def test_security_violation_not_retryable(store: DLQStore) -> None:
     assert "cannot be retried" in message
 
 
-def test_dlq_api_requires_admin_key() -> None:
+@pytest.mark.asyncio
+async def test_dlq_api_requires_admin_key() -> None:
     settings = Settings(admin_api_key="secret-admin")
-    client = TestClient(create_app(settings))
-    response = client.get("/api/v1/dlq")
+    async with api_client(settings) as client:
+        response = await client.get("/api/v1/dlq")
     assert response.status_code == 403
 
 
-def test_dlq_api_lists_events() -> None:
+@pytest.mark.asyncio
+async def test_dlq_api_lists_events() -> None:
     from backend.dlq import store as dlq_module
 
     dlq_module.dlq_store.add(_event())
     settings = Settings(admin_api_key="secret-admin")
-    client = TestClient(create_app(settings))
-    response = client.get("/api/v1/dlq", headers={"X-Admin-Key": "secret-admin"})
+    async with api_client(settings) as client:
+        response = await client.get("/api/v1/dlq", headers={"X-Admin-Key": "secret-admin"})
     assert response.status_code == 200
     payload = response.json()
     assert len(payload) >= 1
 
 
-def test_dlq_retry_rejects_security_event() -> None:
+@pytest.mark.asyncio
+async def test_dlq_retry_rejects_security_event() -> None:
     from backend.dlq import store as dlq_module
 
     event = dlq_module.dlq_store.add(_event("security_violation_detected"))
     settings = Settings(admin_api_key="secret-admin")
-    client = TestClient(create_app(settings))
-    response = client.post(
-        f"/api/v1/dlq/{event.id}/retry",
-        headers={"X-Admin-Key": "secret-admin"},
-    )
+    async with api_client(settings) as client:
+        response = await client.post(
+            f"/api/v1/dlq/{event.id}/retry",
+            headers={"X-Admin-Key": "secret-admin"},
+        )
     assert response.status_code == 403
 
 

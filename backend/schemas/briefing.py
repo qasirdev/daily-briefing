@@ -5,6 +5,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from backend.schemas.consent import ConsentPromptRequest
+
 
 class BriefingRequest(BaseModel):
     """Request body for briefing generation."""
@@ -49,3 +51,4 @@ class BriefingResponse(BaseModel):
     briefing: str = ""
     metadata: BriefingMetadata
     consent_context: str | None = None
+    consent_request: ConsentPromptRequest | None = None

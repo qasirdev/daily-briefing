@@ -13,7 +13,10 @@ from slowapi.middleware import SlowAPIMiddleware
 
 from backend.api.v1.briefing import limiter
 from backend.api.v1.briefing import router as briefing_router
+from backend.api.v1.consent import router as consent_router
 from backend.api.v1.dlq import router as dlq_router
+from backend.api.v1.export import router as export_router
+from backend.api.v1.preferences import router as preferences_router
 from backend.logging_config import bind_trace_id, configure_logging, get_logger
 from backend.settings import Settings, get_settings
 from backend.telemetry import configure_telemetry, trace_id_from_span
@@ -75,6 +78,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         }
 
     app.include_router(briefing_router)
+    app.include_router(consent_router)
+    app.include_router(preferences_router)
+    app.include_router(export_router)
     app.include_router(dlq_router)
     app.mount("/metrics", make_asgi_app())
 

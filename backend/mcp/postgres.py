@@ -10,7 +10,9 @@ from backend.mcp.client import (
     validate_read_query,
 )
 
-ALLOWED_TABLES = frozenset({"tasks", "user_preferences", "dlq_events"})
+ALLOWED_TABLES = frozenset(
+    {"tasks", "user_preferences", "dlq_events", "consent_records", "consent_audit_log"},
+)
 
 
 class PostgresMCPClient(MCPClient):

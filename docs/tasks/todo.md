@@ -1,21 +1,21 @@
-# Active Task Plan — Epic DB-E3 (MVP 3: Observability)
+# Active Task Plan — Epic DB-E4 (MVP 4: Agentic Consent)
 
-**Epic:** DB-E3  
-**Branch:** `epic/E3-observability`  
+**Epic:** DB-E4  
+**Branch:** `epic/E4-agentic-consent`  
 **Started:** 2026-05-30  
 **Agent:** Coding Agent
 
 ### Implementation Steps
 
-- [x] DB-022: Prompt injection detector (`backend/security/injection.py`)
-- [x] DB-026: Structured logging with trace_id + PII masking
-- [x] DB-021: Critic agent with revision loop + injection integration
-- [x] DB-023: DLQ schema, handler, persistence, admin API
-- [x] DB-024: OpenTelemetry integration
-- [x] DB-025: Prometheus metrics exporter
-- [x] DB-027: Frontend ObservabilityBadge component
-- [x] DB-028: Frontend BriefingDashboard component
-- [x] Tests: 40 passed, ruff + mypy strict
+- [x] DB-029: Consent data model + store + migration SQL
+- [x] DB-030: Consent management API
+- [x] DB-032: Orchestrator consent handling + briefing consent_request
+- [x] DB-033: Local LLM fallback (PII, metrics, docs/LOCAL-LLM.md)
+- [x] DB-034: User preferences learning loop
+- [x] DB-035: Data export endpoint
+- [x] DB-031: ConsentPromptModal component
+- [x] DB-036: Consent dashboard settings page
+- [x] Tests: 56 passed, ruff + mypy strict
 - [ ] Push branch and open PR to epic/autonomus-implementation
 
 ---

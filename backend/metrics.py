@@ -47,6 +47,18 @@ SECURITY_VIOLATIONS_TOTAL = Counter(
     ["type", "agent_id"],
 )
 
+CONSENT_REQUESTS_TOTAL = Counter(
+    "consent_requests_total",
+    "Consent prompt outcomes",
+    ["mcp_server", "outcome"],
+)
+
+LLM_FALLBACK_TOTAL = Counter(
+    "llm_fallback_total",
+    "LLM fallback triggers",
+    ["from_model", "to_model", "reason"],
+)
+
 
 @contextmanager
 def observe_agent_execution(
@@ -104,3 +116,11 @@ def record_briefing_generation(*, status: str, degraded: bool, duration_seconds:
         status=status,
         degraded=str(degraded).lower(),
     ).observe(duration_seconds)
+
+
+def record_consent_request(*, mcp_server: str, outcome: str) -> None:
+    CONSENT_REQUESTS_TOTAL.labels(mcp_server=mcp_server, outcome=outcome).inc()
+
+
+def record_llm_fallback(*, from_model: str, to_model: str, reason: str) -> None:
+    LLM_FALLBACK_TOTAL.labels(from_model=from_model, to_model=to_model, reason=reason).inc()

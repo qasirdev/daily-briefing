@@ -40,6 +40,7 @@ def _base_state(**overrides: object) -> BriefingGraphState:
         "final_briefing": None,
         "consent_required": False,
         "consent_context": None,
+        "consent_request": None,
         "dlq_events": [],
         "orchestrator_result": None,
         "task_result": None,
