@@ -56,6 +56,14 @@ def configure_telemetry(settings: Settings) -> None:
     _telemetry_configured = True
 
 
+def flush_telemetry() -> None:
+    """Flush pending span batches during shutdown."""
+    provider = trace.get_tracer_provider()
+    shutdown = getattr(provider, "shutdown", None)
+    if callable(shutdown):
+        shutdown()
+
+
 def trace_id_from_span() -> str | None:
     span = trace.get_current_span()
     context = span.get_span_context()

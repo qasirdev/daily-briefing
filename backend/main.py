@@ -6,6 +6,7 @@ from uuid import uuid4
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from prometheus_client import make_asgi_app
 from slowapi.middleware import SlowAPIMiddleware
 
@@ -14,9 +15,11 @@ from backend.api.v1.consent import router as consent_router
 from backend.api.v1.dlq import router as dlq_router
 from backend.api.v1.export import router as export_router
 from backend.api.v1.preferences import router as preferences_router
+from backend.health.router import router as health_router
 from backend.logging_config import bind_trace_id, configure_logging, get_logger
 from backend.security.rate_limit import register_rate_limiting
 from backend.settings import Settings, get_settings
+from backend.shutdown import ShutdownCoordinator
 from backend.telemetry import configure_telemetry, trace_id_from_span
 
 logger = get_logger(__name__)
@@ -28,9 +31,16 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
     configure_logging(debug=settings.app_debug)
     configure_telemetry(settings)
+
+    coordinator: ShutdownCoordinator = app.state.shutdown
+    try:
+        coordinator.register_signal_handlers()
+    except NotImplementedError:
+        logger.info("signal_handlers_unavailable")
+
     logger.info("application_started", app_env=settings.app_env, version=settings.app_version)
     yield
-    logger.info("application_shutdown")
+    await coordinator.shutdown(app)
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -42,8 +52,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         version=resolved_settings.app_version,
         lifespan=lifespan,
     )
-    register_rate_limiting(app)
+    app.state.shutdown = ShutdownCoordinator()
     app.state.settings = resolved_settings
+    register_rate_limiting(app)
     app.add_middleware(SlowAPIMiddleware)
 
     app.add_middleware(
@@ -53,6 +64,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    @app.middleware("http")
+    async def shutdown_gate_middleware(request: Request, call_next):  # type: ignore[no-untyped-def]
+        coordinator: ShutdownCoordinator = request.app.state.shutdown
+        if not coordinator.accepting_requests:
+            return JSONResponse(status_code=503, content={"detail": "Server shutting down"})
+        await coordinator.track_request()
+        try:
+            return await call_next(request)
+        finally:
+            await coordinator.release_request()
 
     @app.middleware("http")
     async def trace_id_middleware(request: Request, call_next):  # type: ignore[no-untyped-def]
@@ -66,14 +88,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         response.headers["X-Trace-Id"] = trace_id
         return response
 
-    @app.get("/health")
-    async def health() -> dict[str, str]:
-        """Health check endpoint — no authentication required."""
-        return {
-            "status": "healthy",
-            "version": resolved_settings.app_version,
-        }
-
+    app.include_router(health_router)
     app.include_router(briefing_router)
     app.include_router(consent_router)
     app.include_router(preferences_router)

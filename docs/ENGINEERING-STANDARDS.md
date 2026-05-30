@@ -115,6 +115,21 @@ JWT_ALGORITHM=RS256
 CORS_ORIGINS=http://localhost:3000
 ```
 
+### Production Configuration
+
+Use `.env.production.example` for deploy templates.
+
+| Variable | Production requirement |
+|---|---|
+| `APP_ENV` | `production` |
+| `APP_DEBUG` | `false` (startup validation fails if true) |
+| `JWT_SECRET_KEY` | Strong secret — no dev/default markers |
+| `ADMIN_API_KEY` | Required for DLQ admin API |
+| `OPENROUTER_API_KEY` | Required unless `LOCAL_LLM_ENABLED=true` |
+| `CORS_ORIGINS` | Production frontend domain(s) only |
+
+Rate limits: briefing `10/min`, export `5/hour`, other API `60/min` per IP.
+
 ### Pydantic Settings Validation
 
 ```python

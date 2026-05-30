@@ -1,0 +1,21 @@
+groups:
+  - name: daily-briefing-slo
+    rules:
+      - record: daily_briefing:success_rate:5m
+        expr: |
+          sum(rate(briefing_generation_duration_seconds_count{status="success"}[5m]))
+          /
+          clamp_min(sum(rate(briefing_generation_duration_seconds_count[5m])), 1)
+
+      - record: daily_briefing:latency_p95:5m
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum(rate(briefing_generation_duration_seconds_bucket[5m])) by (le)
+          )
+
+      - record: daily_briefing:error_rate:5m
+        expr: |
+          sum(rate(briefing_generation_duration_seconds_count{status="failure"}[5m]))
+          /
+          clamp_min(sum(rate(briefing_generation_duration_seconds_count[5m])), 1)

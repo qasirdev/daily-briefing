@@ -51,9 +51,20 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_production_secrets(self) -> Self:
-        if self.app_env == "production" and self.jwt_secret_key.startswith("dev-only"):
-            msg = "JWT_SECRET_KEY must be set to a secure value in production"
-            raise ValueError(msg)
+        insecure_jwt_markers = ("dev-only", "change-me-in-production")
+        if self.app_env == "production":
+            if any(marker in self.jwt_secret_key for marker in insecure_jwt_markers):
+                msg = "JWT_SECRET_KEY must be set to a secure value in production"
+                raise ValueError(msg)
+            if self.app_debug:
+                msg = "APP_DEBUG must be false in production"
+                raise ValueError(msg)
+            if not self.admin_api_key:
+                msg = "ADMIN_API_KEY is required in production"
+                raise ValueError(msg)
+            if not self.local_llm_enabled and not self.openrouter_api_key:
+                msg = "OPENROUTER_API_KEY is required when LOCAL_LLM_ENABLED is false"
+                raise ValueError(msg)
         return self
 
     @property
