@@ -37,6 +37,7 @@ class Settings(BaseSettings):
     graph_timeout_seconds: int = 60
 
     otel_exporter_otlp_endpoint: str = "http://localhost:4317"
+    admin_api_key: str = ""
 
     jwt_secret_key: str = Field(
         default="dev-only-jwt-secret-change-in-production-0123456789abcdef",

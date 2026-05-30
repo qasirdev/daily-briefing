@@ -27,10 +27,12 @@ def build_mcp_clients(settings: Settings | None = None) -> MCPClients:
         postgres=PostgresMCPClient(
             host=resolved.postgres_mcp_host,
             port=resolved.postgres_mcp_port,
+            server_name="postgres",
         ),
         calendar=CalendarMCPClient(
             host=resolved.calendar_mcp_host,
             port=resolved.calendar_mcp_port,
+            server_name="calendar",
         ),
     )
 

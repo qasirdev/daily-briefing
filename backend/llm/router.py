@@ -10,7 +10,9 @@ from openai import APIConnectionError, APIError, APIStatusError, AsyncOpenAI
 from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
 
 from backend.llm.models import LLMResponse
+from backend.metrics import record_llm_tokens
 from backend.settings import Settings
+from backend.telemetry import start_async_span
 
 logger = structlog.get_logger()
 
@@ -119,34 +121,36 @@ class LLMRouter:
         max_tokens: int,
         trace_id: str,
     ) -> LLMResponse:
-        start = time.perf_counter()
-        try:
-            completion = await client.chat.completions.create(
+        async with start_async_span(f"llm.{model}.generate", llm_model=model):
+            start = time.perf_counter()
+            try:
+                completion = await client.chat.completions.create(
+                    model=model,
+                    messages=messages,  # type: ignore[arg-type]
+                    max_tokens=max_tokens,
+                )
+            except httpx.TimeoutException as exc:
+                raise LLMError("LLM request timed out") from exc
+            except APIConnectionError as exc:
+                raise LLMError("LLM connection error") from exc
+
+            latency_ms = int((time.perf_counter() - start) * 1000)
+            choice = completion.choices[0].message.content or ""
+            usage = completion.usage
+            tokens_used = usage.total_tokens if usage else len(choice) // 4
+            record_llm_tokens(agent_id="llm_router", model=model, tokens=tokens_used)
+
+            logger.info(
+                "llm_generation_complete",
+                trace_id=trace_id,
                 model=model,
-                messages=messages,  # type: ignore[arg-type]
-                max_tokens=max_tokens,
+                tokens_used=tokens_used,
+                latency_ms=latency_ms,
             )
-        except httpx.TimeoutException as exc:
-            raise LLMError("LLM request timed out") from exc
-        except APIConnectionError as exc:
-            raise LLMError("LLM connection error") from exc
 
-        latency_ms = int((time.perf_counter() - start) * 1000)
-        choice = completion.choices[0].message.content or ""
-        usage = completion.usage
-        tokens_used = usage.total_tokens if usage else len(choice) // 4
-
-        logger.info(
-            "llm_generation_complete",
-            trace_id=trace_id,
-            model=model,
-            tokens_used=tokens_used,
-            latency_ms=latency_ms,
-        )
-
-        return LLMResponse(
-            content=choice,
-            model_used=model,
-            tokens_used=tokens_used,
-            latency_ms=latency_ms,
-        )
+            return LLMResponse(
+                content=choice,
+                model_used=model,
+                tokens_used=tokens_used,
+                latency_ms=latency_ms,
+            )

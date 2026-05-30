@@ -15,6 +15,18 @@ class BriefingRequest(BaseModel):
     target_date: date | None = None
 
 
+class AgentExecutionSummary(BaseModel):
+    """Per-agent execution metrics for observability UI."""
+
+    model_config = ConfigDict(strict=True)
+
+    agent_id: str
+    execution_ms: int = Field(..., ge=0)
+    tokens_used: int = Field(..., ge=0)
+    model_used: str = "none"
+    status: Literal["success", "failure", "escalated"] = "success"
+
+
 class BriefingMetadata(BaseModel):
     """Execution metadata returned to clients."""
 
@@ -23,7 +35,9 @@ class BriefingMetadata(BaseModel):
     trace_id: str = Field(..., min_length=32, max_length=64)
     total_tokens: int = Field(..., ge=0)
     execution_ms: int = Field(..., ge=0)
+    model_used: str = "none"
     agents_invoked: list[str] = Field(default_factory=list)
+    agent_breakdown: list[AgentExecutionSummary] = Field(default_factory=list)
 
 
 class BriefingResponse(BaseModel):

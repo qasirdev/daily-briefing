@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import time
 from datetime import UTC, date, datetime
+from typing import cast
 from uuid import uuid4
 
 import structlog
@@ -14,12 +15,55 @@ from slowapi.util import get_remote_address
 from backend.dependencies import build_llm_router, build_mcp_clients
 from backend.graph.builder import build_briefing_graph
 from backend.graph.state import BriefingGraphState
-from backend.schemas.briefing import BriefingMetadata, BriefingRequest, BriefingResponse
+from backend.metrics import record_briefing_generation
+from backend.schemas.briefing import (
+    AgentExecutionSummary,
+    BriefingMetadata,
+    BriefingRequest,
+    BriefingResponse,
+)
+from backend.schemas.envelope import AgentResultEnvelope
 from backend.settings import get_settings
+from backend.telemetry import start_async_span
 
 logger = structlog.get_logger()
 limiter = Limiter(key_func=get_remote_address)
 router = APIRouter(prefix="/api/v1/briefing", tags=["briefing"])
+
+_AGENT_KEYS = (
+    ("task", "task_result"),
+    ("calendar", "calendar_result"),
+    ("focus", "focus_result"),
+    ("critic", "critic_result"),
+    ("orchestrator", "orchestrator_result"),
+)
+
+
+def _build_agent_breakdown(
+    result: BriefingGraphState,
+) -> tuple[list[str], list[AgentExecutionSummary], str]:
+    agents_invoked: list[str] = []
+    breakdown: list[AgentExecutionSummary] = []
+    primary_model = "none"
+
+    for name, key in _AGENT_KEYS:
+        envelope = result.get(key)
+        if not isinstance(envelope, AgentResultEnvelope):
+            continue
+        agents_invoked.append(name)
+        if envelope.metadata.model_used != "none":
+            primary_model = envelope.metadata.model_used
+        breakdown.append(
+            AgentExecutionSummary(
+                agent_id=name,
+                execution_ms=envelope.metadata.execution_ms,
+                tokens_used=envelope.metadata.tokens_used,
+                model_used=envelope.metadata.model_used,
+                status=envelope.status,
+            ),
+        )
+
+    return agents_invoked, breakdown, primary_model
 
 
 @router.post("/generate", response_model=BriefingResponse)
@@ -56,7 +100,8 @@ async def generate_briefing(request: Request, body: BriefingRequest) -> Briefing
     }
 
     try:
-        result = await graph.ainvoke(initial_state)
+        async with start_async_span("generate_briefing", request_id=body.user_id):
+            result = await graph.ainvoke(initial_state)
     except TimeoutError as exc:
         raise HTTPException(
             status_code=status.HTTP_504_GATEWAY_TIMEOUT,
@@ -79,10 +124,11 @@ async def generate_briefing(request: Request, body: BriefingRequest) -> Briefing
     finally:
         await mcp.close()
 
+    result_state = cast(BriefingGraphState, result)
     execution_ms = int((time.perf_counter() - started) * 1000)
-    graph_status = result.get("status", "failure")
+    graph_status = result_state.get("status", "failure")
 
-    if result.get("consent_required"):
+    if result_state.get("consent_required"):
         response_status = "awaiting_consent"
     elif graph_status == "degraded":
         response_status = "degraded"
@@ -91,11 +137,13 @@ async def generate_briefing(request: Request, body: BriefingRequest) -> Briefing
     else:
         response_status = "failure"
 
-    agents_invoked = [
-        name
-        for name in ("task", "calendar", "focus", "critic", "orchestrator")
-        if result.get(f"{name}_result") or name == "orchestrator"
-    ]
+    agents_invoked, agent_breakdown, model_used = _build_agent_breakdown(result_state)
+
+    record_briefing_generation(
+        status=response_status,
+        degraded=response_status == "degraded",
+        duration_seconds=execution_ms / 1000,
+    )
 
     logger.info(
         "briefing_generation_complete",
@@ -106,12 +154,14 @@ async def generate_briefing(request: Request, body: BriefingRequest) -> Briefing
 
     return BriefingResponse(
         status=response_status,  # type: ignore[arg-type]
-        briefing=result.get("final_briefing") or "",
+        briefing=result_state.get("final_briefing") or "",
         metadata=BriefingMetadata(
             trace_id=trace_id,
-            total_tokens=result.get("total_tokens", 0),
+            total_tokens=result_state.get("total_tokens", 0),
             execution_ms=execution_ms,
+            model_used=model_used,
             agents_invoked=agents_invoked,
+            agent_breakdown=agent_breakdown,
         ),
-        consent_context=result.get("consent_context"),
+        consent_context=result_state.get("consent_context"),
     )

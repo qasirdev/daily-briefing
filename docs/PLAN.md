@@ -57,7 +57,7 @@ Fresh autonomous kickoff only (not every "hi"): then read `docs/KICKOFF-PROMPT.m
 
 ---
 
-## MVP 2: Core Agents 🔄
+## MVP 2: Core Agents ✅
 
 **Epic:** DB-E2  
 **Branch:** `epic/E2-core-agents`  
@@ -78,7 +78,7 @@ Fresh autonomous kickoff only (not every "hi"): then read `docs/KICKOFF-PROMPT.m
 
 ---
 
-## MVP 3: Observability ⬜
+## MVP 3: Observability 🔄
 
 **Epic:** DB-E3  
 **Branch:** `epic/E3-observability`  
@@ -86,14 +86,14 @@ Fresh autonomous kickoff only (not every "hi"): then read `docs/KICKOFF-PROMPT.m
 
 | Task ID | Summary | Status | Agent |
 |---|---|---|---|
-| DB-021 | Critic Agent Implementation | ⬜ | Coding |
-| DB-022 | Prompt Injection Detector | ⬜ | Coding |
-| DB-023 | Dead Letter Queue (DLQ) Implementation | ⬜ | Coding |
-| DB-024 | OpenTelemetry Integration | ⬜ | Coding |
-| DB-025 | Prometheus Metrics Exporter | ⬜ | Coding |
-| DB-026 | Structured Logging with trace_id | ⬜ | Coding |
-| DB-027 | Frontend ObservabilityBadge Component | ⬜ | Coding |
-| DB-028 | BriefingDashboard Component | ⬜ | Coding |
+| DB-021 | Critic Agent Implementation | ✅ | Coding |
+| DB-022 | Prompt Injection Detector | ✅ | Coding |
+| DB-023 | Dead Letter Queue (DLQ) Implementation | ✅ | Coding |
+| DB-024 | OpenTelemetry Integration | ✅ | Coding |
+| DB-025 | Prometheus Metrics Exporter | ✅ | Coding |
+| DB-026 | Structured Logging with trace_id | ✅ | Coding |
+| DB-027 | Frontend ObservabilityBadge Component | ✅ | Coding |
+| DB-028 | BriefingDashboard Component | ✅ | Coding |
 
 ---
 
@@ -160,11 +160,11 @@ Fresh autonomous kickoff only (not every "hi"): then read `docs/KICKOFF-PROMPT.m
 |---|---|---|---|---|
 | MVP 1 | DB-E1 | 10 | 10 | 100% |
 | MVP 2 | DB-E2 | 10 | 10 | 100% |
-| MVP 3 | DB-E3 | 8 | 0 | 0% |
+| MVP 3 | DB-E3 | 8 | 8 | 100% |
 | MVP 4 | DB-E4 | 8 | 0 | 0% |
 | MVP 5 | DB-E5 | 8 | 0 | 0% |
 | MVP 6 | DB-E6 | 8 | 0 | 0% |
-| **Total** | **6 Epics** | **52** | **20** | **38%** |
+| **Total** | **6 Epics** | **52** | **28** | **54%** |
 
 ---
 
