@@ -14,6 +14,13 @@ from backend.security.sanitization import sanitize_markdown
 logger = structlog.get_logger()
 
 
+def _success_result(envelope: AgentResultEnvelope | None) -> dict[str, object] | None:
+    """Return the result dict when an envelope completed successfully."""
+    if envelope is None or envelope.status != "success" or envelope.result is None:
+        return None
+    return envelope.result
+
+
 def _collect_escalations(state: BriefingGraphState) -> list[AgentResultEnvelope]:
     escalated: list[AgentResultEnvelope] = []
     for key in ("task_result", "calendar_result", "focus_result", "critic_result"):
@@ -64,9 +71,9 @@ async def orchestrator_present_node(state: BriefingGraphState) -> dict[str, Any]
 
     sections: list[str] = ["<h1>Daily Briefing</h1>"]
 
-    task_result = state.get("task_result")
-    if isinstance(task_result, AgentResultEnvelope) and task_result.status == "success" and task_result.result:
-        tasks = task_result.result.get("tasks", [])
+    task_payload = _success_result(state.get("task_result"))
+    if task_payload is not None:
+        tasks = task_payload.get("tasks", [])
         if isinstance(tasks, list) and tasks:
             items = "".join(
                 f"<li>{task.get('title', 'Task')} ({task.get('priority', 'medium')})</li>"
@@ -75,13 +82,9 @@ async def orchestrator_present_node(state: BriefingGraphState) -> dict[str, Any]
             )
             sections.append(f"<h2>Tasks</h2><ul>{items}</ul>")
 
-    calendar_result = state.get("calendar_result")
-    if (
-        isinstance(calendar_result, AgentResultEnvelope)
-        and calendar_result.status == "success"
-        and calendar_result.result
-    ):
-        events = calendar_result.result.get("events", [])
+    calendar_payload = _success_result(state.get("calendar_result"))
+    if calendar_payload is not None:
+        events = calendar_payload.get("events", [])
         if isinstance(events, list) and events:
             items = "".join(
                 f"<li>{event.get('summary', 'Event')} — {event.get('start', '')}</li>"
@@ -90,13 +93,9 @@ async def orchestrator_present_node(state: BriefingGraphState) -> dict[str, Any]
             )
             sections.append(f"<h2>Calendar</h2><ul>{items}</ul>")
 
-    focus_result = state.get("focus_result")
-    if (
-        isinstance(focus_result, AgentResultEnvelope)
-        and focus_result.status == "success"
-        and focus_result.result
-    ):
-        plan = focus_result.result.get("plan", {})
+    focus_payload = _success_result(state.get("focus_result"))
+    if focus_payload is not None:
+        plan = focus_payload.get("plan", {})
         if isinstance(plan, dict):
             summary = plan.get("summary", "Focus plan generated.")
         else:
