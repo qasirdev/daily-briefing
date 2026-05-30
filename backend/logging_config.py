@@ -1,10 +1,46 @@
 """Structured logging configuration."""
 
+from __future__ import annotations
+
 import logging
+import re
 import sys
+from collections.abc import Iterator, MutableMapping
+from contextlib import contextmanager
 from typing import Any
+from uuid import uuid4
 
 import structlog
+
+PII_EMAIL = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b")
+PII_PHONE = re.compile(r"\b(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b")
+MAX_LOG_PAYLOAD = 2_000
+
+
+def _mask_pii(
+    _logger: Any,
+    _method: str,
+    event_dict: MutableMapping[str, Any],
+) -> MutableMapping[str, Any]:
+    for key, value in list(event_dict.items()):
+        if isinstance(value, str):
+            masked = PII_EMAIL.sub("[REDACTED_EMAIL]", value)
+            masked = PII_PHONE.sub("[REDACTED_PHONE]", masked)
+            if len(masked) > MAX_LOG_PAYLOAD:
+                masked = masked[:MAX_LOG_PAYLOAD] + "...[truncated]"
+            event_dict[key] = masked
+    return event_dict
+
+
+def _ensure_trace_id(
+    _logger: Any,
+    _method: str,
+    event_dict: MutableMapping[str, Any],
+) -> MutableMapping[str, Any]:
+    if "trace_id" not in event_dict:
+        event_dict["trace_id"] = uuid4().hex
+        event_dict["trace_id_generated"] = True
+    return event_dict
 
 
 def configure_logging(*, debug: bool = False) -> None:
@@ -20,8 +56,11 @@ def configure_logging(*, debug: bool = False) -> None:
     structlog.configure(
         processors=[
             structlog.contextvars.merge_contextvars,
+            _ensure_trace_id,
             structlog.processors.add_log_level,
             structlog.processors.TimeStamper(fmt="iso"),
+            structlog.processors.StackInfoRenderer(),
+            _mask_pii,
             structlog.processors.JSONRenderer(),
         ],
         wrapper_class=structlog.make_filtering_bound_logger(log_level),
@@ -40,3 +79,18 @@ def bind_trace_id(trace_id: str) -> None:
 def get_logger(name: str | None = None) -> Any:
     """Return a structlog logger."""
     return structlog.get_logger(name)
+
+
+def get_security_logger() -> Any:
+    """Return the security audit logger."""
+    return structlog.get_logger("security")
+
+
+@contextmanager
+def agent_log_context(*, trace_id: str, agent_id: str) -> Iterator[None]:
+    """Bind agent execution context for structured logs."""
+    structlog.contextvars.bind_contextvars(trace_id=trace_id, agent_id=agent_id)
+    try:
+        yield
+    finally:
+        structlog.contextvars.unbind_contextvars("agent_id")

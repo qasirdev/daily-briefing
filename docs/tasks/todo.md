@@ -1,23 +1,21 @@
-# Active Task Plan — Epic DB-E2 (MVP 2: Core Agents)
+# Active Task Plan — Epic DB-E3 (MVP 3: Observability)
 
-**Epic:** DB-E2  
-**Branch:** `epic/E2-core-agents`  
+**Epic:** DB-E3  
+**Branch:** `epic/E3-observability`  
 **Started:** 2026-05-30  
 **Agent:** Coding Agent
 
 ### Implementation Steps
 
-- [x] DB-011: PostgreSQL MCP client
-- [x] DB-012: Google Calendar MCP client
-- [x] DB-016: LLM router with fallback
-- [x] DB-020: Prompt files for all agents
-- [x] DB-013: Task agent node
-- [x] DB-014: Calendar agent node
-- [x] DB-015: Focus agent node
-- [x] DB-017: Orchestrator agent (route + present)
-- [x] DB-018: Full LangGraph wiring + circuit breaker + DLQ handler
-- [x] DB-019: POST `/api/v1/briefing/generate` endpoint
-- [x] Tests: 15 passed, ruff + mypy strict
+- [x] DB-022: Prompt injection detector (`backend/security/injection.py`)
+- [x] DB-026: Structured logging with trace_id + PII masking
+- [x] DB-021: Critic agent with revision loop + injection integration
+- [x] DB-023: DLQ schema, handler, persistence, admin API
+- [x] DB-024: OpenTelemetry integration
+- [x] DB-025: Prometheus metrics exporter
+- [x] DB-027: Frontend ObservabilityBadge component
+- [x] DB-028: Frontend BriefingDashboard component
+- [x] Tests: 40 passed, ruff + mypy strict
 - [ ] Push branch and open PR to epic/autonomus-implementation
 
 ---

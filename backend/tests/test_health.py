@@ -14,7 +14,8 @@ async def test_health_returns_200(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_health_includes_trace_id_header(client: AsyncClient) -> None:
-    response = await client.get("/health")
-    assert "x-trace-id" in response.headers
+async def test_metrics_endpoint_returns_prometheus_format(client: AsyncClient) -> None:
+    response = await client.get("/metrics/", follow_redirects=True)
+    assert response.status_code == 200
+    assert "briefing_generation_duration_seconds" in response.text
 

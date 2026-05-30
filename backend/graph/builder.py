@@ -16,6 +16,7 @@ from backend.agents.focus.node import focus_agent_node
 from backend.agents.orchestrator.node import orchestrator_present_node, orchestrator_route_node
 from backend.agents.task.node import task_agent_node
 from backend.dependencies import MCPClients, build_llm_router
+from backend.graph.dlq_handler import dlq_handler_node
 from backend.graph.state import BriefingGraphState
 from backend.llm.router import LLMRouter
 from backend.schemas.envelope import AgentResultEnvelope
@@ -40,7 +41,7 @@ def build_briefing_graph(
     llm: LLMRouter | None = None,
     settings: Settings | None = None,
 ) -> CompiledStateGraph[Any, Any, Any]:
-    """Build and compile the full MVP2 briefing graph."""
+    """Build and compile the full briefing graph."""
     resolved_settings = settings or get_settings()
     resolved_llm = llm or build_llm_router(resolved_settings)
 
@@ -58,22 +59,11 @@ def build_briefing_graph(
     async def focus_wrapper(state: BriefingGraphState) -> dict[str, Any]:
         return await focus_agent_node(state, resolved_llm)
 
-    async def dlq_handler_node(state: BriefingGraphState) -> dict[str, Any]:
-        trace_id = state.get("trace_id", "0" * 32)
-        event = {
-            "trace_id": trace_id,
-            "reason": "circuit_breaker",
-            "agent": state.get("current_agent", "unknown"),
-        }
-        logger.error("dlq_event_recorded", **event)
-        events = list(state.get("dlq_events", []))
-        events.append(event)
-        return {
-            "status": "failure",
-            "final_briefing": "",
-            "dlq_events": events,
-            "current_agent": "dlq_handler",
-        }
+    async def critic_wrapper(state: BriefingGraphState) -> dict[str, Any]:
+        return await critic_agent_node(state, resolved_llm)
+
+    async def dlq_wrapper(state: BriefingGraphState) -> dict[str, Any]:
+        return await dlq_handler_node(state, postgres=mcp.postgres)
 
     def route_after_parallel(
         state: BriefingGraphState,
@@ -98,13 +88,24 @@ def build_briefing_graph(
             return "dlq_handler"
         return "critic_agent"
 
+    def route_after_critic(
+        state: BriefingGraphState,
+    ) -> Literal["dlq_handler", "focus_agent", "orchestrator_present"]:
+        critic = state.get("critic_result")
+        if isinstance(critic, AgentResultEnvelope) and critic.status == "escalated":
+            return "dlq_handler"
+        if isinstance(critic, AgentResultEnvelope) and critic.result:
+            if critic.result.get("revision_required") is True:
+                return "focus_agent"
+        return "orchestrator_present"
+
     graph = StateGraph(BriefingGraphState)
     graph.add_node("orchestrator_route", orchestrator_route_node)
     graph.add_node("parallel_task_calendar", parallel_task_calendar_node)
     graph.add_node("focus_agent", focus_wrapper)
-    graph.add_node("critic_agent", critic_agent_node)
+    graph.add_node("critic_agent", critic_wrapper)
     graph.add_node("orchestrator_present", orchestrator_present_node)
-    graph.add_node("dlq_handler", dlq_handler_node)
+    graph.add_node("dlq_handler", dlq_wrapper)
 
     graph.add_edge(START, "orchestrator_route")
     graph.add_edge("orchestrator_route", "parallel_task_calendar")
@@ -122,7 +123,15 @@ def build_briefing_graph(
         route_after_focus,
         {"critic_agent": "critic_agent", "dlq_handler": "dlq_handler"},
     )
-    graph.add_edge("critic_agent", "orchestrator_present")
+    graph.add_conditional_edges(
+        "critic_agent",
+        route_after_critic,
+        {
+            "focus_agent": "focus_agent",
+            "orchestrator_present": "orchestrator_present",
+            "dlq_handler": "dlq_handler",
+        },
+    )
     graph.add_edge("orchestrator_present", END)
     graph.add_edge("dlq_handler", END)
 
