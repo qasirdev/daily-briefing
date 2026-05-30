@@ -51,7 +51,11 @@ Implement Epic DB-E1 (MVP 1: Project Scaffold) following the autonomous workflow
 6. After refactor: run Testing Agent checks and VERIFY the test suite passes (0 failures)
 7. After testing: run Docs Agent updates
 8. Update `docs/PLAN.md` with completion status
-9. Commit and prepare PR to `epic/autonomus-implementation`
+9. Push branch and open PR to `epic/autonomus-implementation`
+10. Merge PR with a **merge commit** after CI passes (not squash or rebase)
+11. Pull `epic/autonomus-implementation`; delete **local** epic branch only
+12. Leave remote epic branch on GitHub (do not delete after merge)
+13. Start next epic from updated `epic/autonomus-implementation`
 
 ### Context Management
 - At ~75% context usage, write checkpoint to `docs/tasks/checkpoint.md`

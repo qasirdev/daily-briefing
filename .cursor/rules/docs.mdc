@@ -250,11 +250,19 @@ Before epic can be merged to `epic/autonomus-implementation`:
 
 ### Post-Merge Tasks
 
-After PR merged to `epic/autonomus-implementation`:
+After PR merged to `epic/autonomus-implementation` (via **merge commit**, not squash/rebase):
+
+**GitHub / git:**
+- [ ] Checkout and pull `epic/autonomus-implementation`
+- [ ] Delete **local** epic branch: `git branch -d epic/E{n}-{short-description}`
+- [ ] Do **not** delete the remote epic branch on GitHub
+
+**Documentation:**
 - [ ] Update docs/tasks/todo.md Completed Epics table
 - [ ] Archive completed task plan
 - [ ] Prepare template for next epic
+- [ ] Delete active `docs/tasks/checkpoint.md` (if present)
 
 ---
 
-*Documentation Agent Rules — Version 1.5.0 — May 2026*
+*Documentation Agent Rules — Version 1.6.0 — May 2026*

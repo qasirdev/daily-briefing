@@ -9,6 +9,7 @@
 | Date | Mistake Pattern | Root Cause | Rule to Prevent Recurrence |
 |---|---|---|---|
 | 2026-05-30 | Pre-kickoff doc alignment | Version conflicts (Next.js, nh3, /health), premature status markers | Standardize on Next.js 16, nh3, GET /health before running KICKOFF-PROMPT |
+| 2026-05-30 | Epic merge strategy undefined | Ambiguity on squash vs merge and branch cleanup | Merge PRs with merge commit; delete local epic branch after merge; keep remote epic branch |
 
 ---
 

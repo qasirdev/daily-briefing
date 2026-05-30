@@ -8,7 +8,7 @@ co-located AGENT.md files alongside the code they govern.
 
 **Architecture:** Multi-Agent Orchestration | MCP Servers | Cursor Development Agents  
 **Deployment:** Single Docker Container with Advanced Security Posture  
-**Version:** 1.5.0 | May 2026
+**Version:** 1.6.0 | May 2026
 
 ---
 
@@ -103,8 +103,8 @@ All inter-agent communication uses `AgentResultEnvelope`. Full schema, field val
 | **Testing Agent** | OWASP GenAI boundary tests | `.cursor/rules/testing.mdc` | 3rd |
 | **Documentation Agent** | Domain `AGENT.md` and OWASP checklists | `.cursor/rules/docs.mdc` | 4th |
 
-Epic workflow: branch → implement → refactor → test → docs → PR to `epic/autonomus-implementation`. Details in `.cursor/rules/coding.mdc`.
+Epic workflow: branch → implement → refactor → test → docs → PR to `epic/autonomus-implementation` → **merge commit** → delete local epic branch (keep remote). Details in `.cursor/rules/coding.mdc` and `docs/EXECUTION-RULES.md` §9.
 
 ---
 
-*AI Daily Briefing Assistant — Version 1.5.0 — May 2026*
+*AI Daily Briefing Assistant — Version 1.6.0 — May 2026*

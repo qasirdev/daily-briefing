@@ -157,13 +157,16 @@ This document tracks the implementation progress across all 6 MVPs. Each epic fo
 
 For each epic:
 
-1. **Create branch:** `git checkout -b epic/E{n}-{description}`
+1. **Create branch** from latest `epic/autonomus-implementation`: `git checkout -b epic/E{n}-{description}`
 2. **Implement:** Coding Agent executes all tasks
 3. **Refactor:** Refactor Agent reviews and improves
 4. **Test:** Testing Agent adds coverage
 5. **Document:** Docs Agent updates AGENT.md files
-6. **Merge:** PR to `epic/autonomus-implementation` after all checks pass
+6. **Push & PR:** Push epic branch; open PR to `epic/autonomus-implementation`
+7. **Merge:** Use a **merge commit** after CI passes (not squash or rebase)
+8. **Post-merge git:** Pull integration branch; delete **local** epic branch only — keep remote epic branch on GitHub
+9. **Next epic:** Branch E{n+1} from updated `epic/autonomus-implementation`
 
 ---
 
-*Implementation Plan — Version 1.5.0 — May 2026*
+*Implementation Plan — Version 1.6.0 — May 2026*

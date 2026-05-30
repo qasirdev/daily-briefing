@@ -268,7 +268,8 @@ daily-briefing/
 2. Refactor Agent  → Code quality review
 3. Testing Agent   → Add tests, verify coverage
 4. Docs Agent      → Update documentation
-5. Merge to `epic/autonomus-implementation`   → After all checks pass
+5. Merge to `epic/autonomus-implementation`   → Merge commit after CI passes (not squash/rebase)
+6. Post-merge git                     → Pull integration; delete local epic branch; keep remote
 ```
 
 ### Context Management
@@ -277,7 +278,12 @@ daily-briefing/
 - Resume with compacted context from checkpoint
 
 ### Branch Strategy
+
+Integration branch: `epic/autonomus-implementation`. Each epic gets its own branch; PR back with a **merge commit**. Delete the local epic branch after merge; **keep** the remote epic branch on GitHub.
+
 ```bash
+# Start each epic from latest integration branch
+git checkout epic/autonomus-implementation && git pull
 git checkout -b epic/E1-project-scaffold  # MVP 1
 git checkout -b epic/E2-core-agents       # MVP 2
 git checkout -b epic/E3-observability     # MVP 3

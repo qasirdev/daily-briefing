@@ -261,4 +261,40 @@ New session MUST:
 
 ---
 
-*Execution Rules — Version 1.5.0 — May 2026*
+## 9. GitHub Branch Policy (Epic-to-Epic)
+
+Each epic uses one feature branch merged into the long-lived integration branch `epic/autonomus-implementation`. Never merge epics directly to `main` during autonomous implementation.
+
+### Per-Epic GitHub Flow
+
+| Step | Action |
+|---|---|
+| Start | Branch from latest `epic/autonomus-implementation`; push `epic/E{n}-{description}` |
+| Finish | Push branch; open PR with base `epic/autonomus-implementation` |
+| CI | All workflow jobs must pass on the PR |
+| Merge | Use **merge commit** only — do not squash or rebase |
+| Post-merge | Pull `epic/autonomus-implementation`; delete **local** epic branch |
+| Remote branch | **Keep** `origin/epic/E{n}-...` — do not delete after merge |
+| Next epic | Create `epic/E{n+1}-...` from updated integration branch |
+
+### Post-Merge Commands
+
+```bash
+git checkout epic/autonomus-implementation
+git pull origin epic/autonomus-implementation
+git branch -d epic/E{n}-{short-description}
+# Do NOT run: git push origin --delete epic/E{n}-{short-description}
+```
+
+### Starting the Next Epic
+
+```bash
+git checkout epic/autonomus-implementation
+git pull origin epic/autonomus-implementation
+git checkout -b epic/E{n+1}-{short-description}
+git push -u origin epic/E{n+1}-{short-description}
+```
+
+---
+
+*Execution Rules — Version 1.6.0 — May 2026*
