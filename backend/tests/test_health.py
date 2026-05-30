@@ -18,8 +18,3 @@ async def test_health_includes_trace_id_header(client: AsyncClient) -> None:
     response = await client.get("/health")
     assert "x-trace-id" in response.headers
 
-
-@pytest.mark.asyncio
-async def test_briefing_generate_returns_501(client: AsyncClient) -> None:
-    response = await client.get("/api/v1/briefing/generate")
-    assert response.status_code == 501

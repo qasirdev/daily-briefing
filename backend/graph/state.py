@@ -1,6 +1,6 @@
 """LangGraph shared state definition."""
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Literal, TypedDict
 
 from backend.schemas.envelope import AgentResultEnvelope
@@ -13,6 +13,7 @@ class BriefingGraphState(TypedDict, total=False):
     request_id: str
     trace_id: str
     requested_at: datetime
+    target_date: date
 
     orchestrator_result: AgentResultEnvelope | None
     task_result: AgentResultEnvelope | None
@@ -23,6 +24,10 @@ class BriefingGraphState(TypedDict, total=False):
     current_agent: str
     revision_count: int
     total_tokens: int
+    graph_started_at: float
 
     final_briefing: str | None
     status: Literal["pending", "success", "failure", "degraded"]
+    consent_required: bool
+    consent_context: str | None
+    dlq_events: list[dict[str, str]]
