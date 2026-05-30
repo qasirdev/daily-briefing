@@ -19,7 +19,7 @@ The AI Daily Briefing Assistant uses the Model Context Protocol (MCP) to provide
 │  └─────────┼───────────────────────────┼───────────────┘    │
 │            │                           │                     │
 └────────────┼───────────────────────────┼─────────────────────┘
-             │ TCP :5433                 │ TCP :5434
+             │ TCP :5443                 │ TCP :5444
              ▼                           ▼
 ┌────────────────────┐        ┌─────────────────────────┐
 │ PostgreSQL MCP     │        │ Google Calendar MCP     │
@@ -45,7 +45,7 @@ Provides the Task Agent and Orchestrator with structured access to the applicati
 # mcp/postgres/config.yaml
 server:
   host: localhost
-  port: 5433
+  port: 5443 # default 5433
   
 database:
   url: ${DATABASE_URL}
@@ -235,7 +235,7 @@ Provides the Calendar Agent with read-only access to user calendar data.
 # mcp/calendar/config.yaml
 server:
   host: localhost
-  port: 5434
+  port: 5444  #default: 5434
 
 google:
   client_id: ${GOOGLE_CLIENT_ID}

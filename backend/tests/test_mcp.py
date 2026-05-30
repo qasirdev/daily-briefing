@@ -10,7 +10,7 @@ from backend.mcp.postgres import PostgresMCPClient
 
 @pytest.mark.asyncio
 async def test_postgres_list_tables(httpx_mock: HTTPXMock) -> None:
-    client = PostgresMCPClient(host="localhost", port=5433)
+    client = PostgresMCPClient(host="localhost", port=5443)  # default 5433
     httpx_mock.add_response(json={"tables": [{"name": "tasks"}]})
     result = await client.list_tables()
     assert result["tables"][0]["name"] == "tasks"
@@ -19,7 +19,7 @@ async def test_postgres_list_tables(httpx_mock: HTTPXMock) -> None:
 
 @pytest.mark.asyncio
 async def test_postgres_rejects_query_without_user_id() -> None:
-    client = PostgresMCPClient(host="localhost", port=5433)
+    client = PostgresMCPClient(host="localhost", port=5443)  # default 5433
     with pytest.raises(MCPPermissionError):
         await client.query(
             sql="SELECT * FROM tasks WHERE user_id = :user_id",
@@ -30,7 +30,7 @@ async def test_postgres_rejects_query_without_user_id() -> None:
 
 @pytest.mark.asyncio
 async def test_mcp_timeout(httpx_mock: HTTPXMock) -> None:
-    client = MCPClient(host="localhost", port=5433, timeout=0.01)
+    client = MCPClient(host="localhost", port=5443, timeout=0.01)  # default 5433
 
     def raise_timeout(request: httpx.Request) -> httpx.Response:
         raise httpx.TimeoutException("timeout")
@@ -43,7 +43,7 @@ async def test_mcp_timeout(httpx_mock: HTTPXMock) -> None:
 
 @pytest.mark.asyncio
 async def test_consent_required_response(httpx_mock: HTTPXMock) -> None:
-    client = MCPClient(host="localhost", port=5434)
+    client = MCPClient(host="localhost", port=5444)
     httpx_mock.add_response(
         status_code=403,
         json={"error": "consent_required", "message": "expired"},

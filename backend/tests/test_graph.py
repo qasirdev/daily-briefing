@@ -15,8 +15,8 @@ from backend.mcp.postgres import PostgresMCPClient
 
 @pytest.mark.asyncio
 async def test_graph_compiles_and_runs() -> None:
-    postgres = PostgresMCPClient(host="localhost", port=5433)
-    calendar = CalendarMCPClient(host="localhost", port=5434)
+    postgres = PostgresMCPClient(host="localhost", port=5443)  # default 5433
+    calendar = CalendarMCPClient(host="localhost", port=5444)  # default 5434
     mcp = MCPClients(postgres=postgres, calendar=calendar)
 
     with (

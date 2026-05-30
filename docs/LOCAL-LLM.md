@@ -61,7 +61,7 @@ Fallback events increment `llm_fallback_total` with labels:
 llama-server --model ./models/llama-3-8b.gguf --port 8080
 
 # Terminal 2 — backend
-LOCAL_LLM_ENABLED=true uv run uvicorn backend.main:app --reload --host 127.0.0.1 --port 8000
+LOCAL_LLM_ENABLED=true uv run uvicorn backend.main:app --reload --host 127.0.0.1 --port 8010
 ```
 
 Generate a briefing with task/calendar data to trigger PII routing, or simulate OpenRouter failure by leaving `OPENROUTER_API_KEY` empty with fallback enabled.

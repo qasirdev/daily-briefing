@@ -14,7 +14,7 @@ class FakePostgres(PostgresMCPClient):
         rows: list[dict[str, object]] | None = None,
         timeout: bool = False,
     ) -> None:
-        super().__init__(host="localhost", port=5433)
+        super().__init__(host="localhost", port=5443)  # default 5433
         self._rows = rows or []
         self._timeout = timeout
 

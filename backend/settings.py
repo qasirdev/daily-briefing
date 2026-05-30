@@ -32,9 +32,9 @@ class Settings(BaseSettings):
 
     database_url: str = "postgresql://briefing:briefing@localhost:5432/briefing"
     postgres_mcp_host: str = "localhost"
-    postgres_mcp_port: int = 5433
+    postgres_mcp_port: int = 5443
     calendar_mcp_host: str = "localhost"
-    calendar_mcp_port: int = 5434
+    calendar_mcp_port: int = 5444
 
     token_budget_max: int = 16_000
     graph_timeout_seconds: int = 60
