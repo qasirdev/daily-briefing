@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     llm_fallback_model: str = "local/llama-3-8b"
     local_llm_enabled: bool = False
     local_llm_base_url: str = "http://localhost:8080/v1"
+    local_llm_model_id: str = "local/llama-3-8b"
+
+    google_oauth_authorize_url: str = ""
 
     database_url: str = "postgresql://briefing:briefing@localhost:5432/briefing"
     postgres_mcp_host: str = "localhost"

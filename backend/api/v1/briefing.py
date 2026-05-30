@@ -22,6 +22,7 @@ from backend.schemas.briefing import (
     BriefingRequest,
     BriefingResponse,
 )
+from backend.schemas.consent import ConsentPromptRequest
 from backend.schemas.envelope import AgentResultEnvelope
 from backend.settings import get_settings
 from backend.telemetry import start_async_span
@@ -91,6 +92,7 @@ async def generate_briefing(request: Request, body: BriefingRequest) -> Briefing
         "final_briefing": None,
         "consent_required": False,
         "consent_context": None,
+        "consent_request": None,
         "dlq_events": [],
         "orchestrator_result": None,
         "task_result": None,
@@ -128,7 +130,7 @@ async def generate_briefing(request: Request, body: BriefingRequest) -> Briefing
     execution_ms = int((time.perf_counter() - started) * 1000)
     graph_status = result_state.get("status", "failure")
 
-    if result_state.get("consent_required"):
+    if result_state.get("consent_required") or graph_status == "awaiting_consent":
         response_status = "awaiting_consent"
     elif graph_status == "degraded":
         response_status = "degraded"
@@ -152,6 +154,11 @@ async def generate_briefing(request: Request, body: BriefingRequest) -> Briefing
         execution_ms=execution_ms,
     )
 
+    consent_request: ConsentPromptRequest | None = None
+    raw_consent = result_state.get("consent_request")
+    if isinstance(raw_consent, dict):
+        consent_request = ConsentPromptRequest.model_validate(raw_consent)
+
     return BriefingResponse(
         status=response_status,  # type: ignore[arg-type]
         briefing=result_state.get("final_briefing") or "",
@@ -164,4 +171,5 @@ async def generate_briefing(request: Request, body: BriefingRequest) -> Briefing
             agent_breakdown=agent_breakdown,
         ),
         consent_context=result_state.get("consent_context"),
+        consent_request=consent_request,
     )

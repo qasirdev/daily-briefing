@@ -9,7 +9,8 @@ from typing import Any
 import structlog
 
 from backend.graph.state import BriefingGraphState
-from backend.llm.router import LLMError, LLMRouter
+from backend.llm.router import DataClassification, LLMError, LLMRouter
+from backend.preferences.store import preference_store
 from backend.prompts_loader import build_agent_system_prompt
 from backend.schemas.envelope import AgentResultEnvelope, EscalationPayload, ExecutionMetadata
 
@@ -40,7 +41,12 @@ async def focus_agent_node(
         if isinstance(raw_events, list):
             events = [item for item in raw_events if isinstance(item, dict)]
 
-    user_context = json.dumps({"tasks": tasks, "events": events}, ensure_ascii=True)
+    user_id = state.get("user_id", "")
+    preferences = preference_store.top_context_snippets(user_id)
+    user_context = json.dumps(
+        {"tasks": tasks, "events": events, "preferences": preferences},
+        ensure_ascii=True,
+    )
     system_prompt = build_agent_system_prompt("focus")
     messages = [
         {"role": "system", "content": system_prompt},
@@ -78,12 +84,17 @@ async def focus_agent_node(
         )
         return {"focus_result": envelope, "current_agent": "focus"}
 
+    has_pii = bool(tasks or events)
+    data_classification: DataClassification = "confidential_pii" if has_pii else "confidential"
+
     try:
         llm_response = await llm.generate(
             messages=messages,
             trace_id=trace_id,
             input_budget=FOCUS_INPUT_BUDGET,
             output_budget=FOCUS_OUTPUT_BUDGET,
+            data_classification=data_classification,
+            agent_id="focus",
         )
     except LLMError as exc:
         execution_ms = int((time.perf_counter() - start) * 1000)

@@ -27,7 +27,8 @@ class BriefingGraphState(TypedDict, total=False):
     graph_started_at: float
 
     final_briefing: str | None
-    status: Literal["pending", "success", "failure", "degraded"]
+    status: Literal["pending", "success", "failure", "degraded", "awaiting_consent"]
     consent_required: bool
     consent_context: str | None
+    consent_request: dict[str, object] | None
     dlq_events: list[dict[str, str]]

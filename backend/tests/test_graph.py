@@ -69,6 +69,7 @@ async def test_graph_compiles_and_runs() -> None:
             "final_briefing": None,
             "consent_required": False,
             "consent_context": None,
+            "consent_request": None,
             "dlq_events": [],
             "orchestrator_result": None,
             "task_result": None,

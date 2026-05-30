@@ -2,18 +2,35 @@
 
 from __future__ import annotations
 
+import json
 import time
 from datetime import date, datetime, timedelta
 from typing import Any
 
 import structlog
 
+from backend.consent.store import consent_store
 from backend.graph.state import BriefingGraphState
 from backend.mcp.calendar import CalendarMCPClient
 from backend.mcp.client import MCPConsentRequired, MCPError, MCPTimeoutError
+from backend.metrics import record_consent_request
+from backend.schemas.consent import DEFAULT_TTL_HOURS
 from backend.schemas.envelope import AgentResultEnvelope, EscalationPayload, ExecutionMetadata
 
 logger = structlog.get_logger()
+
+
+def _consent_escalation_payload(message: str) -> str:
+    return json.dumps(
+        {
+            "service": "google_calendar",
+            "scope": ["calendar.readonly"],
+            "suggested_ttl_hours": DEFAULT_TTL_HOURS["google_calendar"],
+            "agent_id": "calendar",
+            "message": message,
+        },
+        ensure_ascii=True,
+    )
 
 
 def _default_end(start_iso: str) -> str:
@@ -36,8 +53,38 @@ async def calendar_agent_node(
 
     logger.info("calendar_agent_started", trace_id=trace_id, user_id=user_id)
 
+    if not consent_store.has_valid_consent(user_id, "google_calendar"):
+        execution_ms = int((time.perf_counter() - start) * 1000)
+        message = "Google Calendar consent required"
+        record_consent_request(mcp_server="google_calendar", outcome="requested")
+        envelope = AgentResultEnvelope(
+            agent_id="calendar",
+            canonical_role="doer",
+            status="escalated",
+            escalation=EscalationPayload(
+                reason="consent_required",
+                target_agent="orchestrator",
+                context=_consent_escalation_payload(message),
+            ),
+            metadata=ExecutionMetadata(
+                execution_ms=execution_ms,
+                tokens_used=0,
+                model_used="none",
+                prompt_version="v1.5.0",
+                trace_id=trace_id,
+                data_classification="internal",
+            ),
+        )
+        return {
+            "calendar_result": envelope,
+            "current_agent": "calendar",
+            "consent_required": True,
+            "consent_context": message,
+        }
+
     try:
         events = await calendar.get_events(user_id=user_id, target_date=target_date)
+        consent_store.record_usage(user_id, "google_calendar")
         serialized = []
         for event in events:
             end = event.end or _default_end(event.start)
@@ -70,6 +117,8 @@ async def calendar_agent_node(
 
     except MCPConsentRequired as exc:
         execution_ms = int((time.perf_counter() - start) * 1000)
+        message = str(exc)
+        record_consent_request(mcp_server="google_calendar", outcome="requested")
         envelope = AgentResultEnvelope(
             agent_id="calendar",
             canonical_role="doer",
@@ -77,7 +126,7 @@ async def calendar_agent_node(
             escalation=EscalationPayload(
                 reason="consent_required",
                 target_agent="orchestrator",
-                context=str(exc),
+                context=_consent_escalation_payload(message),
             ),
             metadata=ExecutionMetadata(
                 execution_ms=execution_ms,

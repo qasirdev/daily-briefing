@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import json
 import time
 from typing import Any, Literal
 
 import structlog
 
 from backend.graph.state import BriefingGraphState
+from backend.metrics import record_consent_request
+from backend.schemas.consent import DEFAULT_TTL_HOURS, ConsentPromptRequest
 from backend.schemas.envelope import AgentResultEnvelope, ExecutionMetadata
 from backend.security.sanitization import sanitize_markdown
 
@@ -30,6 +33,48 @@ def _collect_escalations(state: BriefingGraphState) -> list[AgentResultEnvelope]
     return escalated
 
 
+def _parse_consent_context(context: str) -> dict[str, object]:
+    try:
+        parsed = json.loads(context)
+        if isinstance(parsed, dict):
+            return parsed
+    except json.JSONDecodeError:
+        pass
+    return {
+        "service": "google_calendar",
+        "scope": ["calendar.readonly"],
+        "suggested_ttl_hours": DEFAULT_TTL_HOURS.get("google_calendar", 4),
+        "message": context,
+    }
+
+
+def build_consent_prompt(state: BriefingGraphState) -> ConsentPromptRequest:
+    """Build a JIT consent prompt from calendar escalation or state flags."""
+    calendar = state.get("calendar_result")
+    context_data: dict[str, object] = {}
+    if isinstance(calendar, AgentResultEnvelope) and calendar.escalation:
+        context_data = _parse_consent_context(calendar.escalation.context)
+
+    service = str(context_data.get("service", "google_calendar"))
+    scope_raw = context_data.get("scope", ["calendar.readonly"])
+    if isinstance(scope_raw, list):
+        scope = [str(item) for item in scope_raw]
+    else:
+        scope = ["calendar.readonly"]
+    ttl_raw = context_data.get("suggested_ttl_hours", DEFAULT_TTL_HOURS.get(service, 4))
+    ttl = int(ttl_raw) if isinstance(ttl_raw, (int, float, str)) else DEFAULT_TTL_HOURS.get(service, 4)
+
+    record_consent_request(mcp_server=service, outcome="requested")
+    return ConsentPromptRequest(
+        request_id=state.get("request_id", state.get("trace_id", "0" * 32)),
+        service=service,  # type: ignore[arg-type]
+        scope=scope,
+        suggested_ttl_hours=ttl,
+        agent_requesting=str(context_data.get("agent_id", "calendar")),
+        message=str(context_data.get("message", state.get("consent_context") or "")),
+    )
+
+
 async def orchestrator_route_node(state: BriefingGraphState) -> dict[str, Any]:
     """Initialize routing phase and detect early consent requirements."""
     trace_id = state.get("trace_id", "0" * 32)
@@ -47,17 +92,30 @@ async def orchestrator_present_node(state: BriefingGraphState) -> dict[str, Any]
     trace_id = state.get("trace_id", "0" * 32)
     escalations = _collect_escalations(state)
 
-    if state.get("consent_required"):
+    consent_escalation = any(
+        envelope.escalation and envelope.escalation.reason == "consent_required"
+        for envelope in escalations
+    )
+    if state.get("consent_required") or consent_escalation:
+        consent_request = build_consent_prompt(state)
         execution_ms = int((time.perf_counter() - start) * 1000)
+        partial_sections: list[str] = []
+        task_payload = _success_result(state.get("task_result"))
+        if task_payload is not None:
+            partial_sections.append("tasks")
         return {
-            "status": "degraded",
+            "status": "awaiting_consent",
             "final_briefing": "",
             "consent_required": True,
+            "consent_request": consent_request.model_dump(mode="json"),
             "orchestrator_result": AgentResultEnvelope(
                 agent_id="orchestrator",
                 canonical_role="supervisor",
                 status="success",
-                result={"awaiting_consent": True},
+                result={
+                    "awaiting_consent": True,
+                    "partial_components": partial_sections,
+                },
                 metadata=ExecutionMetadata(
                     execution_ms=execution_ms,
                     tokens_used=state.get("total_tokens", 0),
@@ -102,16 +160,21 @@ async def orchestrator_present_node(state: BriefingGraphState) -> dict[str, Any]
             summary = "Focus plan generated."
         sections.append(f"<h2>Focus Plan</h2><p>{summary}</p>")
 
-    if escalations:
+    non_consent_escalations = [
+        envelope
+        for envelope in escalations
+        if not (envelope.escalation and envelope.escalation.reason == "consent_required")
+    ]
+    if non_consent_escalations:
         sections.append("<p><strong>Note:</strong> Some components were degraded.</p>")
 
     raw_markdown = "".join(sections)
     briefing = sanitize_markdown(raw_markdown)
 
-    status: Literal["success", "failure", "degraded"]
-    if escalations and briefing:
+    status: Literal["success", "failure", "degraded", "awaiting_consent"]
+    if non_consent_escalations and briefing:
         status = "degraded"
-    elif escalations:
+    elif non_consent_escalations:
         status = "failure"
     else:
         status = "success"
@@ -121,7 +184,7 @@ async def orchestrator_present_node(state: BriefingGraphState) -> dict[str, Any]
         agent_id="orchestrator",
         canonical_role="supervisor",
         status="success",
-        result={"sections": len(sections), "escalations": len(escalations)},
+        result={"sections": len(sections), "escalations": len(non_consent_escalations)},
         metadata=ExecutionMetadata(
             execution_ms=execution_ms,
             tokens_used=state.get("total_tokens", 0),

@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { consentPromptSchema } from "@/lib/consent-schema";
+
 export const agentExecutionSummarySchema = z.object({
   agent_id: z.string(),
   execution_ms: z.number().int().nonnegative(),
@@ -22,6 +24,7 @@ export const briefingResponseSchema = z.object({
   briefing: z.string(),
   metadata: briefingMetadataSchema,
   consent_context: z.string().nullable().optional(),
+  consent_request: consentPromptSchema.nullable().optional(),
 });
 
 export type AgentExecutionSummary = z.infer<typeof agentExecutionSummarySchema>;
