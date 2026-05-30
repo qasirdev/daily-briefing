@@ -6,7 +6,7 @@ import time
 from collections.abc import Iterator
 from contextlib import contextmanager
 
-from prometheus_client import Counter, Histogram
+from prometheus_client import Counter, Gauge, Histogram
 
 BRIEFING_GENERATION_DURATION = Histogram(
     "briefing_generation_duration_seconds",
@@ -57,6 +57,12 @@ LLM_FALLBACK_TOTAL = Counter(
     "llm_fallback_total",
     "LLM fallback triggers",
     ["from_model", "to_model", "reason"],
+)
+
+TOKEN_BUDGET_UTILIZATION = Gauge(
+    "token_budget_utilization",
+    "Fraction of per-agent token budget consumed",
+    ["agent_id"],
 )
 
 
@@ -124,3 +130,7 @@ def record_consent_request(*, mcp_server: str, outcome: str) -> None:
 
 def record_llm_fallback(*, from_model: str, to_model: str, reason: str) -> None:
     LLM_FALLBACK_TOTAL.labels(from_model=from_model, to_model=to_model, reason=reason).inc()
+
+
+def set_token_budget_utilization(*, agent_id: str, utilization: float) -> None:
+    TOKEN_BUDGET_UTILIZATION.labels(agent_id=agent_id).set(min(max(utilization, 0.0), 10.0))

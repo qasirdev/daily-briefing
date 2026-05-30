@@ -2,19 +2,17 @@
 
 from __future__ import annotations
 
-import fnmatch
 from datetime import date
 from typing import Any
-from urllib.parse import urlparse
 
 import structlog
 from pydantic import BaseModel, ConfigDict, Field
 
 from backend.mcp.client import MCPClient, MCPConsentRequired, MCPError
+from backend.security.ssrf import SSRFValidationError, SSRFValidator
 
 logger = structlog.get_logger()
-
-GOOGLE_API_ALLOWLIST = ("*.googleapis.com",)
+_ssrf = SSRFValidator()
 
 
 class CalendarEvent(BaseModel):
@@ -31,21 +29,14 @@ class CalendarEvent(BaseModel):
     location: str = ""
 
 
-def _is_allowed_google_url(url: str) -> bool:
-    hostname = urlparse(url).hostname or ""
-    return any(fnmatch.fnmatch(hostname, pattern) for pattern in GOOGLE_API_ALLOWLIST)
-
-
 class CalendarMCPClient(MCPClient):
     """MCP client for Google Calendar read access."""
 
     def _validate_outbound_urls(self, payload: dict[str, Any]) -> None:
-        for key in ("url", "source_url", "api_url"):
-            value = payload.get(key)
-            if isinstance(value, str) and value and not _is_allowed_google_url(value):
-                logger.warning("ssrf_blocked", url=value)
-                msg = f"SSRF blocked: disallowed URL {value}"
-                raise MCPError(msg)
+        try:
+            _ssrf.validate_payload_urls(payload, source="calendar_mcp")
+        except SSRFValidationError as exc:
+            raise MCPError(str(exc)) from exc
 
     async def list_calendars(self, *, user_id: str) -> dict[str, Any]:
         payload = await self.call_tool("list_calendars", {"user_id": user_id})

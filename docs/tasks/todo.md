@@ -1,21 +1,21 @@
-# Active Task Plan — Epic DB-E4 (MVP 4: Agentic Consent)
+# Active Task Plan — Epic DB-E5 (MVP 5: Security Hardening)
 
-**Epic:** DB-E4  
-**Branch:** `epic/E4-agentic-consent`  
+**Epic:** DB-E5  
+**Branch:** `epic/E5-security-hardening`  
 **Started:** 2026-05-30  
 **Agent:** Coding Agent
 
 ### Implementation Steps
 
-- [x] DB-029: Consent data model + store + migration SQL
-- [x] DB-030: Consent management API
-- [x] DB-032: Orchestrator consent handling + briefing consent_request
-- [x] DB-033: Local LLM fallback (PII, metrics, docs/LOCAL-LLM.md)
-- [x] DB-034: User preferences learning loop
-- [x] DB-035: Data export endpoint
-- [x] DB-031: ConsentPromptModal component
-- [x] DB-036: Consent dashboard settings page
-- [x] Tests: 56 passed, ruff + mypy strict
+- [x] DB-037: OWASP GenAI audit + SECURITY.md compliance matrix + PR checklist
+- [x] DB-038: Output sanitization layer (nh3 tags, strip logging)
+- [x] DB-039: Per-agent token budget circuit breaker + metrics
+- [x] DB-040: Rate limiting middleware (centralized slowapi)
+- [x] DB-042: PII detection and masking (logging + LLM router)
+- [x] DB-043: MCP SSRF defense module
+- [x] DB-044: Security prompts (`prompts/security/`)
+- [x] DB-041: Security test suite (`backend/tests/security/`)
+- [x] Tests: ruff + mypy strict + pytest
 - [ ] Push branch and open PR to epic/autonomus-implementation
 
 ---

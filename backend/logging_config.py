@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import re
 import sys
 from collections.abc import Iterator, MutableMapping
 from contextlib import contextmanager
@@ -12,8 +11,8 @@ from uuid import uuid4
 
 import structlog
 
-PII_EMAIL = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b")
-PII_PHONE = re.compile(r"\b(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b")
+from backend.security.pii import mask_pii
+
 MAX_LOG_PAYLOAD = 2_000
 
 
@@ -24,8 +23,7 @@ def _mask_pii(
 ) -> MutableMapping[str, Any]:
     for key, value in list(event_dict.items()):
         if isinstance(value, str):
-            masked = PII_EMAIL.sub("[REDACTED_EMAIL]", value)
-            masked = PII_PHONE.sub("[REDACTED_PHONE]", masked)
+            masked = mask_pii(value)
             if len(masked) > MAX_LOG_PAYLOAD:
                 masked = masked[:MAX_LOG_PAYLOAD] + "...[truncated]"
             event_dict[key] = masked

@@ -11,11 +11,14 @@ from backend.graph.state import BriefingGraphState
 from backend.mcp.postgres import PostgresMCPClient
 from backend.schemas.dlq import DLQEvent
 from backend.schemas.envelope import AgentResultEnvelope
+from backend.security.token_budget import evaluate_token_budget
 
 logger = structlog.get_logger()
 
 
 def _resolve_reason(state: BriefingGraphState) -> str:
+    if evaluate_token_budget(state) == "token_budget_exceeded":
+        return "token_budget_exceeded"
     for key in ("task_result", "calendar_result", "focus_result", "critic_result"):
         envelope = state.get(key)
         if isinstance(envelope, AgentResultEnvelope) and envelope.status == "escalated":

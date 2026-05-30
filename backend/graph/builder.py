@@ -20,6 +20,7 @@ from backend.graph.dlq_handler import dlq_handler_node
 from backend.graph.state import BriefingGraphState
 from backend.llm.router import LLMRouter
 from backend.schemas.envelope import AgentResultEnvelope
+from backend.security.token_budget import evaluate_token_budget
 from backend.settings import Settings, get_settings
 
 logger = structlog.get_logger()
@@ -27,6 +28,8 @@ logger = structlog.get_logger()
 
 def should_circuit_break(state: BriefingGraphState, settings: Settings) -> bool:
     """Return True when token budget or graph timeout exceeded."""
+    if evaluate_token_budget(state) == "token_budget_exceeded":
+        return True
     total_tokens = state.get("total_tokens", 0)
     if total_tokens > settings.token_budget_max * 2:
         return True

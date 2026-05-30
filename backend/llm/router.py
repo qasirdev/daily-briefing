@@ -12,6 +12,7 @@ from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponen
 
 from backend.llm.models import LLMResponse
 from backend.metrics import record_llm_fallback, record_llm_tokens
+from backend.security.pii import mask_pii
 from backend.settings import Settings
 from backend.telemetry import start_async_span
 
@@ -82,9 +83,14 @@ class LLMRouter:
                 reason="pii" if data_classification == "confidential_pii" else "forced",
             )
 
+        outbound_messages = self._prepare_outbound_messages(
+            messages,
+            data_classification=data_classification,
+        )
+
         try:
             return await self._call_primary_with_retry(
-                messages=messages,
+                messages=outbound_messages,
                 max_tokens=output_budget,
                 trace_id=trace_id,
                 agent_id=agent_id,
@@ -112,6 +118,19 @@ class LLMRouter:
                 agent_id=agent_id,
                 reason=reason,
             )
+
+    @staticmethod
+    def _prepare_outbound_messages(
+        messages: list[dict[str, str]],
+        *,
+        data_classification: DataClassification,
+    ) -> list[dict[str, str]]:
+        if data_classification not in {"confidential", "confidential_pii"}:
+            return messages
+        return [
+            {"role": message["role"], "content": mask_pii(message.get("content", ""))}
+            for message in messages
+        ]
 
     async def _fallback_from_primary_error(
         self,

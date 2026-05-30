@@ -1,6 +1,6 @@
 # Security & OWASP GenAI Hardening — AI Daily Briefing Assistant
 
-**Version:** 1.5.0 | **Last Updated:** May 2026
+**Version:** 1.6.0 | **Last Updated:** May 2026
 
 ---
 
@@ -18,14 +18,14 @@
 
 | ID | Vulnerability | Status | Mitigation | Test Coverage |
 |---|---|---|---|---|
-| **LLM01** | Prompt Injection | ⬜ Specified | Critic Agent scanning, input sanitization | `tests/security/test_injection.py` |
-| **LLM02** | Insecure Output Handling | ⬜ Specified | DOMPurify (FE), nh3 (BE), Orchestrator-as-Presenter | `tests/security/test_sanitization.py` |
+| **LLM01** | Prompt Injection | ✅ Implemented | Critic Agent scanning, `PromptInjectionDetector` | `backend/tests/security/test_injection.py` |
+| **LLM02** | Insecure Output Handling | ✅ Implemented | nh3 sanitization, Orchestrator-as-Presenter | `backend/tests/security/test_sanitization.py` |
 | **LLM03** | Training Data Poisoning | ⬜ N/A | No custom model training | N/A |
-| **LLM04** | Model Denial of Service | ⬜ Specified | Token budgets, circuit breakers, rate limiting | `tests/security/test_rate_limits.py` |
-| **LLM05** | Supply Chain Vulnerabilities | ⬜ Specified | Dependency scanning, lockfile pinning | `tests/security/test_dependencies.py` |
-| **LLM06** | Sensitive Information Disclosure | ⬜ Specified | PII masking, data classification | `tests/security/test_pii_masking.py` |
-| **LLM07** | Insecure Plugin Design | ⬜ Specified | MCP allowlists, SSRF defense | `tests/security/test_mcp_security.py` |
-| **LLM08** | Excessive Agency | ⬜ Specified | Read-only scopes, explicit tool boundaries | `tests/security/test_agent_scope.py` |
+| **LLM04** | Model Denial of Service | ✅ Implemented | Per-agent token budgets, circuit breaker, slowapi rate limits | `backend/tests/security/test_token_budget.py`, `test_rate_limits.py` |
+| **LLM05** | Supply Chain Vulnerabilities | ✅ Implemented | `uv.lock` pinning, CI dependency checks | `backend/tests/security/test_dependencies.py` |
+| **LLM06** | Sensitive Information Disclosure | ✅ Implemented | `PIIDetector`, structlog masking, LLM routing | `backend/tests/security/test_pii_masking.py` |
+| **LLM07** | Insecure Plugin Design | ✅ Implemented | MCP allowlists, `SSRFValidator`, read-only SQL | `backend/tests/security/test_mcp_security.py` |
+| **LLM08** | Excessive Agency | ✅ Implemented | Agent scope budgets and MCP boundaries | `backend/tests/security/test_agent_scope.py` |
 | **LLM09** | Overreliance | ⬜ N/A | UX guidance (out of scope) | N/A |
 | **LLM10** | Model Theft | ⬜ N/A | No proprietary models | N/A |
 

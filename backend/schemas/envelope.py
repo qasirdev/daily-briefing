@@ -1,8 +1,11 @@
 """Canonical envelope for all inter-agent communication."""
 
-from typing import Literal
+from typing import Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator, model_validator
+
+from backend.logging_config import get_security_logger
+from backend.security.pii import PIIDetector
 
 
 class ExecutionMetadata(BaseModel):
@@ -64,3 +67,23 @@ class AgentResultEnvelope(BaseModel):
             msg = "result is required when status is success"
             raise ValueError(msg)
         return value
+
+    @model_validator(mode="after")
+    def warn_on_unmasked_pii(self) -> Self:
+        detector = PIIDetector()
+        texts: list[str] = []
+        if self.escalation is not None:
+            texts.append(self.escalation.context)
+        if self.result is not None:
+            for item in self.result.values():
+                if isinstance(item, str):
+                    texts.append(item)
+        for text in texts:
+            if detector.contains_pii(text):
+                get_security_logger().warning(
+                    "unmasked_pii_in_envelope",
+                    agent_id=self.agent_id,
+                    data_classification=self.metadata.data_classification,
+                )
+                break
+        return self
