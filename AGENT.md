@@ -104,7 +104,7 @@ All inter-agent communication uses the standardized `AgentResultEnvelope`. See `
 | **Testing Agent** | OWASP GenAI boundary tests | `.cursor/rules/testing.mdc` | 3rd |
 | **Documentation Agent** | Domain `AGENT.md` and OWASP checklists | `.cursor/rules/docs.mdc` | 4th |
 
-Epic workflow: branch → implement → refactor → test → docs → PR to `epic/autonomus-implementation`. Details in `.cursor/rules/coding.mdc`.
+Epic workflow: branch from `main` → implement → refactor → test → docs → PR to **`main`** (merge commit). Details in `.cursor/rules/coding.mdc` §1 and §7.
 ---
 
-*AI Daily Briefing Assistant — Version 1.5.0 — May 2026*
+*AI Daily Briefing Assistant — Version 1.6.0 — May 2026*

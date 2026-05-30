@@ -155,15 +155,23 @@ This document tracks the implementation progress across all 6 MVPs. Each epic fo
 
 ## Workflow Reminder
 
-For each epic:
+For each epic (full detail: `.cursor/rules/coding.mdc` §1 and §7):
 
-1. **Create branch:** `git checkout -b epic/E{n}-{description}`
+1. **Create branch from `main`:**
+   ```bash
+   git checkout main
+   git pull origin main
+   git checkout -b epic/E{n}-{description}
+   git push -u origin epic/E{n}-{description}
+   ```
 2. **Implement:** Coding Agent executes all tasks
 3. **Refactor:** Refactor Agent reviews and improves
 4. **Test:** Testing Agent adds coverage
 5. **Document:** Docs Agent updates AGENT.md files
-6. **Merge:** PR to main after all checks pass
+6. **Merge:** Open PR (base `main`, head epic branch) → CI green → **merge commit** (no squash/rebase)
+7. **Cleanup:** `git checkout main && git pull origin main && git branch -d epic/E{n}-{description}` (local only; keep remote epic branch on GitHub)
+8. **Next epic:** Repeat from step 1 on `main`
 
 ---
 
-*Implementation Plan — Version 1.5.0 — May 2026*
+*Implementation Plan — Version 1.6.0 — May 2026*

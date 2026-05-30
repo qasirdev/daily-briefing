@@ -43,7 +43,13 @@ Implement Epic DB-E1 (MVP 1: Project Scaffold) following the autonomous workflow
 
 ### Workflow
 0. Run environment checks: Verify uv, npm, docker, and python versions. Fail fast if missing.
-1. Create branch: `git checkout -b epic/E1-project-scaffold`
+1. Create branch from `main`:
+   ```bash
+   git checkout main
+   git pull origin main
+   git checkout -b epic/E1-project-scaffold
+   git push -u origin epic/E1-project-scaffold
+   ```
 2. Read all tasks from `docs/jira-tickets-json/DB-E1-mvp1-scaffold.json`
 3. Update `docs/tasks/todo.md` with your implementation plan
 4. Implement each task following IMPLEMENTATION DETAILS and EDGE CASES. Check existing code first to avoid duplicating/overwriting logic.
@@ -51,7 +57,18 @@ Implement Epic DB-E1 (MVP 1: Project Scaffold) following the autonomous workflow
 6. After refactor: run Testing Agent checks and VERIFY the test suite passes (0 failures)
 7. After testing: run Docs Agent updates
 8. Update `docs/PLAN.md` with completion status
-9. Commit and prepare PR to main
+9. Push epic branch: `git push -u origin epic/E1-project-scaffold`
+10. Open PR with base `main` and head `epic/E1-project-scaffold`
+11. Wait for CI — fix failures on the same branch and push again
+12. Merge the PR using a **merge commit** — do not squash or rebase
+13. After merge:
+    ```bash
+    git checkout main
+    git pull origin main
+    git branch -d epic/E1-project-scaffold   # local epic branch only
+    ```
+    Keep `origin/epic/E1-project-scaffold` on GitHub (do not delete remote epic branch).
+14. Next epic: repeat from step 1 on `main` (see `.cursor/rules/coding.mdc` §7)
 
 ### Context Management
 - At ~75% context usage, write checkpoint to `docs/tasks/checkpoint.md`

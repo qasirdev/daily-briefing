@@ -140,8 +140,11 @@ When implementing an epic, follow this sequence:
 
 ### 1. Branch Creation
 ```bash
+git checkout main
+git pull origin main
 git checkout -b epic/E{n}-{short-description}
 # Example: git checkout -b epic/E1-project-scaffold
+git push -u origin epic/E{n}-{short-description}
 ```
 
 ### 2. Coding Agent Phase
@@ -179,7 +182,36 @@ git checkout -b epic/E{n}-{short-description}
 - [ ] `docs/PLAN.md` shows epic as ✅ Completed
 - [ ] PR approved and merged to main
 
-### 7. Context Checkpoint (Long Sessions)
+### 7. GitHub Actions (Post-Epic)
+
+After merge criteria are met on the epic branch:
+
+1. **Push** the epic branch: `git push -u origin epic/E{n}-{short-description}`
+2. **Open PR** with base `main` and head `epic/E{n}-{short-description}`
+3. **Wait for CI** — fix failures on the same branch and push again
+4. **Merge the PR using a merge commit** — do not squash or rebase
+
+After the PR is merged:
+
+```bash
+git checkout main
+git pull origin main
+git branch -d epic/E{n}-{short-description}   # delete local epic branch only
+```
+
+- **Delete local epic branch:** yes — run `git branch -d` after merge
+- **Delete remote epic branch:** no — leave `origin/epic/E{n}-...` on GitHub
+
+To start the next epic:
+
+```bash
+git checkout main
+git pull origin main
+git checkout -b epic/E{n+1}-{short-description}
+git push -u origin epic/E{n+1}-{short-description}
+```
+
+### 8. Context Checkpoint (Long Sessions)
 
 When context reaches ~75% capacity during epic implementation:
 
@@ -192,4 +224,4 @@ See `docs/EXECUTION-RULES.md` Section 8 for full protocol.
 
 ---
 
-*Coding Agent Rules — Version 1.5.0 — May 2026*
+*Coding Agent Rules — Version 1.6.0 — May 2026*

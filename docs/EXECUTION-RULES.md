@@ -248,6 +248,17 @@ New session MUST:
 2. Read `docs/tasks/lessons.md` for any new learnings
 3. Verify branch and git status
 4. Resume from documented next steps
+5. Follow git workflow in `.cursor/rules/coding.mdc` §1 (branch from `main`) and §7 (PR, merge commit, cleanup)
+
+### Git Workflow (Epic Branches)
+
+Epic branch naming, PR target, merge, and cleanup are defined in `.cursor/rules/coding.mdc` §1 and §7. Summary:
+
+- Branch from `main` after `git pull origin main`; push epic branch with `git push -u origin epic/E{n}-...`
+- Open PR: base **`main`**, head epic branch
+- Merge with a **merge commit** (no squash or rebase)
+- After merge: pull `main`, delete **local** epic branch only; keep remote epic branch on GitHub
+- Next epic: repeat from `main`
 
 ### Checkpoint File Lifecycle
 
@@ -261,4 +272,4 @@ New session MUST:
 
 ---
 
-*Execution Rules — Version 1.5.0 — May 2026*
+*Execution Rules — Version 1.6.0 — May 2026*

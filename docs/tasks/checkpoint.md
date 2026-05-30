@@ -46,7 +46,13 @@ _None._
 ## Next Steps
 
 1. Start MVP 1 (Epic DB-E1) with task DB-001: Monorepo Init
-2. Create branch: `git checkout -b epic/E1-project-scaffold`
+2. Create branch from `main` (see `.cursor/rules/coding.mdc` §1):
+   ```bash
+   git checkout main
+   git pull origin main
+   git checkout -b epic/E1-project-scaffold
+   git push -u origin epic/E1-project-scaffold
+   ```
 3. Follow `docs/jira-tickets-json/DB-E1-mvp1-scaffold.json`
 
 ---
@@ -57,7 +63,8 @@ _None._
 Start implementing the AI Daily Briefing Assistant.
 Begin with Epic DB-E1 (MVP 1: Project Scaffold).
 Read AGENT.md, docs/EXECUTION-RULES.md, and docs/tasks/checkpoint.md first.
-Create branch: epic/E1-project-scaffold
+Branch from main: checkout main, pull, checkout -b epic/E1-project-scaffold, push -u origin.
+Git workflow: .cursor/rules/coding.mdc §1 and §7.
 ```
 
 ---

@@ -277,14 +277,28 @@ daily-briefing/
 - Resume with compacted context from checkpoint
 
 ### Branch Strategy
+
+Branch from `main` for each epic (see `.cursor/rules/coding.mdc` §1 and §7):
+
 ```bash
-git checkout -b epic/E1-project-scaffold  # MVP 1
-git checkout -b epic/E2-core-agents       # MVP 2
-git checkout -b epic/E3-observability     # MVP 3
-git checkout -b epic/E4-agentic-consent   # MVP 4
-git checkout -b epic/E5-security-hardening # MVP 5
-git checkout -b epic/E6-production        # MVP 6
+git checkout main
+git pull origin main
+git checkout -b epic/E{n}-{short-description}
+git push -u origin epic/E{n}-{short-description}
 ```
+
+Epic branch names:
+
+| MVP | Branch |
+|---|---|
+| MVP 1 | `epic/E1-project-scaffold` |
+| MVP 2 | `epic/E2-core-agents` |
+| MVP 3 | `epic/E3-observability` |
+| MVP 4 | `epic/E4-agentic-consent` |
+| MVP 5 | `epic/E5-security-hardening` |
+| MVP 6 | `epic/E6-production` |
+
+After each epic: PR to **`main`** (merge commit, no squash/rebase) → pull `main` → delete **local** epic branch only → keep remote epic branch on GitHub.
 
 ---
 

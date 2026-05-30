@@ -247,14 +247,17 @@ Before epic can be merged to main:
 - [ ] Any learnings captured in docs/learning/
 - [ ] CHANGELOG.md updated (if applicable)
 - [ ] README.md updated (if user-facing changes)
+- [ ] PR opened: base `main`, head `epic/E{n}-...` (see `.cursor/rules/coding.mdc` §7)
 
 ### Post-Merge Tasks
 
-After PR merged to main:
+After PR merged to main (via **merge commit** — not squash or rebase; see `.cursor/rules/coding.mdc` §7):
 - [ ] Update docs/tasks/todo.md Completed Epics table
 - [ ] Archive completed task plan
 - [ ] Prepare template for next epic
+- [ ] `git checkout main && git pull origin main`
+- [ ] Delete **local** epic branch only (`git branch -d epic/E{n}-...`); leave remote epic branch on GitHub
 
 ---
 
-*Documentation Agent Rules — Version 1.5.0 — May 2026*
+*Documentation Agent Rules — Version 1.6.0 — May 2026*
