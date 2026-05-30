@@ -10,7 +10,11 @@ import structlog
 
 from backend.graph.state import BriefingGraphState
 from backend.metrics import record_consent_request
-from backend.schemas.consent import DEFAULT_TTL_HOURS, ConsentPromptRequest
+from backend.schemas.consent import (
+    DEFAULT_TTL_HOURS,
+    ConsentPromptRequest,
+    coerce_consent_service,
+)
 from backend.schemas.envelope import AgentResultEnvelope, ExecutionMetadata
 from backend.security.sanitization import sanitize_markdown
 
@@ -55,7 +59,7 @@ def build_consent_prompt(state: BriefingGraphState) -> ConsentPromptRequest:
     if isinstance(calendar, AgentResultEnvelope) and calendar.escalation:
         context_data = _parse_consent_context(calendar.escalation.context)
 
-    service = str(context_data.get("service", "google_calendar"))
+    service = coerce_consent_service(context_data.get("service", "google_calendar"))
     scope_raw = context_data.get("scope", ["calendar.readonly"])
     if isinstance(scope_raw, list):
         scope = [str(item) for item in scope_raw]
@@ -67,7 +71,7 @@ def build_consent_prompt(state: BriefingGraphState) -> ConsentPromptRequest:
     record_consent_request(mcp_server=service, outcome="requested")
     return ConsentPromptRequest(
         request_id=state.get("request_id", state.get("trace_id", "0" * 32)),
-        service=service,  # type: ignore[arg-type]
+        service=service,
         scope=scope,
         suggested_ttl_hours=ttl,
         agent_requesting=str(context_data.get("agent_id", "calendar")),

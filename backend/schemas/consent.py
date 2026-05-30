@@ -25,6 +25,19 @@ DEFAULT_TTL_HOURS: dict[str, int] = {
 }
 
 
+def coerce_consent_service(
+    value: object,
+    *,
+    default: ConsentService = "google_calendar",
+) -> ConsentService:
+    """Normalize untrusted service identifiers to a known consent service."""
+    if value == "google_calendar":
+        return "google_calendar"
+    if value == "postgres_mcp":
+        return "postgres_mcp"
+    return default
+
+
 class ConsentRecord(BaseModel):
     """Time-bounded authorization for agent MCP access."""
 
