@@ -4,10 +4,14 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from uuid import uuid4
 
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
+from backend.api.v1.briefing import limiter
+from backend.api.v1.briefing import router as briefing_router
 from backend.logging_config import bind_trace_id, configure_logging, get_logger
 from backend.settings import Settings, get_settings
 
@@ -33,6 +37,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         version=resolved_settings.app_version,
         lifespan=lifespan,
     )
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
+    app.add_middleware(SlowAPIMiddleware)
 
     app.add_middleware(
         CORSMiddleware,
@@ -59,16 +66,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "version": resolved_settings.app_version,
         }
 
-    @app.get(
-        "/api/v1/briefing/generate",
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-    )
-    async def generate_briefing_placeholder() -> JSONResponse:
-        """Placeholder until MVP 2 briefing generation is implemented."""
-        return JSONResponse(
-            status_code=status.HTTP_501_NOT_IMPLEMENTED,
-            content={"detail": "Briefing generation not yet implemented"},
-        )
+    app.include_router(briefing_router)
 
     return app
 

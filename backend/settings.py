@@ -21,12 +21,20 @@ class Settings(BaseSettings):
     app_version: str = "0.1.0"
 
     openrouter_api_key: str = ""
+    openrouter_base_url: str = "https://openrouter.ai/api/v1"
+    llm_primary_model: str = "openai/gpt-4o-mini"
+    llm_fallback_model: str = "local/llama-3-8b"
     local_llm_enabled: bool = False
     local_llm_base_url: str = "http://localhost:8080/v1"
 
     database_url: str = "postgresql://briefing:briefing@localhost:5432/briefing"
     postgres_mcp_host: str = "localhost"
+    postgres_mcp_port: int = 5433
     calendar_mcp_host: str = "localhost"
+    calendar_mcp_port: int = 5434
+
+    token_budget_max: int = 16_000
+    graph_timeout_seconds: int = 60
 
     otel_exporter_otlp_endpoint: str = "http://localhost:4317"
 

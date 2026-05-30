@@ -57,7 +57,7 @@ Fresh autonomous kickoff only (not every "hi"): then read `docs/KICKOFF-PROMPT.m
 
 ---
 
-## MVP 2: Core Agents ⬜
+## MVP 2: Core Agents 🔄
 
 **Epic:** DB-E2  
 **Branch:** `epic/E2-core-agents`  
@@ -65,16 +65,16 @@ Fresh autonomous kickoff only (not every "hi"): then read `docs/KICKOFF-PROMPT.m
 
 | Task ID | Summary | Status | Agent |
 |---|---|---|---|
-| DB-011 | PostgreSQL MCP Client | ⬜ | Coding |
-| DB-012 | Google Calendar MCP Client | ⬜ | Coding |
-| DB-013 | Task Agent Implementation | ⬜ | Coding |
-| DB-014 | Calendar Agent Implementation | ⬜ | Coding |
-| DB-015 | Focus Agent Implementation | ⬜ | Coding |
-| DB-016 | LLM Router with Fallback | ⬜ | Coding |
-| DB-017 | Orchestrator Agent Implementation | ⬜ | Coding |
-| DB-018 | Full LangGraph Wiring | ⬜ | Coding |
-| DB-019 | Briefing API Endpoint | ⬜ | Coding |
-| DB-020 | Prompt Files for All Agents | ⬜ | Coding |
+| DB-011 | PostgreSQL MCP Client | ✅ | Coding |
+| DB-012 | Google Calendar MCP Client | ✅ | Coding |
+| DB-013 | Task Agent Implementation | ✅ | Coding |
+| DB-014 | Calendar Agent Implementation | ✅ | Coding |
+| DB-015 | Focus Agent Implementation | ✅ | Coding |
+| DB-016 | LLM Router with Fallback | ✅ | Coding |
+| DB-017 | Orchestrator Agent Implementation | ✅ | Coding |
+| DB-018 | Full LangGraph Wiring | ✅ | Coding |
+| DB-019 | Briefing API Endpoint | ✅ | Coding |
+| DB-020 | Prompt Files for All Agents | ✅ | Coding |
 
 ---
 
@@ -159,12 +159,12 @@ Fresh autonomous kickoff only (not every "hi"): then read `docs/KICKOFF-PROMPT.m
 | MVP | Epic | Tasks | Completed | Progress |
 |---|---|---|---|---|
 | MVP 1 | DB-E1 | 10 | 10 | 100% |
-| MVP 2 | DB-E2 | 10 | 0 | 0% |
+| MVP 2 | DB-E2 | 10 | 10 | 100% |
 | MVP 3 | DB-E3 | 8 | 0 | 0% |
 | MVP 4 | DB-E4 | 8 | 0 | 0% |
 | MVP 5 | DB-E5 | 8 | 0 | 0% |
 | MVP 6 | DB-E6 | 8 | 0 | 0% |
-| **Total** | **6 Epics** | **52** | **10** | **19%** |
+| **Total** | **6 Epics** | **52** | **20** | **38%** |
 
 ---
 
