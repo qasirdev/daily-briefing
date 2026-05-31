@@ -1,50 +1,22 @@
-# Active Task Plan — AI Daily Briefing Assistant
+# Active Task Plan — Epic DB-E6 (MVP 6: Production Deployment)
 
-> **Note:** This file is written BEFORE any implementation begins. Update incrementally as steps complete.
-
----
-
-## Active Plan — [Pending First Epic Assignment]
-
-**Epic:** TBD  
-**Branch:** `epic/E1-project-scaffold`  
-**Started:** TBD  
+**Epic:** DB-E6  
+**Branch:** `epic/E6-production`  
+**Started:** 2026-05-30  
 **Agent:** Coding Agent
 
 ### Implementation Steps
 
-- [ ] Step 1: TBD
-- [ ] Step 2: TBD
-- [ ] Step 3: TBD
-
----
-
-## Review Template
-
-> Complete this section when the epic is finished, before merging to main.
-
-### What Was Built
-- 
-
-### What Was Skipped
-- 
-
-### What Changed From Plan
-- 
-
-### Tests Added
-- 
-
-### Documentation Updated
-- 
-
----
-
-## Completed Epics
-
-| Epic | Branch | Completed | Agent |
-|---|---|---|---|
-| — | — | — | — |
+- [x] DB-045: Docker image signing with Cosign (GitHub Actions)
+- [x] DB-046: Production environment configuration
+- [x] DB-047: Health and readiness probes
+- [x] DB-048: Graceful shutdown handler
+- [x] DB-049: SLO definition and monitoring artifacts
+- [x] DB-050: Production Prometheus alert rules
+- [x] DB-051: End-to-end integration tests
+- [x] DB-052: Production README and deployment guide
+- [x] Tests: ruff + mypy + pytest
+- [ ] Push branch and open PR to epic/autonomus-implementation
 
 ---
 

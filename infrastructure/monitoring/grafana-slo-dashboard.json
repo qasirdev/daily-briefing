@@ -1,0 +1,32 @@
+{
+  "title": "Daily Briefing SLO Overview",
+  "panels": [
+    {
+      "title": "Availability (success rate)",
+      "targets": [
+        {
+          "expr": "daily_briefing:success_rate:5m",
+          "legendFormat": "success rate"
+        }
+      ]
+    },
+    {
+      "title": "Latency P95 (seconds)",
+      "targets": [
+        {
+          "expr": "daily_briefing:latency_p95:5m",
+          "legendFormat": "p95"
+        }
+      ]
+    },
+    {
+      "title": "Error rate",
+      "targets": [
+        {
+          "expr": "daily_briefing:error_rate:5m",
+          "legendFormat": "errors"
+        }
+      ]
+    }
+  ]
+}

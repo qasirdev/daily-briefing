@@ -84,8 +84,8 @@ The security documentation MUST include:
 
 | ID | Vulnerability | Status | Mitigation | Test Coverage |
 |---|---|---|---|---|
-| LLM01 | Prompt Injection | ✅ Mitigated | Critic Agent scanning | `test_injection.py` |
-| LLM02 | Insecure Output | ✅ Mitigated | DOMPurify + Bleach | `test_sanitization.py` |
+| LLM01 | Prompt Injection | ⬜ Specified | Critic Agent scanning | `test_injection.py` |
+| LLM02 | Insecure Output | ⬜ Specified | DOMPurify + nh3 | `test_sanitization.py` |
 | ... | ... | ... | ... | ... |
 ```
 
@@ -240,7 +240,7 @@ The Docs Agent runs **last** after all other agents complete:
 
 ### Handoff Checklist (Pre-Merge)
 
-Before epic can be merged to main:
+Before epic can be merged to `epic/autonomus-implementation`:
 - [ ] All new agents have AGENT.md files
 - [ ] docs/PLAN.md updated with ✅ status
 - [ ] docs/tasks/todo.md Review section completed
@@ -250,11 +250,19 @@ Before epic can be merged to main:
 
 ### Post-Merge Tasks
 
-After PR merged to main:
+After PR merged to `epic/autonomus-implementation` (via **merge commit**, not squash/rebase):
+
+**GitHub / git:**
+- [ ] Checkout and pull `epic/autonomus-implementation`
+- [ ] Delete **local** epic branch: `git branch -d epic/E{n}-{short-description}`
+- [ ] Do **not** delete the remote epic branch on GitHub
+
+**Documentation:**
 - [ ] Update docs/tasks/todo.md Completed Epics table
 - [ ] Archive completed task plan
 - [ ] Prepare template for next epic
+- [ ] Delete active `docs/tasks/checkpoint.md` (if present)
 
 ---
 
-*Documentation Agent Rules — Version 1.5.0 — May 2026*
+*Documentation Agent Rules — Version 1.6.0 — May 2026*

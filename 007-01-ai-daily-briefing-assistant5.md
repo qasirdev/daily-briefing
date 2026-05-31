@@ -37,7 +37,7 @@ This represents the enterprise-hardened specification for the AI Daily Briefing 
 
 | Layer | Technology | Version |
 |---|---|---|
-| **Frontend** | Next.js (App Router) | 15.x |
+| **Frontend** | Next.js (App Router) | 16.x |
 | **React** | React with Server Components | 19.x |
 | **Backend** | FastAPI | 0.115+ |
 | **Python** | Python (managed by uv) | 3.12+ |
@@ -236,7 +236,7 @@ daily-briefing/
 | ID | Vulnerability | Mitigation | Status |
 |---|---|---|---|
 | LLM01 | Prompt Injection | Critic Agent scanning, input sanitization | Specified |
-| LLM02 | Insecure Output | DOMPurify (FE), Bleach (BE), Orchestrator-as-Presenter | Specified |
+| LLM02 | Insecure Output | DOMPurify (FE), nh3 (BE), Orchestrator-as-Presenter | Specified |
 | LLM03 | Training Data Poisoning | N/A (no custom training) | N/A |
 | LLM04 | Model DoS | Token budgets, circuit breakers, rate limiting | Specified |
 | LLM05 | Supply Chain | Dependency scanning, lockfile pinning | Specified |
@@ -268,7 +268,8 @@ daily-briefing/
 2. Refactor Agent  → Code quality review
 3. Testing Agent   → Add tests, verify coverage
 4. Docs Agent      → Update documentation
-5. Merge to main   → After all checks pass
+5. Merge to `epic/autonomus-implementation`   → Merge commit after CI passes (not squash/rebase)
+6. Post-merge git                     → Pull integration; delete local epic branch; keep remote
 ```
 
 ### Context Management
@@ -277,7 +278,12 @@ daily-briefing/
 - Resume with compacted context from checkpoint
 
 ### Branch Strategy
+
+Integration branch: `epic/autonomus-implementation`. Each epic gets its own branch; PR back with a **merge commit**. Delete the local epic branch after merge; **keep** the remote epic branch on GitHub.
+
 ```bash
+# Start each epic from latest integration branch
+git checkout epic/autonomus-implementation && git pull
 git checkout -b epic/E1-project-scaffold  # MVP 1
 git checkout -b epic/E2-core-agents       # MVP 2
 git checkout -b epic/E3-observability     # MVP 3

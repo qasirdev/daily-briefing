@@ -374,6 +374,26 @@ groups:
 
 ---
 
+## Service Level Objectives (SLOs)
+
+| Objective | Target | Recording rule |
+|---|---|---|
+| Availability | 99.5% successful briefings | `daily_briefing:success_rate:5m` |
+| Latency P50 | < 3s | `histogram_quantile(0.50, ...)` |
+| Latency P95 | < 10s | `daily_briefing:latency_p95:5m` |
+| Latency P99 | < 30s | `histogram_quantile(0.99, ...)` |
+| Error rate | < 0.5% | `daily_briefing:error_rate:5m` |
+
+Artifacts:
+
+- Recording rules: `infrastructure/monitoring/recording_rules.yml`
+- Grafana dashboard: `infrastructure/monitoring/grafana-slo-dashboard.json`
+- Alert rules: `infrastructure/alerting/rules.yml`
+
+**Error budget:** when success rate drops below 99.5% over a rolling 30-day window, freeze non-critical releases and prioritize reliability work.
+
+---
+
 ## Structured Logging
 
 ### Log Format

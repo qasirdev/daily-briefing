@@ -10,18 +10,18 @@ This project adheres to the [Twelve-Factor App](https://12factor.net/) methodolo
 
 | Factor | Implementation | Status |
 |---|---|---|
-| **I. Codebase** | Single Git repository, multiple deploys via branches | ✅ |
-| **II. Dependencies** | Explicit via `pyproject.toml` (uv) and `package.json` (npm) | ✅ |
-| **III. Config** | Environment variables, `.env` files, never in code | ✅ |
-| **IV. Backing Services** | PostgreSQL, Google Calendar API as attached resources | ✅ |
-| **V. Build, Release, Run** | Docker multi-stage build, CI/CD pipeline | ✅ |
-| **VI. Processes** | Stateless processes, state in PostgreSQL | ✅ |
-| **VII. Port Binding** | Self-contained via uvicorn/next.js, exposed through Nginx | ✅ |
-| **VIII. Concurrency** | Process model via supervisord, horizontal scaling ready | ✅ |
-| **IX. Disposability** | Graceful SIGTERM handling, fast startup | ✅ |
-| **X. Dev/Prod Parity** | Docker Compose for local, same image in production | ✅ |
-| **XI. Logs** | Structured JSON to stdout, collected externally | ✅ |
-| **XII. Admin Processes** | One-off tasks via management commands | ✅ |
+| **I. Codebase** | Single Git repository, multiple deploys via branches | ⬜ Specified |
+| **II. Dependencies** | Explicit via `pyproject.toml` (uv) and `package.json` (npm) | ⬜ Specified |
+| **III. Config** | Environment variables, `.env` files, never in code | ⬜ Specified |
+| **IV. Backing Services** | PostgreSQL, Google Calendar API as attached resources | ⬜ Specified |
+| **V. Build, Release, Run** | Docker multi-stage build, CI/CD pipeline | ⬜ Specified |
+| **VI. Processes** | Stateless processes, state in PostgreSQL | ⬜ Specified |
+| **VII. Port Binding** | Self-contained via uvicorn/next.js, exposed through Nginx | ⬜ Specified |
+| **VIII. Concurrency** | Process model via supervisord, horizontal scaling ready | ⬜ Specified |
+| **IX. Disposability** | Graceful SIGTERM handling, fast startup | ⬜ Specified |
+| **X. Dev/Prod Parity** | Docker Compose for local, same image in production | ⬜ Specified |
+| **XI. Logs** | Structured JSON to stdout, collected externally | ⬜ Specified |
+| **XII. Admin Processes** | One-off tasks via management commands | ⬜ Specified |
 
 ---
 
@@ -101,9 +101,9 @@ LOCAL_LLM_BASE_URL=http://localhost:8080/v1
 
 # MCP Configuration
 POSTGRES_MCP_HOST=localhost
-POSTGRES_MCP_PORT=5433
+POSTGRES_MCP_PORT=5443 # default 5433
 CALENDAR_MCP_HOST=localhost
-CALENDAR_MCP_PORT=5434
+CALENDAR_MCP_PORT=5444 # default 5434
 
 # Observability
 OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
@@ -114,6 +114,21 @@ JWT_SECRET_KEY=<generate-with-openssl-rand-hex-64>
 JWT_ALGORITHM=RS256
 CORS_ORIGINS=http://localhost:3000
 ```
+
+### Production Configuration
+
+Use `.env.production.example` for deploy templates.
+
+| Variable | Production requirement |
+|---|---|
+| `APP_ENV` | `production` |
+| `APP_DEBUG` | `false` (startup validation fails if true) |
+| `JWT_SECRET_KEY` | Strong secret — no dev/default markers |
+| `ADMIN_API_KEY` | Required for DLQ admin API |
+| `OPENROUTER_API_KEY` | Required unless `LOCAL_LLM_ENABLED=true` |
+| `CORS_ORIGINS` | Production frontend domain(s) only |
+
+Rate limits: briefing `10/min`, export `5/hour`, other API `60/min` per IP.
 
 ### Pydantic Settings Validation
 

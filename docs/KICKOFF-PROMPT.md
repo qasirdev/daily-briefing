@@ -15,6 +15,7 @@ Before running the kick-off prompt, verify:
 - [ ] `docs/tasks/todo.md` exists and is ready for updates
 - [ ] `docs/tasks/lessons.md` exists with initial structure
 - [ ] `docs/tasks/checkpoint.md` exists for context handoff
+- [ ] `docs/TOKEN-EFFICIENCY.md` exists for context window rules
 - [ ] `.cursor/rules/` contains all 4 rule files (coding, testing, refactor, docs)
 - [ ] Git repository is initialized (if implementing in new location)
 
@@ -27,10 +28,11 @@ You are implementing the AI Daily Briefing Assistant project from scratch.
 
 ## CRITICAL: Read These Files First (In Order)
 1. AGENT.md — Root index with workflow rules
-2. docs/EXECUTION-RULES.md — Execution discipline and context management
-3. docs/tasks/checkpoint.md — Current state (starting fresh)
-4. docs/PLAN.md — Implementation progress tracker
-5. .cursor/rules/* — All cursor rules for coding, testing, refactor, and docs
+2. docs/TOKEN-EFFICIENCY.md — Context window rules (read before this file on continuation sessions)
+3. docs/EXECUTION-RULES.md — Execution discipline and context management
+4. docs/tasks/checkpoint.md — Current state (starting fresh)
+5. docs/PLAN.md — Implementation progress tracker
+6. .cursor/rules/* — All cursor rules for coding, testing, refactor, and docs
 
 ## Project Overview
 - Multi-agent orchestration system using LangGraph
@@ -51,7 +53,11 @@ Implement Epic DB-E1 (MVP 1: Project Scaffold) following the autonomous workflow
 6. After refactor: run Testing Agent checks and VERIFY the test suite passes (0 failures)
 7. After testing: run Docs Agent updates
 8. Update `docs/PLAN.md` with completion status
-9. Commit and prepare PR to main
+9. Push branch and open PR to `epic/autonomus-implementation`
+10. Merge PR with a **merge commit** after CI passes (not squash or rebase)
+11. Pull `epic/autonomus-implementation`; delete **local** epic branch only
+12. Leave remote epic branch on GitHub (do not delete after merge)
+13. Start next epic from updated `epic/autonomus-implementation`
 
 ### Context Management
 - At ~75% context usage, write checkpoint to `docs/tasks/checkpoint.md`
@@ -85,12 +91,16 @@ Continue implementing the AI Daily Briefing Assistant.
 ## CRITICAL: Read These Files First
 1. docs/tasks/checkpoint.md — Resume from this state
 2. docs/tasks/lessons.md — Any learnings from previous session
-3. docs/PLAN.md — Current progress
+3. AGENT.md — Root workflow index
+4. docs/TOKEN-EFFICIENCY.md — Context window rules (do NOT re-read KICKOFF-PROMPT)
+5. docs/PLAN.md — Current progress
+6. docs/EXECUTION-RULES.md — Workflow discipline
 
 ## Current State
 [The checkpoint.md file contains the exact state - read it first]
 
 ## Rules Reminder
+- Follow docs/TOKEN-EFFICIENCY.md — skip re-reading this kick-off prompt on continuation
 - Follow docs/EXECUTION-RULES.md for all workflow rules
 - Update checkpoint.md at 75% context usage
 - Commit progress before session end
@@ -198,4 +208,4 @@ Fix before proceeding. Never move to next task with failing tests.
 
 ---
 
-*Kick-off Prompt — Version 1.5.0 — May 2026*
+*Kick-off Prompt — Version 1.6.0 — May 2026*
