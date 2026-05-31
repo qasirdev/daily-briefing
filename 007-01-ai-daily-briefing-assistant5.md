@@ -26,7 +26,7 @@ This represents the enterprise-hardened specification for the AI Daily Briefing 
 ## DESIGN PRINCIPLES & SECURITY
 
 - **Zero-Trust Input (OWASP Top 10):** Calendar events and tasks are treated as untrusted inputs. They are sanitized for markdown/HTML execution and scanned for Prompt Injection attempts before being passed to LLMs.
-- **Cryptographic Integrity:** Docker images are signed in CI. All MCP communications occur over local TCP or TLS. JWTs (`pyjwt[crypto]`) are enforced if externalized.
+- **Cryptographic Integrity:** Docker images are signed in CI. MCP uses **stdio** (Option 1) or legacy local TCP when `MCP_TRANSPORT=http`. JWTs (`pyjwt[crypto]`) are enforced if externalized.
 - **Orchestrator-as-Presenter:** The Orchestrator completely synthesizes multi-agent outputs. Individual agents (Doers/Planners) return raw Pydantic JSON; only the Orchestrator maps this into the user-facing format to ensure consistent tone and safety.
 - **Circuit Breakers:** Exceeding 2x token budgets immediately circuit-breaks the agent, dropping the request to the DLQ to prevent denial-of-wallet attacks.
 - **Agentic Consent:** Time-bounded, transaction-aware authorization for external services with JIT (Just-In-Time) re-authorization flows.
@@ -94,12 +94,18 @@ Calendar events created by third parties (e.g., meeting invites) are prime vecto
 
 ---
 
-## MCP INTEGRATIONS
+## MCP INTEGRATIONS (Option 1 — stdio)
 
-| MCP Server | Implementation Details | Security |
-|---|---|---|
-| **PostgreSQL MCP** | Tools: `list_tables`, `query`, `insert`. Manages tasks, preferences, DLQ | RLS enforced, read-only for agents |
-| **Google Calendar MCP** | Tools: `list_calendars`, `get_events`. Time-bounded consent | SSRF defense, `*.googleapis.com` allowlist |
+| MCP Server | Package / transport | Data store | Security |
+|---|---|---|---|
+| **PostgreSQL MCP** | `@modelcontextprotocol/server-postgres` via stdio | **Supabase** (Supavisor :6543) | Parameterized queries, `user_id` on all reads |
+| **Google Calendar MCP** | `@franciscpd/calendar-mcp-server` via stdio | Google Calendar API | SSRF allowlist, OAuth refresh token in `.env`, JIT consent |
+
+**Persistence (not via agents):** SQLAlchemy async + Alembic → Supabase for DLQ, consent records, user preferences.
+
+**Legacy:** `MCP_TRANSPORT=http` uses TCP clients on ports `5443`/`5444` for local mock servers.
+
+Setup: [docs/guidence/docker-setup.md](docs/guidence/docker-setup.md), [docs/MCP.md](docs/MCP.md).
 
 ---
 

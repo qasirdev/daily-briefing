@@ -1,6 +1,6 @@
 # Data Ownership & Privacy — AI Daily Briefing Assistant
 
-**Version:** 1.5.0 | **Last Updated:** May 2026
+**Version:** 1.6.0 (Option 1 Enterprise Hybrid) | **Last Updated:** May 2026
 
 ---
 
@@ -326,10 +326,23 @@ class ExecutionMetadata(BaseModel):
     @model_validator(mode="after")
     def enforce_pii_handling(self) -> "ExecutionMetadata":
         if self.data_classification == "confidential_pii":
-            # TODO: Implement strict masking and local LLM routing
+            # Enforced in backend/llm/router.py: local LLM if enabled,
+            # else mask_pii() before OpenRouter. See docs/LOCAL-LLM.md.
             pass
         return self
 ```
+
+---
+
+## Persistence (Option 1 — Supabase)
+
+| Store | Technology | Tables / data |
+|---|---|---|
+| **Supabase PostgreSQL** (:6543 Supavisor) | SQLAlchemy async + Alembic | `tasks`, `dlq_events`, `user_preferences`, `consent_records`, `consent_audit_log` |
+| **Task reads (agents)** | PostgreSQL MCP stdio only | Agents do not write SQL directly |
+| **Calendar reads (agents)** | Calendar MCP stdio | Events not persisted; fetched per briefing |
+
+Connection strings: `DATABASE_URL` (asyncpg) and `MCP_POSTGRES_URL` (sync, for MCP). See [guidence/supabase-setup.md](./guidence/supabase-setup.md).
 
 ---
 
@@ -339,8 +352,8 @@ class ExecutionMetadata(BaseModel):
 
 | Provider | Data Shared | Safeguards |
 |---|---|---|
-| OpenRouter | Task titles, calendar summaries | PII stripped, no raw descriptions |
-| Local LLM | Full data (local processing) | No network transmission |
+| OpenRouter | Task titles, calendar summaries (masked) | `mask_pii()` before outbound calls when `confidential_pii` |
+| Local LLM | Full context when enabled | No third-party transmission; Docker: use `host.docker.internal` |
 
 ### Data NOT Shared
 

@@ -31,6 +31,10 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
     configure_logging(debug=settings.app_debug)
     configure_telemetry(settings)
+    if "asyncpg" in settings.database_url:
+        from backend.db.session import init_engine
+
+        init_engine(settings)
 
     coordinator: ShutdownCoordinator = app.state.shutdown
     try:

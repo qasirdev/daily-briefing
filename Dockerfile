@@ -16,7 +16,7 @@ WORKDIR /app
 
 RUN pip install --no-cache-dir uv
 
-COPY pyproject.toml uv.lock README.md ./
+COPY pyproject.toml uv.lock README.md alembic.ini ./
 COPY backend/ ./backend/
 RUN uv sync --frozen --no-dev
 
@@ -26,12 +26,18 @@ FROM python:3.12-slim AS production
 WORKDIR /app
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends nginx supervisor curl \
+    && apt-get install -y --no-install-recommends nginx supervisor curl ca-certificates gnupg \
+    && mkdir -p /etc/apt/keyrings \
+    && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
+    && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_22.x nodistro main" > /etc/apt/sources.list.d/nodesource.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends nodejs \
     && rm -rf /var/lib/apt/lists/* \
     && pip install --no-cache-dir uv
 
-COPY pyproject.toml uv.lock README.md ./
+COPY pyproject.toml uv.lock README.md alembic.ini ./
 COPY backend/ ./backend/
+COPY prompts/ ./prompts/
 COPY --from=backend-builder /app/.venv /app/.venv
 
 COPY --from=frontend-builder /app/frontend/.next/standalone ./frontend/.next/standalone

@@ -10,8 +10,9 @@ from typing import Any
 import structlog
 
 from backend.consent.store import consent_store
+from backend.datetime_format import format_event_time_london
+from backend.dependencies import CalendarMCPProtocol
 from backend.graph.state import BriefingGraphState
-from backend.mcp.calendar import CalendarMCPClient
 from backend.mcp.client import MCPConsentRequired, MCPError, MCPTimeoutError
 from backend.metrics import record_consent_request
 from backend.schemas.consent import DEFAULT_TTL_HOURS
@@ -43,7 +44,7 @@ def _default_end(start_iso: str) -> str:
 
 async def calendar_agent_node(
     state: BriefingGraphState,
-    calendar: CalendarMCPClient,
+    calendar: CalendarMCPProtocol,
 ) -> dict[str, Any]:
     """Fetch today's calendar events via Google Calendar MCP."""
     start = time.perf_counter()
@@ -87,13 +88,14 @@ async def calendar_agent_node(
         consent_store.record_usage(user_id, "google_calendar")
         serialized = []
         for event in events:
-            end = event.end or _default_end(event.start)
+            start_raw = event.start
+            end_raw = event.end or _default_end(start_raw)
             serialized.append(
                 {
                     "id": event.id,
                     "summary": event.summary,
-                    "start": event.start,
-                    "end": end,
+                    "start": format_event_time_london(start_raw),
+                    "end": format_event_time_london(end_raw),
                     "attendees": event.attendees,
                 },
             )

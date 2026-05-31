@@ -84,3 +84,24 @@ async def test_consent_api_revoke_not_found() -> None:
     async with api_client() as client:
         response = await client.delete(f"/api/v1/consent/{uuid4()}")
     assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_consent_oauth_google_calendar(monkeypatch: pytest.MonkeyPatch) -> None:
+    from backend.settings import get_settings
+
+    get_settings.cache_clear()
+    monkeypatch.setenv("GOOGLE_CLIENT_ID", "test-client-id.apps.googleusercontent.com")
+    monkeypatch.setenv("GOOGLE_OAUTH_REDIRECT_URI", "http://localhost:8088")
+    monkeypatch.delenv("GOOGLE_OAUTH_AUTHORIZE_URL", raising=False)
+    get_settings.cache_clear()
+
+    async with api_client() as client:
+        response = await client.get("/api/v1/consent/oauth/google_calendar")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["service"] == "google_calendar"
+    assert "client_id=test-client-id" in payload["oauth_url"]
+    assert "redirect_uri=http%3A%2F%2Flocalhost%3A8088" in payload["oauth_url"]
+    get_settings.cache_clear()

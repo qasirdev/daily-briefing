@@ -1,12 +1,12 @@
 # System Architecture — AI Daily Briefing Assistant
 
-**Version:** 1.5.0 | **Last Updated:** May 2026
+**Version:** 1.6.0 (Option 1 Enterprise Hybrid) | **Last Updated:** May 2026
 
 ---
 
 ## Overview
 
-The AI Daily Briefing Assistant is deployed via a **Single Docker Container** topology to minimize orchestration overhead while retaining enterprise scalability patterns. The system orchestrates multiple AI agents to generate personalized daily briefings from tasks and calendar data.
+The AI Daily Briefing Assistant is deployed via a **single Docker container** topology. **Option 1 (Enterprise Hybrid)** adds stdio MCP servers, **Supabase** persistence (port **6543**, Supavisor), and SQLAlchemy/Alembic for DLQ, consent, and preferences — while agents access tasks only through PostgreSQL MCP.
 
 ---
 
@@ -15,33 +15,49 @@ The AI Daily Briefing Assistant is deployed via a **Single Docker Container** to
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                     Single Docker Container                      │
+│  Host: http://localhost:8088  →  nginx :80                       │
 │  ┌───────────────────────────────────────────────────────────┐  │
 │  │                      supervisord                           │  │
-│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────┐   │  │
-│  │  │   nginx     │  │  uvicorn    │  │  next.js        │   │  │
-│  │  │  (reverse   │  │  (FastAPI)  │  │  (standalone)   │   │  │
-│  │  │   proxy)    │  │             │  │                 │   │  │
-│  │  └──────┬──────┘  └──────┬──────┘  └────────┬────────┘   │  │
-│  │         │                │                   │            │  │
-│  │         │    /api/*      │       /*          │            │  │
-│  │         └────────────────┴───────────────────┘            │  │
-│  └───────────────────────────────────────────────────────────┘  │
-│                              │                                   │
-│  ┌───────────────────────────┴───────────────────────────────┐  │
-│  │                     MCP Clients                            │  │
-│  │  ┌─────────────────┐      ┌─────────────────────────────┐ │  │
-│  │  │ PostgreSQL MCP  │      │     Google Calendar MCP     │ │  │
-│  │  │ (localhost TCP) │      │     (localhost TCP)         │ │  │
-│  │  └─────────────────┘      └─────────────────────────────┘ │  │
-│  └───────────────────────────────────────────────────────────┘  │
+│  │  ┌────────┐ ┌──────────┐ ┌─────────┐ ┌─────────────────┐  │  │
+│  │  │ nginx  │ │ mcp-pg   │ │ mcp-cal │ │ uvicorn :8000   │  │  │
+│  │  │ :80    │ │ (stdio)  │ │ (stdio) │ │ next.js :3000   │  │  │
+│  │  └───┬────┘ └────┬─────┘ └────┬────┘ └────────┬────────┘  │  │
+│  │      │ /api/*→8000  │          │             │ /*→3000   │  │
+│  └──────┼──────────────┼──────────┼─────────────┼────────────┘  │
+│         │              │          │             │                │
+│  ┌──────┴──────────────┴──────────┴─────────────┴────────────┐  │
+│  │  LangGraph agents spawn stdio MCP clients (on demand)      │  │
+│  │  SQLAlchemy (async) → Supabase :6543 (DLQ, consent, prefs) │  │
+│  └────────────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────┘
           │                              │
           ▼                              ▼
-┌─────────────────┐           ┌─────────────────────┐
-│   PostgreSQL    │           │   Google APIs       │
-│   (external)    │           │   (googleapis.com)  │
-└─────────────────┘           └─────────────────────┘
+┌─────────────────────┐       ┌─────────────────────┐
+│ Supabase PostgreSQL │       │ Google Calendar API │
+│ (external, :6543)   │       │ (googleapis.com)    │
+└─────────────────────┘       └─────────────────────┘
 ```
+
+### Port map
+
+| Context | nginx | FastAPI | Next.js | Browser URL |
+|---|---|---|---|---|
+| **Docker (production-like)** | 80 (host **8088**) | 8000 | 3000 | http://localhost:8088 |
+| **Local dev** | — | **8010** | **3010** | http://localhost:3010 |
+
+See [guidence/docker-setup.md](./guidence/docker-setup.md) and [guidence/try-it-locally.md](./guidence/try-it-locally.md).
+
+---
+
+## Option 1 data paths
+
+| Path | Technology | Used by |
+|---|---|---|
+| Task reads | PostgreSQL MCP (stdio) → Supabase | Task Agent only |
+| Calendar reads | Calendar MCP (stdio) → Google API | Calendar Agent only |
+| DLQ, consent, preferences | SQLAlchemy async + Alembic | FastAPI services (not agents) |
+
+Agents **never** call SQLAlchemy directly for task queries.
 
 ---
 
@@ -296,4 +312,4 @@ See `docs/SECURITY.md` for comprehensive security documentation.
 
 ---
 
-*Architecture Documentation — Version 1.5.0 — May 2026*
+*Architecture Documentation — Version 1.6.0 — May 2026*

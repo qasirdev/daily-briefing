@@ -1,36 +1,71 @@
 # Model Context Protocol (MCP) Integrations — AI Daily Briefing Assistant
 
-**Version:** 1.5.0 | **Last Updated:** May 2026
+**Version:** 1.6.0 (Option 1 Enterprise Hybrid) | **Last Updated:** May 2026
 
 ---
 
 ## Overview
 
-The AI Daily Briefing Assistant uses the Model Context Protocol (MCP) to provide agents with controlled access to external tools and data sources. MCP servers run as separate processes and communicate via local TCP.
+The AI Daily Briefing Assistant uses the **Model Context Protocol (MCP)** to give agents controlled access to external tools and data sources.
+
+**Current transport (Option 1):** **stdio** — the backend spawns MCP servers via `npx` on demand (`MCP_TRANSPORT=stdio`). In Docker, supervisord also runs `mcp-postgres` and `mcp-google-calendar` as managed processes.
+
+**Legacy transport:** **HTTP/TCP** on ports `5443`/`5444` when `MCP_TRANSPORT=http` (local dev mocks only).
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    Backend (FastAPI)                         │
 │  ┌─────────────────────────────────────────────────────┐    │
-│  │              MCP Client Manager                      │    │
+│  │         MCP clients (stdio or HTTP fallback)         │    │
 │  │  ┌──────────────┐        ┌──────────────────────┐   │    │
-│  │  │ pg_mcp_client│        │ calendar_mcp_client  │   │    │
+│  │  │ postgres_stdio│        │ calendar_stdio       │   │    │
 │  │  └──────┬───────┘        └──────────┬───────────┘   │    │
 │  └─────────┼───────────────────────────┼───────────────┘    │
-│            │                           │                     │
+│            │ stdio (npx)               │ stdio (npx)         │
 └────────────┼───────────────────────────┼─────────────────────┘
-             │ TCP :5443                 │ TCP :5444
              ▼                           ▼
 ┌────────────────────┐        ┌─────────────────────────┐
-│ PostgreSQL MCP     │        │ Google Calendar MCP     │
-│ Server             │        │ Server                  │
+│ @modelcontextprotocol│      │ @franciscpd/calendar-   │
+│ /server-postgres    │      │ mcp-server              │
 └─────────┬──────────┘        └───────────┬─────────────┘
           │                               │
           ▼                               ▼
 ┌────────────────────┐        ┌─────────────────────────┐
-│ PostgreSQL DB      │        │ Google Calendar API     │
+│ Supabase PostgreSQL│        │ Google Calendar API     │
+│ (Supavisor :6543)  │        │ (OAuth refresh token)   │
 └────────────────────┘        └─────────────────────────┘
 ```
+
+### Option 1 configuration (`.env`)
+
+```env
+MCP_TRANSPORT=stdio
+DATABASE_URL=postgresql+asyncpg://...@...pooler.supabase.com:6543/postgres?sslmode=require
+MCP_POSTGRES_URL=postgresql://...@...pooler.supabase.com:6543/postgres?sslmode=require
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+GOOGLE_REFRESH_TOKEN=...
+```
+
+| Component | Package / process | Data store |
+|---|---|---|
+| Task Agent | `@modelcontextprotocol/server-postgres` | Supabase via MCP |
+| Calendar Agent | `@franciscpd/calendar-mcp-server` | Google Calendar API |
+| DLQ / consent / preferences | SQLAlchemy (async) — **not** via agents | Supabase direct |
+
+Setup guides: [supabase-setup.md](./guidence/supabase-setup.md), [google-calandar-setup.md](./guidence/google-calandar-setup.md), [docker-setup.md](./guidence/docker-setup.md).
+
+---
+
+## Legacy HTTP/TCP transport (`MCP_TRANSPORT=http`)
+
+When `MCP_TRANSPORT=http`, clients connect to long-running TCP servers (local dev only):
+
+```
+             │ TCP :5443                 │ TCP :5444
+```
+
+Use `POSTGRES_MCP_PORT=5443` and `CALENDAR_MCP_PORT=5444` in `.env`. Not used in production Docker with Option 1.
 
 ---
 
@@ -531,4 +566,4 @@ async def call_tool(self, tool_name: str, args: dict) -> dict:
 
 ---
 
-*MCP Documentation — Version 1.5.0 — May 2026*
+*MCP Documentation — Version 1.6.0 — May 2026*

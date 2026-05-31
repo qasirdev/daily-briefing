@@ -1,0 +1,44 @@
+{
+  "DB-E7": [
+    {
+      "Issue id": "DB-053",
+      "Summary": "Supabase async SQLAlchemy and Alembic migrations",
+      "Issue Type": "Task",
+      "Description": "Wire Supabase Supavisor (port 6543) via async SQLAlchemy for DLQ and preference persistence.\n\nIMPLEMENTATION DETAILS:\n- Add asyncpg, sqlalchemy[asyncio], alembic dependencies\n- Create backend/db/session.py with prepare_database_url (SSL + statement_cache_size=0 for Supavisor)\n- Create backend/db/models.py and Alembic initial migration (tasks, dlq_events, user_preferences, consent_*)\n- Run alembic upgrade head against Supabase\n\nEFFORT: M (4 hours)\nPROJECT AREA: Backend\nDEPENDENCIES: None\n\nTESTING CRITERIA:\n- alembic upgrade head succeeds against Supabase\n- DLQ events persist via SQLAlchemy when DATABASE_URL uses asyncpg\n- Existing unit tests remain green\n\nEDGE CASES:\n- Password special characters: quote DATABASE_URL in .env\n- Supavisor prepared statement cache: statement_cache_size=0 required",
+      "Labels": "backend,database,supabase,option1",
+      "Parent": "DB-E7"
+    },
+    {
+      "Issue id": "DB-054",
+      "Summary": "PostgreSQL MCP stdio transport and Supervisord process",
+      "Issue Type": "Task",
+      "Description": "Add Option 1 stdio PostgreSQL MCP using @modelcontextprotocol/server-postgres.\n\nIMPLEMENTATION DETAILS:\n- Create backend/mcp/stdio_transport.py and backend/mcp/postgres_stdio.py\n- Add [program:mcp-postgres] to supervisord.conf\n- MCP_TRANSPORT=stdio selects stdio client; HTTP client unchanged for tests\n- Task Agent continues to call PostgresMCPClient interface\n\nEFFORT: M (5 hours)\nPROJECT AREA: Backend\nDEPENDENCIES: DB-053\n\nTESTING CRITERIA:\n- Task Agent query returns rows from Supabase via stdio MCP\n- HTTP MCPClient tests unchanged and passing\n- Supervisord mcp-postgres program defined\n\nEDGE CASES:\n- npx cold start latency: acceptable per-call spawn for MVP\n- TLS to Supabase: NODE_TLS_REJECT_UNAUTHORIZED documented for dev only",
+      "Labels": "backend,mcp,postgres,option1",
+      "Parent": "DB-E7"
+    },
+    {
+      "Issue id": "DB-055",
+      "Summary": "Google Calendar MCP stdio transport and Supervisord process",
+      "Issue Type": "Task",
+      "Description": "Add Option 1 stdio Google Calendar MCP using @franciscpd/calendar-mcp-server.\n\nIMPLEMENTATION DETAILS:\n- Create backend/mcp/calendar_stdio.py with tool name adapter (calendar_list_events)\n- Add [program:mcp-google-calendar] to supervisord.conf\n- Map GOOGLE_CLIENT_* settings to GOOGLE_CALENDAR_* env for npm server\n- Calendar Agent unchanged; uses CalendarMCPClient interface\n\nEFFORT: M (5 hours)\nPROJECT AREA: Backend\nDEPENDENCIES: DB-054\n\nTESTING CRITERIA:\n- Calendar Agent calls stdio MCP when MCP_TRANSPORT=stdio\n- Valid OAuth credentials return events\n- Consent flow unchanged for missing consent\n\nEDGE CASES:\n- Invalid refresh token: agent escalates, graph continues degraded\n- Node 22 required: Dockerfile installs NodeSource 22.x",
+      "Labels": "backend,mcp,calendar,option1",
+      "Parent": "DB-E7"
+    },
+    {
+      "Issue id": "DB-056",
+      "Summary": "Docker and nginx alignment for Option 1 topology",
+      "Issue Type": "Task",
+      "Description": "Align production container with Option 1 Enterprise Hybrid process layout.\n\nIMPLEMENTATION DETAILS:\n- Fix nginx upstream ports (8000 FastAPI, 3000 Next.js)\n- Install Node.js 22 in Dockerfile production stage for npx MCP servers\n- Copy alembic.ini into Docker image\n- Extend supervisord and .env.example with MCP_TRANSPORT, MCP_POSTGRES_URL, Google OAuth vars\n\nEFFORT: S (2 hours)\nPROJECT AREA: Infrastructure\nDEPENDENCIES: DB-054, DB-055\n\nTESTING CRITERIA:\n- docker build succeeds\n- Container /health returns 200 via nginx\n- All supervisord programs defined (nginx, fastapi, nextjs, mcp-postgres, mcp-google-calendar)\n\nEDGE CASES:\n- npm cache: use NPM_CONFIG_CACHE in container /tmp",
+      "Labels": "infrastructure,docker,option1",
+      "Parent": "DB-E7"
+    },
+    {
+      "Issue id": "DB-057",
+      "Summary": "End-to-end briefing with stdio MCP integration",
+      "Issue Type": "Task",
+      "Description": "Verify full LangGraph briefing pipeline with stdio MCP and Supabase.\n\nIMPLEMENTATION DETAILS:\n- POST /api/v1/briefing/generate with MCP_TRANSPORT=stdio\n- Confirm task agent reads from Supabase via stdio PostgreSQL MCP\n- Confirm focus and critic agents invoke LLM\n- Document degraded mode when calendar OAuth invalid\n\nEFFORT: S (2 hours)\nPROJECT AREA: Testing\nDEPENDENCIES: DB-054, DB-055\n\nTESTING CRITERIA:\n- Task agent status success with seeded tasks\n- Orchestrator returns briefing markdown\n- Agent breakdown includes all five agents\n\nEDGE CASES:\n- Calendar OAuth failure: degraded briefing, not 500\n- MCP spawn timeout: task agent escalates mcp_timeout",
+      "Labels": "testing,e2e,option1",
+      "Parent": "DB-E7"
+    }
+  ]
+}

@@ -8,6 +8,7 @@ from typing import Any, Literal
 
 import structlog
 
+from backend.datetime_format import format_time_range
 from backend.graph.state import BriefingGraphState
 from backend.metrics import record_consent_request
 from backend.schemas.consent import (
@@ -19,6 +20,36 @@ from backend.schemas.envelope import AgentResultEnvelope, ExecutionMetadata
 from backend.security.sanitization import sanitize_markdown
 
 logger = structlog.get_logger()
+
+
+def _render_focus_plan(plan: dict[str, object]) -> str:
+    blocks = plan.get("time_blocks")
+    block_count = len(blocks) if isinstance(blocks, list) else 0
+    summary = plan.get("summary")
+    if (
+        not isinstance(summary, str)
+        or not summary.strip()
+        or summary.strip().startswith(("{", "```"))
+    ):
+        summary = (
+            f"Today's focus plan includes {block_count} scheduled blocks "
+            f"aligned with your calendar and tasks."
+            if block_count
+            else "Focus plan generated."
+        )
+    parts = [f"<p>{summary}</p>"]
+    if isinstance(blocks, list) and blocks:
+        items = "".join(
+            f"<li><strong>"
+            f"{format_time_range(block.get('start', ''), block.get('end', ''))}"
+            f"</strong>: "
+            f"{block.get('activity', 'Scheduled block')}</li>"
+            for block in blocks
+            if isinstance(block, dict)
+        )
+        if items:
+            parts.append(f"<ul>{items}</ul>")
+    return "".join(parts)
 
 
 def _success_result(envelope: AgentResultEnvelope | None) -> dict[str, object] | None:
@@ -162,10 +193,10 @@ async def orchestrator_present_node(state: BriefingGraphState) -> dict[str, Any]
     if focus_payload is not None:
         plan = focus_payload.get("plan", {})
         if isinstance(plan, dict):
-            summary = plan.get("summary", "Focus plan generated.")
+            focus_html = _render_focus_plan(plan)
         else:
-            summary = "Focus plan generated."
-        sections.append(f"<h2>Focus Plan</h2><p>{summary}</p>")
+            focus_html = "<p>Focus plan generated.</p>"
+        sections.append(f"<h2>Focus Plan</h2>{focus_html}")
 
     non_consent_escalations = [
         envelope
