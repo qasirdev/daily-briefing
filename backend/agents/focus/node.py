@@ -127,7 +127,13 @@ async def focus_agent_node(
     except json.JSONDecodeError:
         text = llm_response.content.strip()
         if text.startswith("```"):
-            text = text.removeprefix("```json").removeprefix("```").strip().removesuffix("```").strip()
+            text = (
+                text.removeprefix("```json")
+                .removeprefix("```")
+                .strip()
+                .removesuffix("```")
+                .strip()
+            )
         try:
             plan = json.loads(text)
         except json.JSONDecodeError:

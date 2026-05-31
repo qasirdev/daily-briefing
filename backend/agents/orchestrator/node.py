@@ -26,16 +26,23 @@ def _render_focus_plan(plan: dict[str, object]) -> str:
     blocks = plan.get("time_blocks")
     block_count = len(blocks) if isinstance(blocks, list) else 0
     summary = plan.get("summary")
-    if not isinstance(summary, str) or not summary.strip() or summary.strip().startswith(("{", "```")):
+    if (
+        not isinstance(summary, str)
+        or not summary.strip()
+        or summary.strip().startswith(("{", "```"))
+    ):
         summary = (
-            f"Today's focus plan includes {block_count} scheduled blocks aligned with your calendar and tasks."
+            f"Today's focus plan includes {block_count} scheduled blocks "
+            f"aligned with your calendar and tasks."
             if block_count
             else "Focus plan generated."
         )
     parts = [f"<p>{summary}</p>"]
     if isinstance(blocks, list) and blocks:
         items = "".join(
-            f"<li><strong>{format_time_range(block.get('start', ''), block.get('end', ''))}</strong>: "
+            f"<li><strong>"
+            f"{format_time_range(block.get('start', ''), block.get('end', ''))}"
+            f"</strong>: "
             f"{block.get('activity', 'Scheduled block')}</li>"
             for block in blocks
             if isinstance(block, dict)

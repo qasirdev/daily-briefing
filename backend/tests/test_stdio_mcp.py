@@ -3,7 +3,7 @@
 import pytest
 
 from backend.mcp.client import MCPError
-from backend.mcp.stdio_transport import bind_user_id, _content_to_dict
+from backend.mcp.stdio_transport import _content_to_dict, bind_user_id
 
 
 def test_bind_user_id_replaces_placeholder() -> None:

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime, time, timezone
+from datetime import UTC, date, datetime, time
 from typing import Any
 
 import structlog
@@ -56,8 +56,8 @@ class CalendarMCPStdioClient(StdioMCPTransport):
         calendar_id: str = "primary",
     ) -> list[CalendarEvent]:
         resolved_calendar = calendar_id or self._calendar_id
-        start = datetime.combine(target_date, time.min, tzinfo=timezone.utc)
-        end = datetime.combine(target_date, time.max, tzinfo=timezone.utc)
+        start = datetime.combine(target_date, time.min, tzinfo=UTC)
+        end = datetime.combine(target_date, time.max, tzinfo=UTC)
         try:
             payload = await self.call_tool(
                 "calendar_list_events",
