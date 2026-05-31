@@ -2,9 +2,13 @@
 
 from functools import lru_cache
 from typing import Literal, Self
+from urllib.parse import urlencode, urlparse, urlunparse
 
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+GOOGLE_OAUTH_AUTH_ENDPOINT = "https://accounts.google.com/o/oauth2/v2/auth"
+GOOGLE_CALENDAR_OAUTH_SCOPE = "https://www.googleapis.com/auth/calendar.readonly"
 
 
 class Settings(BaseSettings):
@@ -29,8 +33,15 @@ class Settings(BaseSettings):
     local_llm_model_id: str = "local/llama-3-8b"
 
     google_oauth_authorize_url: str = ""
+    google_oauth_redirect_uri: str = "http://localhost:8088"
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    google_refresh_token: str = ""
+    calendar_id: str = "primary"
 
     database_url: str = "postgresql://briefing:briefing@localhost:5432/briefing"
+    mcp_postgres_url: str = ""
+    mcp_transport: Literal["http", "stdio"] = "stdio"
     postgres_mcp_host: str = "localhost"
     postgres_mcp_port: int = 5443
     calendar_mcp_host: str = "localhost"
@@ -70,6 +81,34 @@ class Settings(BaseSettings):
     @property
     def cors_origin_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+
+    @property
+    def resolved_mcp_postgres_url(self) -> str:
+        if self.mcp_postgres_url:
+            return self.mcp_postgres_url
+        return self.database_url.replace("postgresql+asyncpg://", "postgresql://", 1)
+
+    @property
+    def resolved_google_oauth_authorize_url(self) -> str:
+        """OAuth authorize URL for the consent popup (built from client id when unset)."""
+        if not self.google_client_id:
+            return ""
+        if self.google_oauth_authorize_url and "client_id=" in self.google_oauth_authorize_url:
+            return self.google_oauth_authorize_url
+        base = self.google_oauth_authorize_url or GOOGLE_OAUTH_AUTH_ENDPOINT
+        parsed = urlparse(base)
+        auth_base = urlunparse(parsed._replace(query="", fragment=""))
+        params = urlencode(
+            {
+                "client_id": self.google_client_id,
+                "redirect_uri": self.google_oauth_redirect_uri,
+                "response_type": "code",
+                "scope": GOOGLE_CALENDAR_OAUTH_SCOPE,
+                "access_type": "offline",
+                "prompt": "consent",
+            },
+        )
+        return f"{auth_base}?{params}"
 
 
 @lru_cache

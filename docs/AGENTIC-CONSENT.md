@@ -122,6 +122,10 @@ class ConsentRecord(BaseModel):
 
 ### Default TTL Configuration
 
+OAuth popup URL is auto-built from `GOOGLE_CLIENT_ID` (`GET /api/v1/consent/oauth/google_calendar`). Register redirect URIs in Google Cloud: `http://localhost:8088`, `http://localhost:3010`, and `https://developers.google.com/oauthplayground`. See [guidence/google-calandar-setup.md](./guidence/google-calandar-setup.md).
+
+Calendar API access in production uses `GOOGLE_REFRESH_TOKEN` in `.env`; the popup is optional UX during consent grant.
+
 ```python
 CONSENT_TTL_HOURS = {
     "google_calendar": 4,  # 4-hour living contract

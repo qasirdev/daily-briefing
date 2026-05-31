@@ -348,7 +348,7 @@ Token budgets enforce computational scope; MCP clients enforce data access scope
 | `public` | Non-sensitive metadata | Standard logging |
 | `internal` | System operational data | Masked in external logs |
 | `confidential` | Business-sensitive content | Encrypted at rest (production target) |
-| `confidential_pii` | Personal identifiable information | Masked, minimal retention, local LLM routing |
+| `confidential_pii` | Personal identifiable information | Masked; local LLM when enabled; else masked OpenRouter |
 
 ### PII detection & masking
 
@@ -361,7 +361,12 @@ Token budgets enforce computational scope; MCP clients enforce data access scope
 | SSN | `[REDACTED_SSN]` |
 | Credit card | `[REDACTED_CARD]` |
 
-`AgentResultEnvelope` validates metadata and applies PII checks before external LLM calls. When classification is `confidential_pii`, the LLM router prefers local inference to keep payloads off third-party APIs.
+`AgentResultEnvelope` validates metadata and applies PII checks before external LLM calls. When classification is `confidential_pii`, the LLM router (`backend/llm/router.py`):
+
+1. Uses **local LLM** if `LOCAL_LLM_ENABLED=true` and the server is reachable
+2. Falls back to **masked OpenRouter** if local LLM is disabled or unreachable (PII masked via `mask_pii()` before outbound calls)
+
+In Docker, `LOCAL_LLM_BASE_URL=http://localhost:8080` points at the container — use `http://host.docker.internal:8080/v1` to reach a host-side model, or set `LOCAL_LLM_ENABLED=false` for OpenRouter-only dev.
 
 ```python
 from backend.security.pii import PIIDetector, mask_pii

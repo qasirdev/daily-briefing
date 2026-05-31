@@ -40,8 +40,10 @@ async def revoke_consent(consent_id: UUID) -> ConsentRecord:
 async def oauth_redirect(service: str) -> dict[str, str]:
     """Return OAuth authorize URL for a service (Google Calendar)."""
     settings = get_settings()
-    if service == "google_calendar" and settings.google_oauth_authorize_url:
-        return {"oauth_url": settings.google_oauth_authorize_url, "service": service}
+    if service == "google_calendar":
+        oauth_url = settings.resolved_google_oauth_authorize_url
+        if oauth_url:
+            return {"oauth_url": oauth_url, "service": service}
     raise HTTPException(
         status_code=status.HTTP_501_NOT_IMPLEMENTED,
         detail=f"OAuth not configured for service: {service}",

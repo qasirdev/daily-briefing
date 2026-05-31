@@ -20,8 +20,8 @@
 | **Problem** | Knowledge workers lose hours reconciling tasks, meetings, and priorities each morning |
 | **Solution** | Supervisor-led **LangGraph** pipeline: Task, Calendar, Focus, and Critic agents produce one sanitized daily briefing |
 | **Differentiators** | OWASP GenAI hardening, JIT agentic consent, local LLM fallback for PII, MCP integrations, Cosign-signed images |
-| **Quality bar** | 86 automated tests, strict MyPy, Ruff lint, GitHub Actions CI, E2E flows, Prometheus SLOs |
-| **Deployment** | Single production container (Nginx + FastAPI + Next.js), GHCR, health/readiness probes, graceful shutdown |
+| **Quality bar** | 90+ automated tests, strict MyPy, Ruff lint, GitHub Actions CI, E2E flows, Prometheus SLOs |
+| **Deployment** | Option 1 Enterprise Hybrid — Supabase + stdio MCP + single Docker container (nginx **8088** → 80) |
 
 ---
 
@@ -46,7 +46,7 @@ rate limiting, circuit breakers, dead letter queue (DLQ), GDPR export, OAuth con
 | **AI / Agents** | LangGraph, multi-agent orchestration, LLM router (OpenRouter + local fallback), externalized prompts |
 | **Backend API** | FastAPI, Pydantic Settings, async Python, REST `/api/v1/*` |
 | **Frontend** | Next.js 16, React 19, TypeScript, Tailwind CSS 4, client-side sanitization |
-| **Data & Tools** | PostgreSQL MCP (read-only, RLS), Google Calendar MCP, JIT consent store |
+| **Data & Tools** | Supabase PostgreSQL (Supavisor :6543), PostgreSQL MCP stdio, Google Calendar MCP stdio, JIT consent store |
 | **Security** | OWASP GenAI LLM01–LLM08, nh3 output sanitization, PII detector, SSRF allowlists, rate limits |
 | **Observability** | OpenTelemetry traces, Prometheus metrics, structured JSON logs, SLO recording rules |
 | **DevOps** | Docker, GitHub Actions, GHCR, Cosign keyless signing, health/readiness probes |
@@ -146,7 +146,7 @@ Dedicated security test suite: `backend/tests/security/` (injection, sanitizatio
 
 | Practice | Implementation |
 |----------|----------------|
-| **Testing** | 86 pytest cases including unit, security, and E2E (`backend/tests/e2e/`) |
+| **Testing** | 90+ pytest cases including unit, security, live stdio integration, and E2E |
 | **Static analysis** | Ruff lint + MyPy strict mode on backend |
 | **CI/CD** | GitHub Actions: lint, typecheck, test, Docker build, workflow docs |
 | **Image supply chain** | GHCR publish + Cosign keyless verify |
@@ -163,35 +163,36 @@ Dedicated security test suite: `backend/tests/security/` (injection, sanitizatio
 - Node.js 22.x (`nvm use`)  
 - Docker 27+ (optional full stack)  
 
-### Backend
+### Backend (local dev — port 8010)
 
 ```bash
 cp .env.example .env
 uv sync --all-extras
-uv run uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+uv run alembic upgrade head   # once, against Supabase
+uv run uvicorn backend.main:app --reload \
+  --reload-dir backend --reload-dir prompts \
+  --host 127.0.0.1 --port 8010
 ```
 
-Health: `curl http://localhost:8000/health`  
-Readiness: `curl http://localhost:8000/health/ready`  
+Health: `curl http://127.0.0.1:8010/health`  
+Readiness: `curl http://127.0.0.1:8010/health/ready`
 
-### Frontend
+### Docker (full stack — port 8088)
+
+```bash
+docker compose up --build -d
+curl http://localhost:8088/health
+```
+
+See [docs/guidence/docker-setup.md](docs/guidence/docker-setup.md) and [docs/guidence/try-it-locally.md](docs/guidence/try-it-locally.md).
+
+### Frontend (local dev — port 3010)
 
 ```bash
 cd frontend && npm ci && npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000)
-
-### Full stack (Docker)
-
-```bash
-cp .env.example .env
-docker compose up --build
-```
-
-Open [http://localhost](http://localhost) — API at `/api/v1/`, metrics at `/metrics/`.
-
-> If port 80 is busy, map `"8080:80"` in `docker-compose.yml` and use [http://localhost:8080](http://localhost:8080).
+Open [http://localhost:3010](http://localhost:3010) — API auto-detects backend at **8010** (or **8088** in hybrid Docker mode).
 
 ### Verify quality locally
 

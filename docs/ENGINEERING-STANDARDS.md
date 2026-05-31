@@ -13,7 +13,7 @@ This project adheres to the [Twelve-Factor App](https://12factor.net/) methodolo
 | **I. Codebase** | Single Git repository, multiple deploys via branches | ⬜ Specified |
 | **II. Dependencies** | Explicit via `pyproject.toml` (uv) and `package.json` (npm) | ⬜ Specified |
 | **III. Config** | Environment variables, `.env` files, never in code | ⬜ Specified |
-| **IV. Backing Services** | PostgreSQL, Google Calendar API as attached resources | ⬜ Specified |
+| **IV. Backing Services** | Supabase PostgreSQL, Google Calendar API as attached resources | ⬜ Specified |
 | **V. Build, Release, Run** | Docker multi-stage build, CI/CD pipeline | ⬜ Specified |
 | **VI. Processes** | Stateless processes, state in PostgreSQL | ⬜ Specified |
 | **VII. Port Binding** | Self-contained via uvicorn/next.js, exposed through Nginx | ⬜ Specified |
@@ -66,7 +66,7 @@ This project adheres to the [Twelve-Factor App](https://12factor.net/) methodolo
 | Docker | 27.x | Containerization |
 | Nginx | 1.27.x | Reverse proxy |
 | Supervisord | 4.2.x | Process manager |
-| PostgreSQL | 16.x | Primary database |
+| PostgreSQL | 16.x (Supabase) | Primary database (Supavisor :6543) |
 
 ---
 
@@ -84,36 +84,40 @@ APP_ENV=development|staging|production
 APP_DEBUG=false
 APP_SECRET_KEY=<generate-with-openssl-rand-hex-32>
 
-# Database
-DATABASE_URL=postgresql://user:pass@localhost:5432/briefing
-DATABASE_POOL_SIZE=10
-DATABASE_POOL_MAX_OVERFLOW=20
+# Database — Supabase Supavisor (port 6543)
+DATABASE_URL=postgresql+asyncpg://postgres.[ref]:[password]@...pooler.supabase.com:6543/postgres?sslmode=require
+MCP_POSTGRES_URL=postgresql://postgres.[ref]:[password]@...pooler.supabase.com:6543/postgres?sslmode=require
 
-# LLM Configuration
-OPENROUTER_API_KEY=<your-key>
+# MCP — stdio (Option 1 default) or http (legacy TCP mock servers)
+MCP_TRANSPORT=stdio
+
+# MCP HTTP fallback only (when MCP_TRANSPORT=http)
+POSTGRES_MCP_HOST=localhost
+POSTGRES_MCP_PORT=5443
+CALENDAR_MCP_HOST=localhost
+CALENDAR_MCP_PORT=5444
+
+# Google Calendar OAuth
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GOOGLE_REFRESH_TOKEN=
+GOOGLE_OAUTH_REDIRECT_URI=http://localhost:8088
+CALENDAR_ID=primary
+
+# LLM
+OPENROUTER_API_KEY=
 OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
 LLM_PRIMARY_MODEL=openai/gpt-4o-mini
-LLM_FALLBACK_MODEL=local/llama-3-8b
-
-# Local LLM (optional)
 LOCAL_LLM_ENABLED=false
 LOCAL_LLM_BASE_URL=http://localhost:8080/v1
 
-# MCP Configuration
-POSTGRES_MCP_HOST=localhost
-POSTGRES_MCP_PORT=5443 # default 5433
-CALENDAR_MCP_HOST=localhost
-CALENDAR_MCP_PORT=5444 # default 5434
-
-# Observability
+# Observability / security
 OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
-OTEL_SERVICE_NAME=daily-briefing
-
-# Security
 JWT_SECRET_KEY=<generate-with-openssl-rand-hex-64>
-JWT_ALGORITHM=RS256
-CORS_ORIGINS=http://localhost:3000
+CORS_ORIGINS=http://localhost:3010,http://127.0.0.1:3010,http://localhost
 ```
+
+**Supabase URL rules:** use port **6543** (Supavisor pooler); URL-encode `$` in passwords as `%24`; no quotes around `DATABASE_URL` / `MCP_POSTGRES_URL`; no inline `#` comments on values (breaks parsing).
 
 ### Production Configuration
 

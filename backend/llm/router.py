@@ -73,15 +73,37 @@ class LLMRouter:
             msg = "Token budget exceeded for input"
             raise LLMError(msg)
 
-        use_local = force_local or data_classification == "confidential_pii"
+        use_local = force_local or (
+            data_classification == "confidential_pii" and self._fallback is not None
+        )
         if use_local:
-            return await self._generate_local(
-                messages=messages,
-                max_tokens=output_budget,
-                trace_id=trace_id,
-                agent_id=agent_id,
-                reason="pii" if data_classification == "confidential_pii" else "forced",
-            )
+            try:
+                return await self._generate_local(
+                    messages=messages,
+                    max_tokens=output_budget,
+                    trace_id=trace_id,
+                    agent_id=agent_id,
+                    reason="pii" if data_classification == "confidential_pii" else "forced",
+                )
+            except LLMError as local_error:
+                if not self._settings.openrouter_api_key:
+                    raise
+                logger.warning(
+                    "llm_local_failed_using_masked_primary",
+                    trace_id=trace_id,
+                    error=str(local_error),
+                    reason="pii" if data_classification == "confidential_pii" else "forced",
+                )
+                outbound_messages = self._prepare_outbound_messages(
+                    messages,
+                    data_classification=data_classification,
+                )
+                return await self._call_primary_with_retry(
+                    messages=outbound_messages,
+                    max_tokens=output_budget,
+                    trace_id=trace_id,
+                    agent_id=agent_id,
+                )
 
         outbound_messages = self._prepare_outbound_messages(
             messages,

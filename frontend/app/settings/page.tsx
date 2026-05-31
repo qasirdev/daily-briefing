@@ -3,12 +3,12 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
-import { API_BASE, DEFAULT_USER_ID } from "@/lib/api";
+import { DEFAULT_USER_ID, getApiBase } from "@/lib/api";
 import { consentRecordSchema, type ConsentRecord } from "@/lib/consent-schema";
 
 async function fetchConsents(): Promise<ConsentRecord[]> {
   const res = await fetch(
-    `${API_BASE}/api/v1/consent?user_id=${encodeURIComponent(DEFAULT_USER_ID)}`,
+    `${getApiBase()}/api/v1/consent?user_id=${encodeURIComponent(DEFAULT_USER_ID)}`,
   );
   if (!res.ok) {
     throw new Error(`Failed to load consents (${res.status})`);
@@ -63,7 +63,7 @@ export default function SettingsPage() {
     setRevoking(consentId);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/api/v1/consent/${consentId}`, {
+      const res = await fetch(`${getApiBase()}/api/v1/consent/${consentId}`, {
         method: "DELETE",
       });
       if (!res.ok) {
@@ -106,7 +106,7 @@ export default function SettingsPage() {
               Refresh
             </button>
             <a
-              href={`${API_BASE}/api/v1/export?user_id=${encodeURIComponent(DEFAULT_USER_ID)}&format=json`}
+              href={`${getApiBase()}/api/v1/export?user_id=${encodeURIComponent(DEFAULT_USER_ID)}&format=json`}
               className="text-sm text-briefing-primary underline-offset-2 hover:underline"
             >
               Export my data

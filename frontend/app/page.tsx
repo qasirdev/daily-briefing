@@ -10,7 +10,7 @@ import {
   toObservabilityData,
   type BriefingResponse,
 } from "@/lib/briefing-schema";
-import { API_BASE, DEFAULT_USER_ID } from "@/lib/api";
+import { DEFAULT_USER_ID, getApiBase } from "@/lib/api";
 import type { ConsentPromptRequest } from "@/lib/consent-schema";
 
 const emptyObservability = {
@@ -34,7 +34,7 @@ export default function Home() {
     setError(null);
     setConsentPrompt(null);
     try {
-      const res = await fetch(`${API_BASE}/api/v1/briefing/generate`, {
+      const res = await fetch(`${getApiBase()}/api/v1/briefing/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_id: DEFAULT_USER_ID }),
@@ -61,7 +61,7 @@ export default function Home() {
       setOauthError(null);
       try {
         const oauthRes = await fetch(
-          `${API_BASE}/api/v1/consent/oauth/${consentPrompt.service}`,
+          `${getApiBase()}/api/v1/consent/oauth/${consentPrompt.service}`,
         );
         if (oauthRes.ok) {
           const oauthPayload: { oauth_url?: string } = await oauthRes.json();
@@ -73,7 +73,7 @@ export default function Home() {
           }
         }
 
-        const grantRes = await fetch(`${API_BASE}/api/v1/consent`, {
+        const grantRes = await fetch(`${getApiBase()}/api/v1/consent`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

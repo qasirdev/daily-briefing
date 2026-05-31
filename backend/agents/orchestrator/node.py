@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import json
 import time
+from datetime import datetime
 from typing import Any, Literal
+from zoneinfo import ZoneInfo
 
 import structlog
 
@@ -19,6 +21,24 @@ from backend.schemas.envelope import AgentResultEnvelope, ExecutionMetadata
 from backend.security.sanitization import sanitize_markdown
 
 logger = structlog.get_logger()
+
+LONDON = ZoneInfo("Europe/London")
+
+
+def format_event_time_london(value: str) -> str:
+    """Format an ISO event start time in Europe/London as ``YYYY-MM-DDTHH:MM``."""
+    text = value.strip()
+    if not text:
+        return ""
+    if "T" not in text:
+        return text[:10] if len(text) >= 10 else text
+    try:
+        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except ValueError:
+        return text
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=LONDON)
+    return parsed.astimezone(LONDON).strftime("%Y-%m-%dT%H:%M")
 
 
 def _success_result(envelope: AgentResultEnvelope | None) -> dict[str, object] | None:
@@ -152,7 +172,8 @@ async def orchestrator_present_node(state: BriefingGraphState) -> dict[str, Any]
         events = calendar_payload.get("events", [])
         if isinstance(events, list) and events:
             items = "".join(
-                f"<li>{event.get('summary', 'Event')} — {event.get('start', '')}</li>"
+                f"<li>{event.get('summary', 'Event')} — "
+                f"{format_event_time_london(str(event.get('start', '')))}</li>"
                 for event in events
                 if isinstance(event, dict)
             )

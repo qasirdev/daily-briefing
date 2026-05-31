@@ -163,9 +163,14 @@ global:
 scrape_configs:
   - job_name: 'daily-briefing'
     static_configs:
-      - targets: ['localhost:8000']
+      # Local uvicorn
+      - targets: ['localhost:8010']
+      # Docker via nginx (host port 8088)
+      # - targets: ['localhost:8088']
     metrics_path: /metrics
 ```
+
+> Inside Docker, scrape via nginx at `http://localhost:8088/metrics/` or FastAPI directly at `http://localhost:8000/metrics/` from within the container. OTEL to `localhost:4347` from the host is optional — container logs show `UNAVAILABLE` if no collector is running (harmless).
 
 ### FastAPI Metrics Endpoint
 

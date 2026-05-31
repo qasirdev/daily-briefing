@@ -6,9 +6,11 @@ This is the root index for the AI Daily Briefing Assistant.
 All engineering standards, agent specs, and prompt rules live in
 co-located AGENT.md files alongside the code they govern.
 
-**Architecture:** Multi-Agent Orchestration | MCP Servers | Cursor Development Agents  
-**Deployment:** Single Docker Container with Advanced Security Posture  
+**Architecture:** Multi-Agent Orchestration | MCP Servers (stdio) | Supabase | Cursor Development Agents  
+**Deployment:** Single Docker Container (Option 1 Enterprise Hybrid)  
 **Version:** 1.6.0 | May 2026
+
+> **Option 1 implemented:** stdio MCP (`@modelcontextprotocol/server-postgres`, `@franciscpd/calendar-mcp-server`), Supabase persistence (Alembic/SQLAlchemy), Docker on **8088**. Setup: [docs/guidence/docker-setup.md](docs/guidence/docker-setup.md).
 
 ---
 
@@ -48,12 +50,13 @@ co-located AGENT.md files alongside the code they govern.
 
 | Milestone | Scope Summary | Status |
 |---|---|---|
-| **MVP 1** | Next.js UI scaffold, FastAPI backend, LangGraph orchestration, basic MCP integration | Planned |
-| **MVP 2** | PostgreSQL MCP, Task Agent, Calendar Agent, Focus Agent implementation | Planned |
-| **MVP 3** | Critic Agent, DLQ routing, observability baseline, OpenTelemetry integration | Planned |
-| **MVP 4** | Agentic Consent modal, Local LLM fallback, learner feedback loops | Planned |
-| **MVP 5** | Comprehensive OWASP GenAI Security Hardening, Prompt Injection Defense | Planned |
-| **MVP 6** | Orchestrator-as-Presenter finalization, production deployment, Docker signing | Planned |
+| **MVP 1** | Next.js UI scaffold, FastAPI backend, LangGraph orchestration, basic MCP integration | ✅ Done |
+| **MVP 2** | PostgreSQL MCP, Task Agent, Calendar Agent, Focus Agent implementation | ✅ Done |
+| **MVP 3** | Critic Agent, DLQ routing, observability baseline, OpenTelemetry integration | ✅ Done |
+| **MVP 4** | Agentic Consent modal, Local LLM fallback, learner feedback loops | ✅ Done |
+| **MVP 5** | Comprehensive OWASP GenAI Security Hardening, Prompt Injection Defense | ✅ Done |
+| **MVP 6** | Orchestrator-as-Presenter finalization, production deployment, Docker signing | ✅ Done |
+| **Option 1** | Supabase + stdio MCP + Alembic + Docker E2E (DB-E7, DB-053–057) | ✅ Done |
 
 ---
 
@@ -63,6 +66,9 @@ co-located AGENT.md files alongside the code they govern.
 |---|---|---|
 | Architecture & agent roles | docs/ARCHITECTURE.md | MVP 1 |
 | Model Context Protocol (MCP) | docs/MCP.md | MVP 2 |
+| **Run locally / Docker** | docs/guidence/try-it-locally.md, docs/guidence/docker-setup.md | Option 1 |
+| **Supabase setup** | docs/guidence/supabase-setup.md | Option 1 |
+| **Google Calendar OAuth** | docs/guidence/google-calandar-setup.md | Option 1 |
 | Engineering Standards (FE/BE/DB) | docs/ENGINEERING-STANDARDS.md | MVP 1 |
 | Details of epics and tasks | docs/jira-tickets-json/*.json | MVP 1–6 |
 | Observability & Tracing | docs/OBSERVABILITY.md | MVP 3 |

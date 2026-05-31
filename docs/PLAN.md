@@ -154,6 +154,20 @@ Fresh autonomous kickoff only (not every "hi"): then read `docs/KICKOFF-PROMPT.m
 
 ---
 
+## Option 1: Enterprise Hybrid ✅
+
+**Epic:** DB-E7  
+**Tasks:** DB-053–DB-057 (see `docs/jira-tickets-json/DB-E7-option1-hybrid.json`)
+
+| Area | Implementation |
+|---|---|
+| Supabase | `DATABASE_URL` + `MCP_POSTGRES_URL`, Alembic `001_initial_schema` |
+| MCP transport | `MCP_TRANSPORT=stdio`, `backend/mcp/*_stdio.py` |
+| Docker | nginx **8088→80**, supervisord MCP programs, `prompts/` in image |
+| Guides | `docs/guidence/docker-setup.md`, `try-it-locally.md`, `google-calandar-setup.md` |
+
+---
+
 ## Summary
 
 | MVP | Epic | Tasks | Completed | Progress |
@@ -164,7 +178,8 @@ Fresh autonomous kickoff only (not every "hi"): then read `docs/KICKOFF-PROMPT.m
 | MVP 4 | DB-E4 | 8 | 8 | 100% |
 | MVP 5 | DB-E5 | 8 | 8 | 100% |
 | MVP 6 | DB-E6 | 8 | 8 | 100% |
-| **Total** | **6 Epics** | **52** | **52** | **100%** |
+| Option 1 | DB-E7 | 5 | 5 | 100% |
+| **Total** | **7 Epics** | **57** | **57** | **100%** |
 
 ---
 

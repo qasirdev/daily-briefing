@@ -35,16 +35,62 @@ async def test_pii_forces_local_llm() -> None:
 
 
 @pytest.mark.asyncio
-async def test_local_disabled_raises() -> None:
-    settings = Settings(local_llm_enabled=False)
+async def test_local_disabled_uses_masked_primary_for_pii() -> None:
+    settings = Settings(local_llm_enabled=False, openrouter_api_key="test")
     router = LLMRouter(settings)
-    with pytest.raises(LLMError, match="Local LLM fallback is disabled"):
-        await router.generate(
-            messages=[{"role": "user", "content": "plan"}],
+    primary_mock = AsyncMock(
+        return_value=LLMResponse(
+            content="{}",
+            model_used="openai/gpt-4o-mini",
+            tokens_used=10,
+            latency_ms=5,
+        ),
+    )
+    with patch.object(router, "_call_primary_with_retry", primary_mock):
+        result = await router.generate(
+            messages=[{"role": "user", "content": "email: user@example.com"}],
             trace_id="b" * 32,
             data_classification="confidential_pii",
             agent_id="focus",
         )
+    assert result.model_used == "openai/gpt-4o-mini"
+    primary_mock.assert_awaited_once()
+    outbound = primary_mock.await_args.kwargs["messages"]
+    assert "[REDACTED_EMAIL]" in outbound[0]["content"] or "user@example.com" not in outbound[0]["content"]
+
+
+@pytest.mark.asyncio
+async def test_pii_local_failure_falls_back_to_masked_primary() -> None:
+    settings = Settings(
+        local_llm_enabled=True,
+        openrouter_api_key="test",
+        llm_primary_model="openai/gpt-4o-mini",
+    )
+    router = LLMRouter(settings)
+    primary_mock = AsyncMock(
+        return_value=LLMResponse(
+            content="{}",
+            model_used="openai/gpt-4o-mini",
+            tokens_used=12,
+            latency_ms=4,
+        ),
+    )
+    with (
+        patch.object(
+            router,
+            "_generate_local",
+            AsyncMock(side_effect=LLMError("Local LLM unavailable")),
+        ),
+        patch.object(router, "_call_primary_with_retry", primary_mock),
+    ):
+        result = await router.generate(
+            messages=[{"role": "user", "content": "email: user@example.com"}],
+            trace_id="d" * 32,
+            data_classification="confidential_pii",
+            agent_id="focus",
+        )
+    assert result.model_used == "openai/gpt-4o-mini"
+    primary_mock.assert_awaited_once()
 
 
 @pytest.mark.asyncio
