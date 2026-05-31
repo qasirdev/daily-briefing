@@ -44,7 +44,11 @@ async def focus_agent_node(
     user_id = state.get("user_id", "")
     preferences = preference_store.top_context_snippets(user_id)
     user_context = json.dumps(
-        {"tasks": tasks, "events": events, "preferences": preferences},
+        {
+            "tasks": tasks,
+            "events": events,
+            "preferences": preferences,
+        },
         ensure_ascii=True,
     )
     system_prompt = build_agent_system_prompt("focus")
@@ -121,10 +125,13 @@ async def focus_agent_node(
     try:
         plan = json.loads(llm_response.content)
     except json.JSONDecodeError:
-        plan = {
-            "time_blocks": [],
-            "summary": llm_response.content,
-        }
+        text = llm_response.content.strip()
+        if text.startswith("```"):
+            text = text.removeprefix("```json").removeprefix("```").strip().removesuffix("```").strip()
+        try:
+            plan = json.loads(text)
+        except json.JSONDecodeError:
+            plan = {"time_blocks": [], "summary": "Focus plan could not be parsed. Please retry."}
 
     if not tasks and not events:
         plan = {"time_blocks": [], "summary": "Minimal plan — no tasks or events available."}

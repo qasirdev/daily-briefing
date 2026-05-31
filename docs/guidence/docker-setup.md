@@ -152,6 +152,9 @@ Expected: **200** with an `access_token`.
 From the repo root:
 
 ```bash
+# build app and build image
+docker compose build app && docker compose up -d
+
 # Build image + start (foreground — logs in terminal)
 docker compose up --build
 

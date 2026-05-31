@@ -180,6 +180,9 @@ Readiness: `curl http://127.0.0.1:8010/health/ready`
 ### Docker (full stack — port 8088)
 
 ```bash
+# build app and docker compose run
+docker compose build app && docker compose up -d
+
 docker compose up --build -d
 curl http://localhost:8088/health
 ```
