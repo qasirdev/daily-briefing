@@ -7,9 +7,9 @@ from typing import Any, Literal
 
 import structlog
 
+from backend.dependencies import PostgresMCPProtocol
 from backend.graph.state import BriefingGraphState
 from backend.mcp.client import MCPError, MCPTimeoutError
-from backend.mcp.postgres import PostgresMCPClient
 from backend.schemas.envelope import AgentResultEnvelope, EscalationPayload, ExecutionMetadata
 from backend.schemas.task import TaskRecord
 
@@ -54,7 +54,7 @@ def _envelope(
 
 async def task_agent_node(
     state: BriefingGraphState,
-    postgres: PostgresMCPClient,
+    postgres: PostgresMCPProtocol,
 ) -> dict[str, Any]:
     """Fetch and prioritize pending tasks via PostgreSQL MCP."""
     start = time.perf_counter()

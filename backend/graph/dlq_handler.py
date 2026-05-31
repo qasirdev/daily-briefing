@@ -6,9 +6,9 @@ from typing import Any
 
 import structlog
 
+from backend.dependencies import PostgresMCPProtocol
 from backend.dlq.store import dlq_store
 from backend.graph.state import BriefingGraphState
-from backend.mcp.postgres import PostgresMCPClient
 from backend.schemas.dlq import DLQEvent
 from backend.schemas.envelope import AgentResultEnvelope
 from backend.security.token_budget import evaluate_token_budget
@@ -43,7 +43,7 @@ def _resolve_envelope(state: BriefingGraphState) -> AgentResultEnvelope | None:
 async def dlq_handler_node(
     state: BriefingGraphState,
     *,
-    postgres: PostgresMCPClient | None = None,
+    postgres: PostgresMCPProtocol | None = None,
 ) -> dict[str, Any]:
     """Record failed executions and terminate the graph."""
     trace_id = state.get("trace_id", "0" * 32)

@@ -9,7 +9,7 @@ import structlog
 
 from backend.db.models import DLQEventRow
 from backend.db.session import session_scope
-from backend.mcp.postgres import PostgresMCPClient
+from backend.dependencies import PostgresMCPProtocol
 from backend.metrics import record_dlq_event
 from backend.schemas.dlq import MAX_DLQ_RETRIES, NON_RETRYABLE_REASONS, DLQEvent
 from backend.settings import get_settings
@@ -49,7 +49,7 @@ class DLQStore:
         self,
         event: DLQEvent,
         *,
-        postgres: PostgresMCPClient | None = None,
+        postgres: PostgresMCPProtocol | None = None,
     ) -> DLQEvent:
         stored = self.add(event)
         settings = get_settings()

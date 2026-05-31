@@ -8,6 +8,7 @@ import time
 import pytest
 
 from backend.agents.task.node import task_agent_node
+from backend.graph.state import BriefingGraphState
 from backend.mcp.postgres_stdio import PostgresMCPStdioClient
 from backend.schemas.envelope import AgentResultEnvelope
 
@@ -35,7 +36,7 @@ LIMIT 5
 async def test_live_stdio_task_agent_node() -> None:
     """Task agent node succeeds against Supabase via stdio MCP."""
     postgres = PostgresMCPStdioClient()
-    state = {
+    state: BriefingGraphState = {
         "user_id": "demo-user",
         "trace_id": "c" * 32,
         "graph_started_at": time.perf_counter(),

@@ -55,6 +55,7 @@ async def test_local_disabled_uses_masked_primary_for_pii() -> None:
         )
     assert result.model_used == "openai/gpt-4o-mini"
     primary_mock.assert_awaited_once()
+    assert primary_mock.await_args is not None
     outbound = primary_mock.await_args.kwargs["messages"]
     content = outbound[0]["content"]
     assert "[REDACTED_EMAIL]" in content or "user@example.com" not in content

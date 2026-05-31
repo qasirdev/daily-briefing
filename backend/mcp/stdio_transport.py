@@ -85,7 +85,7 @@ class StdioMCPTransport:
 
 def _content_to_dict(content: object) -> dict[str, Any]:
     texts: list[str] = []
-    for block in content:  # type: ignore[union-attr]
+    for block in content:  # type: ignore[attr-defined]
         text = getattr(block, "text", None)
         if isinstance(text, str):
             texts.append(text)

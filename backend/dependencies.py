@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 from typing import Protocol, runtime_checkable
 
 from backend.llm.router import LLMRouter
-from backend.mcp.calendar import CalendarMCPClient
+from backend.mcp.calendar import CalendarEvent, CalendarMCPClient
 from backend.mcp.calendar_stdio import CalendarMCPStdioClient
 from backend.mcp.postgres import PostgresMCPClient
 from backend.mcp.postgres_stdio import PostgresMCPStdioClient
@@ -44,9 +45,9 @@ class CalendarMCPProtocol(Protocol):
         self,
         *,
         user_id: str,
-        target_date: object,
+        target_date: date,
         calendar_id: str = "primary",
-    ) -> list[object]: ...
+    ) -> list[CalendarEvent]: ...
 
     async def close(self) -> None: ...
 
