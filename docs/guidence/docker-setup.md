@@ -154,6 +154,7 @@ From the repo root:
 ```bash
 # build app and build image
 docker compose build app && docker compose up -d
+docker compose build app && docker compose up -d && git checkout main
 
 # Build image + start (foreground — logs in terminal)
 docker compose up --build
