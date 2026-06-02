@@ -1,5 +1,5 @@
 # 🧠 AI Daily Briefing Assistant
-
+See [Project Proposal](007-01-ai-daily-briefing-assistant5.md) for full understanding.
 > **Stop losing your mornings to scattered tools.** One intelligent agent pipeline — your tasks, calendar, and priorities unified into a single, secure, actionable daily briefing.
 
 [![CI](https://img.shields.io/github/actions/workflow/status/qasirdev/daily-briefing/ci.yml?branch=epic%2Fautonomus-implementation&label=CI&style=flat-square)](https://github.com/qasirdev/daily-briefing/actions)
