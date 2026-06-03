@@ -1,5 +1,11 @@
 # 🧠 AI Daily Briefing Assistant
 See [Project Proposal](007-01-ai-daily-briefing-assistant5.md) for full understanding.
+
+---
+
+<img width="1681" height="830" alt="image" src="https://github.com/user-attachments/assets/5c2b157b-599f-47c2-84dd-3358fd449d8a" />
+
+---
 > **Stop losing your mornings to scattered tools.** One intelligent agent pipeline — your tasks, calendar, and priorities unified into a single, secure, actionable daily briefing.
 
 [![CI](https://img.shields.io/github/actions/workflow/status/qasirdev/daily-briefing/ci.yml?branch=epic%2Fautonomus-implementation&label=CI&style=flat-square)](https://github.com/qasirdev/daily-briefing/actions)
@@ -105,10 +111,6 @@ flowchart TB
 ```
 
 **Core design principle: Orchestrator-as-Presenter.** Only sanitised markdown ever reaches the user. Agents return strict `AgentResultEnvelope` JSON; the Orchestrator alone maps these into the UI format — guaranteeing consistent tone, format, and security.
-
----
-
-<img width="1681" height="830" alt="image" src="https://github.com/user-attachments/assets/5c2b157b-599f-47c2-84dd-3358fd449d8a" />
 
 ---
 

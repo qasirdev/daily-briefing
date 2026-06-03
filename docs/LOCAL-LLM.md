@@ -12,7 +12,20 @@ The briefing assistant routes LLM requests based on data classification and prov
 |---|---|
 | Input is **`confidential_pii`** (Focus agent with tasks/calendar) | Local LLM **if enabled**; else **masked OpenRouter** |
 | Local LLM **unreachable** (e.g. wrong URL in Docker) | **Masked OpenRouter** fallback when `OPENROUTER_API_KEY` is set |
-| OpenRouter **429** / **timeout** | Local LLM fallback when `LOCAL_LLM_ENABLED=true` |
+| OpenRouter **429** / **timeout** | OpenRouter tries next model in `LLM_OPENROUTER_MODELS`; if the full chain fails, local LLM when `LOCAL_LLM_ENABLED=true` |
+
+---
+
+## OpenRouter model chain (in-request fallback)
+
+OpenRouter can walk a comma-separated model list on a single request (`route: fallback`). Configure:
+
+```bash
+LLM_OPENROUTER_MODELS=openai/gpt-oss-120b:free,openai/gpt-oss-120b,openai/gpt-4o-mini,anthropic/claude-sonnet-4
+LLM_OPENROUTER_ROUTE=fallback
+```
+
+If `LLM_OPENROUTER_MODELS` is empty, the chain falls back to `LLM_PRIMARY_MODEL` only. This is separate from **local** LLM fallback (`LLM_FALLBACK_MODEL` / `LOCAL_LLM_MODEL_ID`).
 
 ---
 

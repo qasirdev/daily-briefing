@@ -27,6 +27,8 @@ class Settings(BaseSettings):
     openrouter_api_key: str = ""
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
     llm_primary_model: str = "openai/gpt-4o-mini"
+    llm_openrouter_models: str = ""
+    llm_openrouter_route: str = "fallback"
     llm_fallback_model: str = "local/llama-3-8b"
     local_llm_enabled: bool = False
     local_llm_base_url: str = "http://localhost:8080/v1"
@@ -59,6 +61,22 @@ class Settings(BaseSettings):
     )
 
     cors_origins: str = "http://localhost:3000,http://localhost"
+
+    @property
+    def openrouter_model_chain(self) -> list[str]:
+        """Ordered OpenRouter model list for in-request fallback routing."""
+        if self.llm_openrouter_models.strip():
+            seen: set[str] = set()
+            chain: list[str] = []
+            for part in self.llm_openrouter_models.split(","):
+                model = part.strip()
+                if model and model not in seen:
+                    seen.add(model)
+                    chain.append(model)
+            if chain:
+                return chain
+        primary = self.llm_primary_model.strip()
+        return [primary] if primary else []
 
     @model_validator(mode="after")
     def validate_production_secrets(self) -> Self:

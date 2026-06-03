@@ -298,7 +298,7 @@ open -a Docker
 Wait until Docker Desktop shows **Running**, then retry:
 
 ```bash
-docker compose up --build -d
+docker compose up -d --build --force-recreate
 ```
 
 #### 1. Force quit Docker Desktop
@@ -420,9 +420,10 @@ docker compose logs app --tail 100
 
 # LLM retries / errors
 docker compose logs app 2>&1 | grep -iE 'llm|openrouter|chat/completions|focus'
+docker compose logs app | grep llm_generation_complete
 
 # Environment inside container (redact secrets before sharing)
-docker compose exec app printenv MCP_TRANSPORT OPENROUTER_API_KEY LLM_PRIMARY_MODEL LOCAL_LLM_ENABLED LOCAL_LLM_BASE_URL
+docker compose exec app printenv MCP_TRANSPORT OPENROUTER_API_KEY LLM_OPENROUTER_MODELS LLM_PRIMARY_MODEL LOCAL_LLM_ENABLED LOCAL_LLM_BASE_URL
 
 # OAuth endpoint
 curl http://localhost:8088/api/v1/consent/oauth/google_calendar

@@ -42,6 +42,7 @@ class LLMRouter:
 
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
+        self._openrouter_models = settings.openrouter_model_chain
         self._primary = AsyncOpenAI(
             api_key=settings.openrouter_api_key or "missing-key",
             base_url=settings.openrouter_base_url,
@@ -56,6 +57,12 @@ class LLMRouter:
     @property
     def fallback_model(self) -> str:
         return self._settings.local_llm_model_id or self._settings.llm_fallback_model
+
+    @property
+    def _primary_openrouter_model(self) -> str:
+        if self._openrouter_models:
+            return self._openrouter_models[0]
+        return self._settings.llm_primary_model
 
     async def generate(
         self,
@@ -171,7 +178,7 @@ class LLMRouter:
             reason=reason,
         )
         record_llm_fallback(
-            from_model=self._settings.llm_primary_model,
+            from_model=self._primary_openrouter_model,
             to_model=self.fallback_model,
             reason=reason,
         )
@@ -223,11 +230,12 @@ class LLMRouter:
     ) -> LLMResponse:
         return await self._call_provider(
             client=self._primary,
-            model=self._settings.llm_primary_model,
+            model=self._primary_openrouter_model,
             messages=messages,
             max_tokens=max_tokens,
             trace_id=trace_id,
             agent_id=agent_id,
+            openrouter_models=self._openrouter_models,
         )
 
     async def _call_provider(
@@ -239,15 +247,27 @@ class LLMRouter:
         max_tokens: int,
         trace_id: str,
         agent_id: str,
+        openrouter_models: list[str] | None = None,
     ) -> LLMResponse:
         async with start_async_span(f"llm.{model}.generate", llm_model=model):
             start = time.perf_counter()
             try:
-                completion = await client.chat.completions.create(
-                    model=model,
-                    messages=messages,  # type: ignore[arg-type]
-                    max_tokens=max_tokens,
-                )
+                if openrouter_models:
+                    completion = await client.chat.completions.create(
+                        model=model,
+                        messages=messages,  # type: ignore[arg-type]
+                        max_tokens=max_tokens,
+                        extra_body={
+                            "models": openrouter_models,
+                            "route": self._settings.llm_openrouter_route,
+                        },
+                    )
+                else:
+                    completion = await client.chat.completions.create(
+                        model=model,
+                        messages=messages,  # type: ignore[arg-type]
+                        max_tokens=max_tokens,
+                    )
             except httpx.TimeoutException as exc:
                 raise LLMError("LLM request timed out") from exc
             except APIConnectionError as exc:
@@ -256,20 +276,23 @@ class LLMRouter:
             latency_ms = int((time.perf_counter() - start) * 1000)
             choice = completion.choices[0].message.content or ""
             usage = completion.usage
+            model_used = completion.model or model
             tokens_used = usage.total_tokens if usage else len(choice) // 4
-            record_llm_tokens(agent_id=agent_id, model=model, tokens=tokens_used)
+            record_llm_tokens(agent_id=agent_id, model=model_used, tokens=tokens_used)
 
             logger.info(
                 "llm_generation_complete",
                 trace_id=trace_id,
-                model=model,
+                model=model_used,
+                model_requested=model,
+                openrouter_models=openrouter_models,
                 tokens_used=tokens_used,
                 latency_ms=latency_ms,
             )
 
             return LLMResponse(
                 content=choice,
-                model_used=model,
+                model_used=model_used,
                 tokens_used=tokens_used,
                 latency_ms=latency_ms,
             )
