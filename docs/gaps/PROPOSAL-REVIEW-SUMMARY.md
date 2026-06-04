@@ -350,6 +350,10 @@ The AI Daily Briefing Assistant proposal (v1.5.0) provides a **strong foundation
 3. Begin Phase 1: Multi-agent verification architecture & JIT credentials
 4. Establish red team evaluation cadence tied to drift alerts
 
+**Implementation Tracking:**
+- ✅ Week 1 Epic: `docs/jira-tickets-json/DB-E8-gap-remediation.json` (Created)
+- 📋 Week 2-8: Create epic tickets AFTER each week completes (see `docs/gaps/WEEK2-PLANNING.md`)
+
 **Estimated Effort:** 8-10 weeks for full remediation across all phases.
 
 ---

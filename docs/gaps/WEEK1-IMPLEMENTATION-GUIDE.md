@@ -2051,9 +2051,33 @@ git branch -d epic/week1-gap-remediation
 
 ## Next Steps (Week 2)
 
-**⚠️ CRITICAL:** Per EXECUTION-RULES.md §2.12, when creating new agent prompts, you MUST create all 6 files in XML format:
+**⚠️ DO NOT START WEEK 2 UNTIL WEEK 1 IS COMPLETE**
 
-### Prompt Creation Requirements (for Verification & Adversarial agents)
+See `docs/gaps/WEEK2-PLANNING.md` for full guidance on creating Week 2 materials.
+
+### Week 2 Planning Checklist
+
+**Prerequisites:**
+- [ ] Week 1 (DB-E8) merged to `epic/autonomus-implementation-gap`
+- [ ] All tests passing (17 new + 116 baseline)
+- [ ] `docs/tasks/lessons.md` updated with Week 1 learnings
+- [ ] `docs/learning/week1-consensus-pattern.md` complete
+- [ ] Proof package complete in `proof/week1/`
+
+**Then Create:**
+1. [ ] `docs/jira-tickets-json/DB-E9-gap-remediation-week2.json`
+2. [ ] `docs/gaps/WEEK2-IMPLEMENTATION-GUIDE.md`
+3. [ ] `docs/gaps/WEEK2-KICKOFF-PROMPT.md`
+
+**Week 2 Focus:** Four-Layer Memory Architecture (CoALA Framework)
+- Working Memory (ephemeral state)
+- Semantic Memory (vector search)
+- Procedural Memory (learned patterns)
+- Episodic Memory (interaction history)
+
+### Prompt Creation Requirements (for Week 2 agents)
+
+**⚠️ CRITICAL:** Per EXECUTION-RULES.md §2.12, when creating new agent prompts, you MUST create all 6 files in XML format:
 
 For each new agent (`prompts/verification/` and `prompts/adversarial/`), create:
 
@@ -2066,7 +2090,7 @@ For each new agent (`prompts/verification/` and `prompts/adversarial/`), create:
 
 Reference existing prompt structure in `prompts/AGENT.md` and existing agents like `prompts/task/`, `prompts/focus/`, `prompts/critic/`.
 
-### Week 2 Tasks
+### Immediate Week 2 Tasks (After Planning)
 
 1. **Implement Verification Agent node** (`backend/agents/verification/node.py`)
 2. **Implement Adversarial Agent node** (`backend/agents/adversarial/node.py`)
@@ -2074,7 +2098,9 @@ Reference existing prompt structure in `prompts/AGENT.md` and existing agents li
 4. **Create adversarial prompts** (`prompts/adversarial/` — all 6 files)
 5. **Add consensus metrics to Prometheus**
 6. **Test end-to-end consensus workflow**
-7. **Begin Phase 2: Four-layer memory architecture**
+7. **Begin Four-layer memory architecture (if scope allows)**
+
+**See:** `docs/gaps/WEEK2-PLANNING.md` for complete Week 2 roadmap and epic structure.
 
 ---
 

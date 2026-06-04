@@ -320,6 +320,24 @@ This document reviews the AI Daily Briefing Assistant proposal against IBM's mul
 
 ## Recommendations
 
+### 📋 Epic Ticket Creation Workflow
+
+**Each week of gap remediation requires structured planning:**
+
+**Week 1 (Current):**
+- ✅ Epic Ticket: `docs/jira-tickets-json/DB-E8-gap-remediation.json` (Created)
+- ✅ Implementation Guide: `docs/gaps/WEEK1-IMPLEMENTATION-GUIDE.md`
+- ✅ Kickoff Prompt: `docs/gaps/KICKOFF-PROMPT.md`
+
+**Future Weeks (Create AFTER previous week completes):**
+- [ ] Week 2: `DB-E9-gap-remediation-week2.json` + guides
+- [ ] Week 3: `DB-E10-gap-remediation-week3.json` + guides
+- [ ] Week 4-8: Continue pattern (DB-E11 through DB-E15)
+
+**See:** `docs/gaps/WEEK2-PLANNING.md` for guidance on creating subsequent week materials.
+
+---
+
 ### Immediate Actions (This Week)
 1. **Update OBSERVABILITY.md** with rogue agent drift detection (Gap #99) ✅
 2. **Create NHI registry** and document pre-merge gate (Gap #93)

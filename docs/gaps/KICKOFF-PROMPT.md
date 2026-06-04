@@ -12,12 +12,17 @@
 
 Implement the multi-agent consensus model (Generator → Verification → Adversarial → Consensus) to address critical gaps identified in the IBM recommendation review.
 
+**Epic Ticket:** `docs/jira-tickets-json/DB-E8-gap-remediation.json`  
+**Tasks:** DB-101 (Day 1) through DB-105 (Day 5)
+
 **Primary Deliverables:**
-1. Drift detection observability (Gaps #99)
-2. NHI registry for all agents (Gaps #92-93)
-3. Verification & Adversarial agent architecture (Gaps #1-2)
-4. Consensus workflow in LangGraph (Gaps #3-5)
-5. Integration tests & documentation
+1. Drift detection observability (Gaps #99) — DB-101
+2. NHI registry for all agents (Gaps #92-93) — DB-102
+3. Verification & Adversarial agent architecture (Gaps #1-2) — DB-103
+4. Consensus workflow in LangGraph (Gaps #3-5) — DB-104
+5. Integration tests & documentation — DB-105
+
+**Note:** This is Week 1 of the gap remediation roadmap. See "Week 2 Planning" section at the end of this document for creating subsequent week tickets.
 
 ---
 
@@ -485,5 +490,76 @@ git push origin epic/week1-gap-remediation
 ---
 
 **Good luck! Remember: Plan → Implement → Refactor → Test → Document → Verify → Commit**
+
+---
+
+## 📅 Week 2+ Planning Guidance
+
+### Creating Week 2 Epic Ticket
+
+**After Week 1 completion, create:**
+- `docs/jira-tickets-json/DB-E9-gap-remediation-week2.json`
+- `docs/gaps/WEEK2-IMPLEMENTATION-GUIDE.md`
+- `docs/gaps/WEEK2-KICKOFF-PROMPT.md`
+
+**Week 2 Focus Areas (from GAP-ANALYSIS-REVIEW.md):**
+
+**High Priority Gaps (Week 2):**
+1. **Four-Layer Memory Architecture (Gaps #6-12)**
+   - Working Memory (ephemeral state)
+   - Semantic Memory (vector search)
+   - Procedural Memory (learned patterns)
+   - Episodic Memory (interaction history)
+
+2. **Prompt Version Management (Gaps #13-18)**
+   - Semantic versioning for prompts
+   - Prompt registry with rollback
+   - A/B testing framework
+   - Automated prompt optimization
+
+3. **Advanced AgentOps (Gaps #19-25)**
+   - Evaluation metrics (accuracy, latency, cost)
+   - Batch evaluation framework
+   - Human feedback loops
+   - Performance benchmarking
+
+**Ticket Creation Template:**
+
+```json
+{
+  "epic": {
+    "id": "DB-E9",
+    "key": "DB-E9",
+    "summary": "Week 2: Four-Layer Memory Architecture",
+    "description": "Implement CoALA framework memory layers...",
+    "status": "To Do",
+    "priority": "High",
+    "epic_link": "epic/autonomus-implementation-gap",
+    "reference_docs": [
+      "docs/gaps/GAP-ANALYSIS-REVIEW.md",
+      "docs/gaps/WEEK2-IMPLEMENTATION-GUIDE.md"
+    ]
+  },
+  "tasks": [
+    {
+      "id": "DB-106",
+      "summary": "Day 1: Working Memory Implementation",
+      "description": "Implement ephemeral working memory for agent state..."
+    }
+  ]
+}
+```
+
+**Week 3-8 Epic IDs:**
+- DB-E10: Week 3 — Prompt Version Management
+- DB-E11: Week 4 — Advanced AgentOps & Evaluation
+- DB-E12: Week 5 — Dynamic Credential Management
+- DB-E13: Week 6 — Multi-Region Deployment
+- DB-E14: Week 7 — Advanced Security Hardening
+- DB-E15: Week 8 — Production Optimization
+
+**See `docs/gaps/GAP-ANALYSIS-REVIEW.md` Section 5 (Remediation Roadmap) for complete 8-week breakdown.**
+
+---
 
 *Week 1 Kickoff Prompt — Created June 4, 2026*
