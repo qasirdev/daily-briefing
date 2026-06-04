@@ -20,6 +20,9 @@ htmlcov/
 .env.local
 .env.*.local
 
+# docs
+docs/example-code/examples/
+
 # Node.js
 node_modules/
 .npm-cache/

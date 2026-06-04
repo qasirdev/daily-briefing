@@ -388,6 +388,7 @@ groups:
 | Latency P95 | < 10s | `daily_briefing:latency_p95:5m` |
 | Latency P99 | < 30s | `histogram_quantile(0.99, ...)` |
 | Error rate | < 0.5% | `daily_briefing:error_rate:5m` |
+| **Guardrail violation rate** | **< 0.1% (baseline)** | **`daily_briefing:guardrail_violations:7d`** |
 
 Artifacts:
 
@@ -396,6 +397,361 @@ Artifacts:
 - Alert rules: `infrastructure/alerting/rules.yml`
 
 **Error budget:** when success rate drops below 99.5% over a rolling 30-day window, freeze non-critical releases and prioritize reliability work.
+
+---
+
+## Rogue Agent Drift Detection (OWASP Agent #10)
+
+### Overview
+
+**Rogue agent drift** occurs when an agent gradually deviates from its intended behavior while appearing compliant. This is tracked as **OWASP Agent Top 10 vulnerability #10** and requires continuous behavioral monitoring beyond point-in-time security checks.
+
+### Detection Strategy
+
+Drift is detected by tracking **rolling guardrail violation trends** as a tier-1 SLO. A sustained increase in violations signals potential prompt degradation, model drift, or adversarial adaptation.
+
+### Guardrail Violation Metric
+
+```python
+# backend/observability/metrics.py
+from prometheus_client import Counter
+
+GUARDRAIL_VIOLATIONS = Counter(
+    'guardrail_violations_total',
+    'Guardrail violations by agent and type',
+    ['agent_id', 'violation_type', 'severity']
+)
+
+# Violation types
+VIOLATION_TYPES = [
+    'prompt_injection_detected',
+    'unauthorized_tool_access',
+    'data_classification_breach',
+    'token_budget_exceeded',
+    'consent_violation',
+    'output_sanitization_stripped',
+    'hallucination_detected',
+    'instruction_hierarchy_violated',
+]
+```
+
+### Drift Detection Alert Rules
+
+```yaml
+# infrastructure/alerting/drift_detection.yml
+groups:
+  - name: agent-drift-detection
+    interval: 1h
+    rules:
+      # P0 Critical: 2× baseline violation rate over 7 days
+      - alert: RogueAgentDriftCritical
+        expr: |
+          (
+            sum(increase(guardrail_violations_total[7d])) by (agent_id)
+            /
+            sum(increase(agent_executions_total[7d])) by (agent_id)
+          ) > (
+            2 * sum(increase(guardrail_violations_total[30d])) by (agent_id)
+            /
+            sum(increase(agent_executions_total[30d])) by (agent_id)
+          )
+        for: 4h
+        labels:
+          severity: critical
+          owasp_id: agent_10
+          response: immediate
+        annotations:
+          summary: "Agent {{ $labels.agent_id }} showing 2× baseline violation rate"
+          description: |
+            Guardrail violation rate for {{ $labels.agent_id }} is {{ $value | humanizePercentage }}
+            over the past 7 days, exceeding 2× the 30-day baseline.
+            
+            **Required Actions:**
+            1. Review prompt version history for {{ $labels.agent_id }}
+            2. Inspect recent trace_ids with violations
+            3. Check for model version changes or config drift
+            4. Schedule red team evaluation (see docs/RED-TEAMING.md)
+            5. Consider rolling back to last known-good prompt version
+          runbook: https://docs.dailybriefing.ai/runbooks/rogue-agent-drift
+      
+      # P1 Warning: 1.5× baseline violation rate over 7 days
+      - alert: RogueAgentDriftWarning
+        expr: |
+          (
+            sum(increase(guardrail_violations_total[7d])) by (agent_id)
+            /
+            sum(increase(agent_executions_total[7d])) by (agent_id)
+          ) > (
+            1.5 * sum(increase(guardrail_violations_total[30d])) by (agent_id)
+            /
+            sum(increase(agent_executions_total[30d])) by (agent_id)
+          )
+        for: 12h
+        labels:
+          severity: warning
+          owasp_id: agent_10
+        annotations:
+          summary: "Agent {{ $labels.agent_id }} showing elevated violation rate"
+          description: |
+            Guardrail violation rate trending upward for {{ $labels.agent_id }}.
+            Monitor for continued drift and investigate root cause.
+
+      # Spike detection: sudden increase within 1 hour
+      - alert: GuardrailViolationSpike
+        expr: |
+          sum(increase(guardrail_violations_total[1h])) by (agent_id) > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Spike in guardrail violations for {{ $labels.agent_id }}"
+          description: "{{ $value }} violations in the past hour"
+```
+
+### Drift Investigation Workflow
+
+```mermaid
+flowchart TB
+    ALERT[Drift Alert Triggered]
+    REVIEW[Review Metrics Dashboard]
+    TRACES[Inspect Failed Traces]
+    PROMPT[Check Prompt Version History]
+    MODEL[Check Model Version]
+    DECIDE{Root Cause?}
+    
+    PROMPT_ISSUE[Prompt Degradation]
+    MODEL_ISSUE[Model Drift]
+    DATA_ISSUE[Input Distribution Shift]
+    ATTACK[Adversarial Probing]
+    
+    ROLLBACK[Rollback Prompt Version]
+    RETRAIN[Update Prompt/Examples]
+    REDTEAM[Schedule Red Team Eval]
+    INCIDENT[Escalate to Security]
+    
+    ALERT --> REVIEW --> TRACES --> PROMPT --> MODEL --> DECIDE
+    
+    DECIDE -->|Prompt regression| PROMPT_ISSUE --> ROLLBACK
+    DECIDE -->|Model quality| MODEL_ISSUE --> RETRAIN
+    DECIDE -->|Data shift| DATA_ISSUE --> RETRAIN
+    DECIDE -->|Attack pattern| ATTACK --> INCIDENT
+    
+    ROLLBACK --> REDTEAM
+    RETRAIN --> REDTEAM
+```
+
+### Recording Rules
+
+```yaml
+# infrastructure/monitoring/recording_rules.yml
+groups:
+  - name: drift_detection
+    interval: 15m
+    rules:
+      # 7-day violation rate per agent
+      - record: daily_briefing:guardrail_violations:7d
+        expr: |
+          sum(increase(guardrail_violations_total[7d])) by (agent_id)
+          /
+          sum(increase(agent_executions_total[7d])) by (agent_id)
+      
+      # 30-day baseline violation rate per agent
+      - record: daily_briefing:guardrail_violations:30d
+        expr: |
+          sum(increase(guardrail_violations_total[30d])) by (agent_id)
+          /
+          sum(increase(agent_executions_total[30d])) by (agent_id)
+      
+      # Violation rate by type
+      - record: daily_briefing:guardrail_violations_by_type:7d
+        expr: |
+          sum(increase(guardrail_violations_total[7d])) by (agent_id, violation_type)
+          /
+          sum(increase(agent_executions_total[7d])) by (agent_id)
+```
+
+### Dashboard Visualization
+
+```json
+{
+  "dashboard": {
+    "title": "Rogue Agent Drift Detection",
+    "panels": [
+      {
+        "title": "Guardrail Violation Trend (7d rolling)",
+        "targets": [
+          {
+            "expr": "daily_briefing:guardrail_violations:7d",
+            "legendFormat": "{{ agent_id }}"
+          }
+        ],
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [0.002],
+                "type": "gt"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "title": "Violation Rate vs Baseline (2× threshold)",
+        "targets": [
+          {
+            "expr": "daily_briefing:guardrail_violations:7d / daily_briefing:guardrail_violations:30d",
+            "legendFormat": "{{ agent_id }} ratio"
+          }
+        ]
+      },
+      {
+        "title": "Violations by Type (Heatmap)",
+        "type": "heatmap",
+        "targets": [
+          {
+            "expr": "daily_briefing:guardrail_violations_by_type:7d",
+            "format": "heatmap"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+### Red Team Cadence Integration
+
+Drift detection alerts automatically trigger red team evaluation workflows:
+
+| Severity | Trigger Condition | Red Team Response |
+|----------|-------------------|-------------------|
+| **Critical** | 2× baseline over 7 days | Immediate targeted evaluation within 4 hours |
+| **Warning** | 1.5× baseline over 7 days | Scheduled evaluation within 48 hours |
+| **Spike** | 10+ violations in 1 hour | Emergency review within 1 hour |
+
+Red team evaluations follow the protocol in `docs/RED-TEAMING.md` (to be created) and include:
+
+1. Adversarial prompt testing against current agent version
+2. Comparison with previous known-good version
+3. Injection attempt suite from OWASP Agent Top 10
+4. Behavioral consistency checks across edge cases
+5. Output variance analysis (hallucination detection)
+
+### Agent Envelope Violation Tracking
+
+```python
+# backend/schemas/envelope.py
+from pydantic import BaseModel, Field
+from datetime import datetime, timezone
+from typing import Literal
+
+class GuardrailViolation(BaseModel):
+    """Guardrail violation metadata attached to agent envelopes."""
+    
+    violation_type: str = Field(..., description="Type of violation detected")
+    severity: Literal["low", "medium", "high", "critical"]
+    confidence: float = Field(..., ge=0.0, le=1.0)
+    matched_pattern: str | None = None
+    context_snippet: str | None = Field(None, max_length=200)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ExecutionMetadata(BaseModel):
+    """Extended metadata with violation tracking."""
+    
+    # ... existing fields ...
+    
+    # NEW: Violation tracking
+    guardrail_violations: list[GuardrailViolation] = Field(default_factory=list)
+    violation_count: int = Field(default=0, ge=0)
+```
+
+### Logging Integration
+
+```python
+# backend/observability/logging.py
+import structlog
+
+logger = structlog.get_logger()
+
+def log_guardrail_violation(
+    trace_id: str,
+    agent_id: str,
+    violation: GuardrailViolation,
+) -> None:
+    """Log guardrail violation with structured context."""
+    
+    logger.warning(
+        "guardrail_violation_detected",
+        trace_id=trace_id,
+        agent_id=agent_id,
+        violation_type=violation.violation_type,
+        severity=violation.severity,
+        confidence=violation.confidence,
+        matched_pattern=violation.matched_pattern,
+        owasp_id="agent_10",
+    )
+    
+    # Increment Prometheus counter
+    GUARDRAIL_VIOLATIONS.labels(
+        agent_id=agent_id,
+        violation_type=violation.violation_type,
+        severity=violation.severity,
+    ).inc()
+```
+
+### Remediation Playbook
+
+When drift is detected, follow this escalation path:
+
+1. **Auto-notification** → Engineering team via PagerDuty/Slack
+2. **Immediate triage** (within 4 hours for critical)
+   - Pull violation trace IDs from logs
+   - Review `prompts/{agent}/CHANGELOG.md` for recent changes
+   - Check `backend/llm/models.py` for model version changes
+3. **Root cause analysis**
+   - Compare current vs baseline prompt versions
+   - Run prompt regression test suite
+   - Check for data distribution shifts in calendar/task inputs
+4. **Remediation decision**
+   - **Rollback:** Revert to last known-good prompt version
+   - **Hotfix:** Patch prompt with additional guardrails
+   - **Model swap:** Switch to more reliable model variant
+5. **Post-incident**
+   - Update `docs/tasks/lessons.md`
+   - Add test case to prevent regression
+   - Schedule follow-up red team evaluation in 1 week
+
+### Integration with Episodic Memory
+
+Drift patterns detected through observability feed into **Episodic Memory** (Gap #12):
+
+```python
+# backend/memory/episodic.py
+class DriftLessonLearned(BaseModel):
+    """Distilled lesson from drift incident."""
+    
+    incident_id: str
+    agent_id: str
+    detected_at: datetime
+    violation_pattern: str
+    root_cause: str
+    remediation: str
+    prompt_version_before: str
+    prompt_version_after: str
+    outcome: Literal["resolved", "monitoring", "escalated"]
+
+# Store in episodic memory for future reference
+await episodic_memory.store_lesson(drift_lesson)
+```
+
+---
+
+**Related Documentation:**
+- `docs/SECURITY.md` — OWASP Agent Top 10 mapping
+- `docs/RED-TEAMING.md` — Red team evaluation protocol (to be created)
+- `docs/MEMORY-ARCHITECTURE.md` — Episodic memory integration (to be created)
+- `backend/agents/AGENT.md` — NHI definition-of-done gate
 
 ---
 

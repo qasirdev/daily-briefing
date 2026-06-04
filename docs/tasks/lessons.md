@@ -46,3 +46,33 @@
 ---
 
 *Last Updated: May 2026*
+
+## Pre-Week 1 — Existing Test Failures
+
+### Issue: PII Detector Too Aggressive on Trace IDs
+- **File:** backend/tests/test_logging.py::test_logs_include_trace_id
+- **Problem:** Trace IDs (32-char strings) being masked as [REDACTED_TOKEN]
+- **Root Cause:** PII pattern catching repeated character sequences
+- **Fix:** Exclude trace_id format (hex/alphanumeric 32-char) from token pattern
+- **Priority:** Low (doesn't affect production, trace IDs still logged)
+
+### Issue: PII Pattern Overlap (Phone vs NHS)
+- **File:** backend/tests/test_logging.py::test_pii_masked_in_logs
+- **Problem:** Phone numbers incorrectly detected as NHS numbers
+- **Root Cause:** NHS regex pattern evaluated before phone pattern
+- **Fix:** Reorder PII detection patterns or make NHS pattern more specific
+- **Priority:** Low (PII still gets masked, just wrong label)
+
+## Pre-Week 1 — Existing Test Failures
+### Issue: PII Detector Too Aggressive on Trace IDs
+- **File:** backend/tests/test_logging.py::test_logs_include_trace_id
+- **Problem:** Trace IDs (32-char strings) being masked as [REDACTED_TOKEN]
+- **Root Cause:** PII pattern catching repeated character sequences
+- **Fix:** Exclude trace_id format (hex/alphanumeric 32-char) from token pattern
+- **Priority:** Low (doesn't affect production, trace IDs still logged)
+### Issue: PII Pattern Overlap (Phone vs NHS)
+- **File:** backend/tests/test_logging.py::test_pii_masked_in_logs
+- **Problem:** Phone numbers incorrectly detected as NHS numbers
+- **Root Cause:** NHS regex pattern evaluated before phone pattern
+- **Fix:** Reorder PII detection patterns or make NHS pattern more specific
+- **Priority:** Low (PII still gets masked, just wrong label)
