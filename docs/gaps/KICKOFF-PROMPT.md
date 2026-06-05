@@ -36,7 +36,7 @@ Implement the multi-agent consensus model (Generator → Verification → Advers
 4. ✅ `docs/tasks/lessons.md` — Avoid repeating past mistakes (5 min)
 5. ✅ `backend/AGENT.md` — Backend agent rules (10 min)
 6. ✅ `docs/ENGINEERING-STANDARDS.md` — Coding standards (20 min)
-7. ✅ `docs/example-code/examples/s1-d1-python-for-fastapi-engineers-update1.md` — Reference implementations (30 min)
+7. ✅ `docs/example-code/examples/s*.md` — Reference implementations (30 min)
 8. ✅ `docs/gaps/WEEK1-IMPLEMENTATION-GUIDE.md` — Complete implementation guide (45 min)
 9. ✅ `docs/gaps/GAP-ANALYSIS-REVIEW.md` — Context for gaps being addressed (20 min)
 10. ✅ `docs/guidence/2026-12-01-youtube-IBM.md` — IBM multi-agent recommendations (30 min)

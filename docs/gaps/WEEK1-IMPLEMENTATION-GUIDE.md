@@ -102,7 +102,7 @@ After each day, append learnings to `docs/tasks/lessons.md`:
 
 ## 📝 Coding Standards Reference
 
-All code examples in this guide follow the standards defined in `docs/example-code/examples/s1-d1-python-for-fastapi-engineers-update1.md`. Key patterns:
+All code examples in this guide follow the standards defined in `docs/example-code/examples/s*.md`. Key patterns:
 
 ### Type Hints (Strict Required)
 - ✅ Use modern syntax: `str | None` (not `Optional[str]`)
@@ -148,7 +148,7 @@ All code examples in this guide follow the standards defined in `docs/example-co
 - ✅ Use `async with` for async context managers
 - ✅ Always `await` coroutines (never leave dangling)
 
-**Reference:** See `docs/example-code/examples/s1-d1-python-for-fastapi-engineers-update1.md` for comprehensive examples.
+**Reference:** See `docs/example-code/examples/s*.md` for comprehensive examples.
 
 ---
 
@@ -2022,7 +2022,7 @@ git branch -d epic/week1-gap-remediation
 - [ ] **Read IBM recommendations** — Review `docs/guidence/2026-12-01-youtube-IBM.md`
 - [ ] **Review gap analysis** — Read `docs/gaps/GAP-ANALYSIS-REVIEW.md` for context
 - [ ] **Review coding standards** — Read `docs/ENGINEERING-STANDARDS.md`
-- [ ] **Review example code** — Study `docs/example-code/examples/s1-d1-python-for-fastapi-engineers-update1.md`
+- [ ] **Review example code** — Study `docs/example-code/examples/s*.md`
 
 ### Task Planning (Per EXECUTION-RULES.md §2.2)
 - [ ] **Write implementation plan** — Create plan in `docs/tasks/todo.md` BEFORE touching code
