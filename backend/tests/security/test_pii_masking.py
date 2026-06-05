@@ -15,6 +15,7 @@ _MASK_CASES: tuple[tuple[str, str, str], ...] = (
     ("Server at 192.168.1.1 failed", "192.168.1.1", "[REDACTED_IP]"),
     ("Pay to GB29NWBK60161331926819 please", "GB29NWBK60161331926819", "[REDACTED_IBAN]"),
     ("DOB 15/03/1985 recorded", "15/03/1985", "[REDACTED_DOB]"),
+    ("born 15 March 1985 on file", "15 March 1985", "[REDACTED_DOB]"),
     ("password: SecretPass123", "SecretPass123", "[REDACTED_PASSWORD]"),
     ("Vehicle reg AB12CDE on file", "AB12CDE", "[REDACTED_VRM]"),
     ("Location 51.5074, -0.1278 noted", "51.5074, -0.1278", "[REDACTED_COORDS]"),
@@ -70,3 +71,25 @@ def test_contains_pii() -> None:
     detector = PIIDetector()
     assert detector.contains_pii("Email me at user@example.com")
     assert not detector.contains_pii("Plain briefing summary for today")
+
+
+_CALENDAR_DATE_CASES: tuple[str, ...] = (
+    "AI Engineer Interview with QM — 05-06-2026 at 14:30",
+    "2026-06-05T14:30:00 – 2026-06-05T15:30:00: Scheduled block",
+    "05-06-2026 T14:30:00 – 05-06-2026 T15:30:00: Scheduled block",
+)
+
+
+@pytest.mark.parametrize("text", _CALENDAR_DATE_CASES)
+def test_calendar_and_iso_datetimes_are_not_masked_as_dob(text: str) -> None:
+    """Event and ISO datetimes must not be mistaken for dates of birth."""
+    masked = mask_pii(text)
+    assert "[REDACTED_DOB]" not in masked
+    detector = PIIDetector()
+    assert not any(match.kind == "date_of_birth" for match in detector.detect(text))
+
+
+def test_bare_calendar_date_is_not_date_of_birth() -> None:
+    detector = PIIDetector()
+    matches = detector.detect("Meeting on 05-06-2026 at 14:30")
+    assert not any(match.kind == "date_of_birth" for match in matches)

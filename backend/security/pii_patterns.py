@@ -247,13 +247,18 @@ PII_PATTERNS: tuple[tuple[str, re.Pattern[str], str], ...] = (
     # -------------------------------------------------------------------------
     (
         "date_of_birth",
-        # DD/MM/YYYY and DD Month YYYY — pair with context keywords where precision matters
+        # Context-labelled DD/MM/YYYY and DD Month YYYY only — avoids calendar/event false positives
+        # Negative lookahead excludes ISO 8601 datetime suffix (e.g. …2026T14:30:00)
         re.compile(
-            r"\b(?:0?[1-9]|[12]\d|3[01])[/\-.](?:0?[1-9]|1[0-2])[/\-.]\d{4}\b"
+            r"(?:dob|date[\s_-]?of[\s_-]?birth|born(?:[\s_-]?on)?|birth[\s_-]?date|birthday)"
+            r"[\s:=]+"
+            r"(?:"
+            r"(?:0?[1-9]|[12]\d|3[01])[/\-.](?:0?[1-9]|1[0-2])[/\-.]\d{4}\b(?!T\d{2}:)"
             r"|"
-            r"\b(?:0?[1-9]|[12]\d|3[01])\s+(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|"
+            r"(?:0?[1-9]|[12]\d|3[01])\s+(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|"
             r"Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|"
-            r"Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+\d{4}\b",
+            r"Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+\d{4}\b"
+            r")",
             re.IGNORECASE,
         ),
         "[REDACTED_DOB]",
