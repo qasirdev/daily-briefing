@@ -772,7 +772,8 @@ PII_PATTERNS: tuple[tuple[str, re.Pattern[str], str], ...] = (
     (
         "tribunal_case_number",
         # Employment, Immigration, First-tier, Upper Tribunal references
-        # Employment: NNNN/YYYY or NNNNNN/YYYY; Immigration: e.g. IA/12345/2023; FTT: e.g. TC/2023/01234
+        # Employment: NNNN/YYYY or NNNNNN/YYYY; Immigration: e.g. IA/12345/2023;
+        # FTT: e.g. TC/2023/01234
         re.compile(
             r"\b(?:(?:employment|immigration|first[\s_-]?tier|upper|property|tax|social[\s_-]?security)"
             r"[\s_-]?tribunal[\s_-]?(?:case[\s_-]?)?(?:no|number|ref(?:erence)?)[\s:=]+([A-Z0-9/\-]{4,25})"

@@ -66,7 +66,9 @@ async def test_openrouter_request_includes_fallback_extra_body() -> None:
 
     assert result.model_used == "openai/gpt-4o-mini"
     create_mock.assert_awaited_once()
-    kwargs = create_mock.await_args.kwargs
+    await_args = create_mock.await_args
+    assert await_args is not None
+    kwargs = await_args.kwargs
     assert kwargs["model"] == "openai/gpt-oss-120b:free"
     assert kwargs["extra_body"] == {
         "models": ["openai/gpt-oss-120b:free", "openai/gpt-4o-mini"],
@@ -100,5 +102,7 @@ async def test_local_provider_does_not_send_openrouter_extra_body() -> None:
             openrouter_models=None,
         )
 
-    kwargs = create_mock.await_args.kwargs
+    await_args = create_mock.await_args
+    assert await_args is not None
+    kwargs = await_args.kwargs
     assert "extra_body" not in kwargs

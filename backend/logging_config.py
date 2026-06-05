@@ -14,6 +14,7 @@ import structlog
 from backend.security.pii import mask_pii
 
 MAX_LOG_PAYLOAD = 2_000
+_LOG_PII_SKIP_KEYS = frozenset({"trace_id", "request_id", "span_id"})
 
 
 def _mask_pii(
@@ -22,6 +23,8 @@ def _mask_pii(
     event_dict: MutableMapping[str, Any],
 ) -> MutableMapping[str, Any]:
     for key, value in list(event_dict.items()):
+        if key in _LOG_PII_SKIP_KEYS:
+            continue
         if isinstance(value, str):
             masked = mask_pii(value)
             if len(masked) > MAX_LOG_PAYLOAD:

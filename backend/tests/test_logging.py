@@ -23,7 +23,7 @@ def test_pii_masked_in_logs(capsys: pytest.CaptureFixture[str]) -> None:
     configure_logging(debug=True)
     logger = get_logger("test")
     structlog.contextvars.bind_contextvars(trace_id="2" * 32)
-    logger.info("contact", email="user@example.com", phone="555-123-4567")
+    logger.info("contact", email="user@example.com", phone="07123456789")
     captured = capsys.readouterr().out.strip()
     payload = json.loads(captured)
     assert "[REDACTED_EMAIL]" in payload["email"]
