@@ -8,16 +8,24 @@
     "priority": "Critical",
     "assignee": "Cursor Agents (Coding → Refactor → Testing → Documentation)",
     "reporter": "Gap Analysis Review",
-    "labels": ["gap-remediation", "multi-agent", "consensus", "nhi", "security", "observability"],
+    "labels": [
+      "gap-remediation",
+      "multi-agent",
+      "consensus",
+      "nhi",
+      "security",
+      "observability"
+    ],
     "created": "2026-06-04",
     "target_completion": "2026-06-11",
     "epic_link": "epic/autonomus-implementation-gap",
     "reference_docs": [
       "docs/gaps/GAP-ANALYSIS-REVIEW.md",
       "docs/gaps/PROPOSAL-REVIEW-SUMMARY.md",
-      "docs/guidence/2026-12-01-youtube-IBM.md",
+      "docs/example-code/examples/2026-12-01-youtube-IBM.md",
       "docs/gaps/WEEK1-IMPLEMENTATION-GUIDE.md",
-      "docs/gaps/KICKOFF-PROMPT.md"
+      "docs/gaps/KICKOFF-PROMPT.md",
+      "docs/guidence/observability/README.md"
     ]
   },
   "tasks": [
@@ -25,7 +33,7 @@
       "id": "DB-101",
       "key": "DB-101",
       "summary": "Day 1: Implement Drift Detection & Observability (Gap #99)",
-      "description": "Add guardrail violation tracking to agent envelopes and implement observability metrics for rogue agent drift detection (OWASP Agent #10).",
+      "description": "Add guardrail violation tracking to agent envelopes and implement observability metrics for rogue agent drift detection (OWASP Agent #10) plus prompt caching performance metrics (v2.0.0).",
       "task_type": "Implementation",
       "story_points": 8,
       "priority": "Critical",
@@ -33,25 +41,33 @@
       "acceptance_criteria": [
         "GuardrailViolation model added to backend/schemas/envelope.py with frozen=True",
         "ExecutionMetadata extended with guardrail_violations field",
-        "backend/observability/metrics.py created with GUARDRAIL_VIOLATIONS counter",
+        "backend/metrics.py consolidated into backend/observability/metrics.py with GUARDRAIL_VIOLATIONS counter",
+        "Prompt caching metrics added: CACHE_HIT_RATE, CACHE_MISS_TOTAL, CACHE_HIT_TOTAL, CACHE_SIZE_BYTES",
         "log_guardrail_violation() function implemented with structlog + Prometheus",
         "7 tests written in backend/tests/observability/test_drift_detection.py",
         "All tests pass with ACTUAL metrics (not mocked)",
-        "Metrics visible in Prometheus endpoint (/metrics)"
+        "Metrics visible at /metrics and scraped by local Prometheus (see docs/guidence/observability/)",
+        "Cache metrics instrumented and ready for Week 2 caching implementation"
       ],
       "edge_cases": [
         "Empty violation list should not increment counter",
         "Multiple violations in one envelope should batch-increment",
         "Frozen models cannot be mutated after creation",
-        "Confidence score must be between 0.0 and 1.0"
+        "Confidence score must be between 0.0 and 1.0",
+        "Cache metrics default to 0.0 before caching is enabled",
+        "Cache hit rate calculation handles division by zero gracefully"
       ],
       "validation": [
         "uv run pytest backend/tests/observability/test_drift_detection.py -v",
-        "curl http://localhost:8088/metrics | grep guardrail_violations",
-        "Verify counter increments when violations logged"
+        "curl http://localhost:8010/metrics | grep guardrail_violations",
+        "curl http://localhost:8010/metrics | grep llm_cache",
+        "Prometheus target daily-briefing UP at http://localhost:9090/targets",
+        "Verify counter increments when violations logged",
+        "Verify cache metrics are exposed (even if 0.0)"
       ],
       "files_to_modify": [
         "backend/schemas/envelope.py",
+        "backend/metrics.py",
         "backend/observability/metrics.py",
         "backend/observability/__init__.py",
         "backend/tests/observability/test_drift_detection.py"
@@ -98,16 +114,20 @@
       "id": "DB-103",
       "key": "DB-103",
       "summary": "Day 3: Design Verification & Adversarial Agents (Gaps #1-2)",
-      "description": "Design the multi-agent verification architecture with AGENT.md specifications for Verification and Adversarial agents.",
-      "task_type": "Design",
-      "story_points": 5,
+      "description": "Design the multi-agent verification architecture with comprehensive AGENT.md specifications and complete 11-file prompt structure for Verification and Adversarial agents following v2.0.0 prompt engineering standards.",
+      "task_type": "Design + Implementation",
+      "story_points": 8,
       "priority": "High",
       "status": "To Do",
       "acceptance_criteria": [
         "backend/agents/verification/AGENT.md created with all required sections",
         "backend/agents/adversarial/AGENT.md created with all required sections",
+        "prompts/verification/ directory created with all 11 files: system.md, context.md, instructions.md, examples.md, output-schema.md, tools.md, reasoning.md, guardrails.md, quality-checklist.md, CHANGELOG.md, CONTRACT.md",
+        "prompts/adversarial/ directory created with all 11 files",
         "Both AGENT.md files reviewed for consistency with existing agents",
-        "Required sections: Role, Purpose, Canonical Role, Input/Output Schemas, Security Constraints, Escalation Rules",
+        "Prompt files follow v2.0.0 standards: unified principles, model-specific configurations (effort, thinking, reasoning_effort, phase), advanced patterns",
+        "Prompt structure optimized for caching (static content before dynamic, >1024 tokens for OpenAI)",
+        "Required sections in AGENT.md: Role, Purpose, Canonical Role, Input/Output Schemas, Security Constraints, Escalation Rules",
         "Independence protocol documented for verification agent",
         "Red team scenarios documented for adversarial agent"
       ],
@@ -115,18 +135,49 @@
         "AGENT.md must include AgentResultEnvelope return type",
         "Input schemas must specify which MCP data is required",
         "Escalation rules must define conditions for human review",
-        "Adversarial agent must not have access to verification results (independence)"
+        "Adversarial agent must not have access to verification results (independence)",
+        "Prompt files must include cache control markers for Claude",
+        "examples.md must include at least 3 complete input/output pairs with reasoning traces",
+        "reasoning.md must include decision trees and <thinking> tag templates",
+        "quality-checklist.md must include self-verification criteria"
       ],
       "validation": [
         "Read backend/agents/verification/AGENT.md and verify completeness",
         "Read backend/agents/adversarial/AGENT.md and verify completeness",
-        "Compare with existing AGENT.md files for consistency"
+        "ls -la prompts/verification/ | wc -l  # Should show 11 files",
+        "ls -la prompts/adversarial/ | wc -l  # Should show 11 files",
+        "grep -r 'cache_control' prompts/verification/",
+        "grep -r 'cache_control' prompts/adversarial/",
+        "Compare with existing AGENT.md files for consistency",
+        "Compare with prompts/focus/ for prompt structure consistency"
       ],
       "files_to_modify": [
         "backend/agents/verification/AGENT.md",
-        "backend/agents/adversarial/AGENT.md"
+        "backend/agents/adversarial/AGENT.md",
+        "prompts/verification/system.md",
+        "prompts/verification/context.md",
+        "prompts/verification/instructions.md",
+        "prompts/verification/examples.md",
+        "prompts/verification/output-schema.md",
+        "prompts/verification/tools.md",
+        "prompts/verification/reasoning.md",
+        "prompts/verification/guardrails.md",
+        "prompts/verification/quality-checklist.md",
+        "prompts/verification/CHANGELOG.md",
+        "prompts/verification/CONTRACT.md",
+        "prompts/adversarial/system.md",
+        "prompts/adversarial/context.md",
+        "prompts/adversarial/instructions.md",
+        "prompts/adversarial/examples.md",
+        "prompts/adversarial/output-schema.md",
+        "prompts/adversarial/tools.md",
+        "prompts/adversarial/reasoning.md",
+        "prompts/adversarial/guardrails.md",
+        "prompts/adversarial/quality-checklist.md",
+        "prompts/adversarial/CHANGELOG.md",
+        "prompts/adversarial/CONTRACT.md"
       ],
-      "estimated_hours": 8
+      "estimated_hours": 10
     },
     {
       "id": "DB-104",
@@ -211,6 +262,9 @@
     "mypy --strict passes with zero errors",
     "ruff check passes with zero warnings",
     "2 AGENT.md files created (verification, adversarial)",
+    "22 prompt files created (11 per agent: verification and adversarial)",
+    "All prompt files follow v2.0.0 standards (unified principles, model configs, advanced patterns, caching optimization)",
+    "Cache metrics exposed in /metrics endpoint (cache_hit_rate, cache_miss_total, cache_hit_total, cache_size_bytes)",
     "docs/ARCHITECTURE.md updated with consensus workflow",
     "docs/learning/week1-consensus-pattern.md created",
     "docs/tasks/todo.md — all Week 1 tasks marked complete",

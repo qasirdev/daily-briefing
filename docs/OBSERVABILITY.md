@@ -8,6 +8,8 @@
 
 The AI Daily Briefing Assistant implements comprehensive observability using OpenTelemetry for distributed tracing, Prometheus for metrics, and structured logging for audit trails.
 
+**Local setup (beginner):** Before Week 1 kickoff, follow [docs/guidence/observability/README.md](guidence/observability/README.md) to install Prometheus, Grafana, and PagerDuty alert routing via Docker Compose.
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                     Application                              │
@@ -155,18 +157,20 @@ generate_briefing (root span)
 
 ## Prometheus Configuration
 
+**Local setup:** Use Docker Compose in [docs/guidence/observability/](guidence/observability/README.md) — scrapes the app at `host.docker.internal:8010` when running uvicorn locally.
+
 ```yaml
-# prometheus.yml
+# docs/guidence/observability/config/prometheus.yml
 global:
   scrape_interval: 15s
 
 scrape_configs:
   - job_name: 'daily-briefing'
     static_configs:
-      # Local uvicorn
-      - targets: ['localhost:8010']
+      # Local uvicorn (recommended for Week 1 dev)
+      - targets: ['host.docker.internal:8010']
       # Docker via nginx (host port 8088)
-      # - targets: ['localhost:8088']
+      # - targets: ['host.docker.internal:8088']
     metrics_path: /metrics
 ```
 
@@ -392,9 +396,11 @@ groups:
 
 Artifacts:
 
+- Local stack: `docs/guidence/observability/docker-compose.observability.yml`
 - Recording rules: `infrastructure/monitoring/recording_rules.yml`
 - Grafana dashboard: `infrastructure/monitoring/grafana-slo-dashboard.json`
 - Alert rules: `infrastructure/alerting/rules.yml`
+- Alert routing: PagerDuty via Alertmanager — see `docs/guidence/observability/04-pagerduty-setup.md`
 
 **Error budget:** when success rate drops below 99.5% over a rolling 30-day window, freeze non-critical releases and prioritize reliability work.
 

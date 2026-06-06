@@ -31,6 +31,10 @@ git checkout -b epic/week1-gap-remediation
 git push -u origin epic/week1-gap-remediation
 ```
 
+**Execution cadence:** Day 1 → verify tests → commit → Day 2 → … through Day 5. One commit per day; open PR after Week 1.
+
+**Workflow:** Single pass per day — implement, refactor (`mypy`/`ruff`), test, and document inline.
+
 ### Task Planning Protocol (Per EXECUTION-RULES.md §2)
 
 **BEFORE touching any code, write implementation plan to `docs/tasks/todo.md`:**
@@ -43,10 +47,11 @@ Branch: epic/week1-gap-remediation
 Status: in_progress
 
 ### Day 1: Drift Detection & Observability
-- [ ] Update backend/schemas/envelope.py with violation tracking
-- [ ] Create backend/observability/metrics.py
-- [ ] Write tests: backend/tests/observability/test_drift_detection.py
+- [ ] Consolidate `backend/metrics.py` into `backend/observability/metrics.py` (update all imports)
+- [ ] Update `backend/schemas/envelope.py` with violation tracking
+- [ ] Write tests: `backend/tests/observability/test_drift_detection.py`
 - [ ] Verify: All tests pass with actual metrics (not mocked)
+- [ ] Verify: `guardrail_violations_total` visible in Prometheus UI
 
 ### Day 2: NHI Registry Foundation
 - [ ] Create docs/NHI-OBSERVABILITY.md
@@ -274,13 +279,16 @@ class ExecutionMetadata(BaseModel):
 
 ### Afternoon (4 hours): Implement Observability Layer
 
+> **Metrics consolidation:** Move all definitions from `backend/metrics.py` into `backend/observability/metrics.py`, add `GUARDRAIL_VIOLATIONS`, update imports across the codebase, then remove or re-export from `backend/metrics.py` for backward compatibility during migration.
+
 **File:** Create `backend/observability/metrics.py`
 
 ```python
 """Observability metrics for AI Daily Briefing Assistant.
 
 This module defines Prometheus metrics for monitoring agent behavior,
-including rogue agent drift detection (Gap #99).
+including rogue agent drift detection (Gap #99) and prompt caching
+performance metrics (v2.0.0).
 
 All metrics follow the naming convention: {namespace}_{metric}_{unit}
 """
@@ -295,6 +303,31 @@ GUARDRAIL_VIOLATIONS = Counter(
     name="guardrail_violations_total",
     documentation="Guardrail violations by agent and type for drift detection",
     labelnames=["agent_id", "violation_type", "severity"],
+)
+
+# Prompt caching metrics (v2.0.0 — Token Optimization)
+CACHE_HIT_RATE = Gauge(
+    name="llm_cache_hit_rate",
+    documentation="Percentage of LLM requests served from cache",
+    labelnames=["provider", "model"],
+)
+
+CACHE_MISS_TOTAL = Counter(
+    name="llm_cache_miss_total",
+    documentation="Total cache misses requiring full LLM calls",
+    labelnames=["provider", "model"],
+)
+
+CACHE_HIT_TOTAL = Counter(
+    name="llm_cache_hit_total",
+    documentation="Total cache hits avoiding LLM calls",
+    labelnames=["provider", "model"],
+)
+
+CACHE_SIZE_BYTES = Gauge(
+    name="llm_cache_size_bytes",
+    documentation="Current cache size in bytes",
+    labelnames=["provider"],
 )
 
 # Existing metrics (extended for completeness)
@@ -547,9 +580,10 @@ uv run pytest backend/tests/observability/test_drift_detection.py -v > logs/day1
 **Before Proceeding to Day 2:**
 1. ✅ All 7 tests pass
 2. ✅ Prometheus counter increments with actual values (inspect `_value.get()`)
-3. ✅ Update `docs/tasks/todo.md` — mark Day 1 complete
-4. ✅ Update `docs/tasks/lessons.md` with any corrections or insights
-5. ✅ Commit: `git commit -m "Day 1: Drift detection implementation with tests"`
+3. ✅ `guardrail_violations_total` visible in Prometheus UI (http://localhost:9090)
+4. ✅ Update `docs/tasks/todo.md` — mark Day 1 complete
+5. ✅ Update `docs/tasks/lessons.md` with any corrections or insights
+6. ✅ Commit and push: `git commit -m "Day 1: Drift detection implementation with tests"`
 
 ---
 
@@ -1114,9 +1148,11 @@ cat backend/security/nhi_registry.json | jq .
 
 ## Day 3: Verification Agent Design (Gaps #1-2)
 
-**Goal:** Design the multi-agent verification architecture.
+**Goal:** Design the multi-agent verification architecture with comprehensive prompt engineering.
 
-**⚠️ CRITICAL:** Per EXECUTION-RULES.md §2.13, all new agents MUST have an `AGENT.md` file.
+**⚠️ CRITICAL:** Per v2.0.0 proposal, all new agents MUST have:
+1. An `AGENT.md` file in `backend/agents/{agent_name}/`
+2. A complete 11-file prompt structure in `prompts/{agent_name}/`
 
 **Reference Existing Agents:**
 Before creating new AGENT.md files, read existing ones for consistency:
@@ -1125,6 +1161,9 @@ Before creating new AGENT.md files, read existing ones for consistency:
 - `backend/agents/focus/AGENT.md`
 - `backend/agents/critic/AGENT.md`
 - `backend/agents/orchestrator/AGENT.md`
+
+**Reference Existing Prompts (11-file structure):**
+- `prompts/focus/` — Complete 11-file structure with examples, reasoning templates, and quality checklists
 
 ### Morning (4 hours): Architecture Design
 
@@ -2002,24 +2041,61 @@ git branch -d epic/week1-gap-remediation
 - [ ] **Capture baseline metrics** — Record current briefing generation time and token usage
 
 ### Environment Preparation
-- [ ] **Verify Python version** — Ensure Python 3.12+ is installed (`python --version`)
+- [ ] **Verify Node.js version** — `nvm use 22` (Calendar MCP requires Node 22+)
+- [ ] **Verify Python version** — Ensure Python 3.12+ is installed (`uv run python --version`)
 - [ ] **Update dependencies** — Run `uv sync` to ensure latest packages
 - [ ] **Check test suite** — Run existing tests to confirm baseline: `uv run pytest -v`
-- [ ] **Verify MCP connections** — Test PostgreSQL and Calendar MCP servers
+- [ ] **Verify MCP connections** — `LIVE_STDIO_E2E=1 uv run pytest backend/tests/integration/test_live_stdio_briefing.py -v`
 
 ### Feature Flag Setup
 - [ ] **Add consensus feature flag** — Add `ENABLE_CONSENSUS_WORKFLOW=false` to `.env`
 - [ ] **Plan gradual rollout** — Week 1: flag=false (testing), Week 2: flag=true (production)
 - [ ] **Add flag check in builder.py** — Conditional graph construction based on flag
 
-### Monitoring Preparation
-- [ ] **Set up Prometheus** — Ensure Prometheus is running and scraping metrics
-- [ ] **Create Grafana dashboard** — Import consensus metrics dashboard template
-- [ ] **Configure alerts** — Set up PagerDuty/Slack for critical consensus failures
-- [ ] **Test alert routing** — Send test alert to verify notification channel
+### Monitoring Preparation (REQUIRED before Day 1)
+
+Follow the beginner guides in **`docs/guidence/observability/`**:
+
+| Step | Guide | Required before |
+|------|-------|-----------------|
+| Prerequisites | [01-prerequisites.md](../guidence/observability/01-prerequisites.md) | Day 1 |
+| Prometheus | [02-prometheus-setup.md](../guidence/observability/02-prometheus-setup.md) | Day 1 |
+| Grafana | [03-grafana-setup.md](../guidence/observability/03-grafana-setup.md) | Day 1 (recommended) |
+| PagerDuty | [04-pagerduty-setup.md](../guidence/observability/04-pagerduty-setup.md) | Day 1 end |
+| Verification | [05-verify-before-kickoff.md](../guidence/observability/05-verify-before-kickoff.md) | Day 1 start |
+
+**Fast path:**
+
+```bash
+cd docs/guidence/observability
+cp observability.env.example .env
+# Edit .env — GRAFANA_ADMIN_PASSWORD, PAGERDUTY_ROUTING_KEY
+docker compose -f docker-compose.observability.yml up -d
+```
+
+Checklist:
+
+- [ ] **Set up Prometheus** — Target `daily-briefing` UP at http://localhost:9090/targets
+- [ ] **Create Grafana dashboard** — Import `infrastructure/monitoring/grafana-slo-dashboard.json`
+- [ ] **Configure alerts** — PagerDuty Events API v2 key in `observability/.env` → Alertmanager
+- [ ] **Test alert routing** — Send test alert; confirm PagerDuty incident (see step 04 guide)
+
+**Free accounts (optional for local Docker path):**
+
+- Grafana Cloud: https://grafana.com/auth/sign-up/create-user?pg=pricing&plcmt=free&cta=create-free-account
+- PagerDuty: https://www.pagerduty.com/
+- Prometheus: self-hosted (no account) — https://prometheus.io/docs/prometheus/latest/installation/
+
+**Environment files:**
+
+| File | Variables |
+|------|-----------|
+| `.env` / `.env.example` | `OTEL_EXPORTER_OTLP_ENDPOINT`, `ENABLE_CONSENSUS_WORKFLOW`, `METRICS_SCRAPE_*` |
+| `docs/guidence/observability/.env` | `PAGERDUTY_ROUTING_KEY`, `GRAFANA_ADMIN_PASSWORD`, `APP_METRICS_TARGET` |
+| `.env.production.example` | `PAGERDUTY_ROUTING_KEY`, `GRAFANA_CLOUD_*` |
 
 ### Documentation
-- [ ] **Read IBM recommendations** — Review `docs/guidence/2026-12-01-youtube-IBM.md`
+- [ ] **Read IBM recommendations** — Review `docs/example-code/examples/2026-12-01-youtube-IBM.md`
 - [ ] **Review gap analysis** — Read `docs/gaps/GAP-ANALYSIS-REVIEW.md` for context
 - [ ] **Review coding standards** — Read `docs/ENGINEERING-STANDARDS.md`
 - [ ] **Review example code** — Study `docs/example-code/examples/s*.md`
@@ -2035,7 +2111,8 @@ git branch -d epic/week1-gap-remediation
 
 - [x] `docs/OBSERVABILITY.md` — Rogue agent drift detection added
 - [ ] `backend/schemas/envelope.py` — Violation tracking added
-- [ ] `backend/observability/metrics.py` — Guardrail violation counter implemented
+- [ ] `backend/observability/metrics.py` — Consolidated metrics + guardrail violation counter
+- [ ] `backend/metrics.py` — Migrated to observability module (re-export or removed)
 - [ ] `backend/tests/observability/test_drift_detection.py` — Tests passing
 - [ ] `docs/NHI-OBSERVABILITY.md` — Created with definition-of-done gate
 - [ ] `backend/security/nhi_registry.py` — Registry implemented with 5 agents registered
@@ -2077,28 +2154,44 @@ See `docs/gaps/WEEK2-PLANNING.md` for full guidance on creating Week 2 materials
 
 ### Prompt Creation Requirements (for Week 2 agents)
 
-**⚠️ CRITICAL:** Per EXECUTION-RULES.md §2.12, when creating new agent prompts, you MUST create all 6 files in XML format:
+**⚠️ CRITICAL:** Per v2.0.0 proposal and prompt engineering best practices, when creating new agent prompts, you MUST create all 11 files:
 
 For each new agent (`prompts/verification/` and `prompts/adversarial/`), create:
 
-1. **CONTRACT.md** — Input/output contract and version history
-2. **CHANGELOG.md** — Version history and changes
-3. **system.md** — System prompt defining agent role and behavior
-4. **skills.md** — Agent capabilities and skills
-5. **tools.md** — Available tools and when to use them
-6. **guardrails.md** — Safety constraints and escalation rules
+1. **system.md** — Role, identity, and high-level responsibilities
+2. **context.md** — Why this agent exists, user needs, and design principles
+3. **instructions.md** — Step-by-step execution process with tool calls and error handling
+4. **examples.md** — 3-5 complete input/output examples with reasoning traces
+5. **output-schema.md** — Exact JSON schema with validation rules and field specifications
+6. **tools.md** — Tool definitions, usage guidance, and when to invoke each tool
+7. **reasoning.md** — Core reasoning framework, decision trees, and `<thinking>` templates
+8. **guardrails.md** — Security constraints, safety checks, and edge case handling
+9. **quality-checklist.md** — Self-verification criteria for output validation
+10. **CHANGELOG.md** — Version history with semantic versioning
+11. **CONTRACT.md** — Input/output contract and integration points
 
-Reference existing prompt structure in `prompts/AGENT.md` and existing agents like `prompts/task/`, `prompts/focus/`, `prompts/critic/`.
+**Model-Specific Configurations (from v2.0.0):**
+- **Claude**: Use `effort: "high"` for complex reasoning, `thinking: {type: "adaptive"}` for dynamic reasoning
+- **OpenAI**: Use `reasoning_effort: "high"` for o-series models, `phase` parameter for workflow coordination
+
+**Prompt Caching (from v2.0.0):**
+- Structure prompts with cacheable context blocks (>1024 tokens for OpenAI, any size for Claude)
+- Place static content (system instructions, examples) before dynamic content (user input)
+- Use Claude's `cache_control: {type: "ephemeral"}` markers for explicit caching
+- Expected ROI: 50-90% cost reduction on repeated context
+
+Reference existing prompt structure in `prompts/focus/` (11-file structure implemented) and `prompts/AGENT.md`.
 
 ### Immediate Week 2 Tasks (After Planning)
 
 1. **Implement Verification Agent node** (`backend/agents/verification/node.py`)
 2. **Implement Adversarial Agent node** (`backend/agents/adversarial/node.py`)
-3. **Create verification prompts** (`prompts/verification/` — all 6 files)
-4. **Create adversarial prompts** (`prompts/adversarial/` — all 6 files)
-5. **Add consensus metrics to Prometheus**
-6. **Test end-to-end consensus workflow**
-7. **Begin Four-layer memory architecture (if scope allows)**
+3. **Create verification prompts** (`prompts/verification/` — all 11 files: system.md, context.md, instructions.md, examples.md, output-schema.md, tools.md, reasoning.md, guardrails.md, quality-checklist.md, CHANGELOG.md, CONTRACT.md)
+4. **Create adversarial prompts** (`prompts/adversarial/` — all 11 files)
+5. **Implement prompt caching** (add cache_control blocks for Claude, structure prompts for OpenAI auto-caching)
+6. **Add cache metrics to Prometheus** (cache_hit_rate, cache_miss_total, cache_hit_total, cache_size_bytes)
+7. **Test end-to-end consensus workflow with caching enabled**
+8. **Begin Four-layer memory architecture (if scope allows)**
 
 **See:** `docs/gaps/WEEK2-PLANNING.md` for complete Week 2 roadmap and epic structure.
 

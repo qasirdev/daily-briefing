@@ -90,6 +90,8 @@ Unsigned images must be rejected in production environments.
 
 See `infrastructure/DEPLOYMENT.md` for step-by-step production deployment, rollback, and monitoring setup.
 
+**Local observability:** See `docs/guidence/observability/README.md` for Prometheus, Grafana, and PagerDuty setup before Week 1 kickoff.
+
 ---
 
 *Infrastructure Agent — Version 1.7.0 — May 2026*

@@ -23,6 +23,9 @@ htmlcov/
 # docs
 docs/example-code/examples/
 
+# Observability stack secrets (copy from observability.env.example)
+docs/guidence/observability/.env
+
 # Node.js
 node_modules/
 .npm-cache/

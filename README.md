@@ -337,6 +337,7 @@ docs/              Architecture · security · observability · execution standa
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System design, agent roles, data flows |
 | [docs/SECURITY.md](docs/SECURITY.md) | OWASP GenAI matrix, threat model, controls |
 | [docs/OBSERVABILITY.md](docs/OBSERVABILITY.md) | Tracing, Prometheus metrics, SLOs |
+| [docs/guidence/observability/README.md](docs/guidence/observability/README.md) | Local Prometheus, Grafana, PagerDuty setup |
 | [docs/AGENTIC-CONSENT.md](docs/AGENTIC-CONSENT.md) | Consent flows, token lifecycle, revocation |
 | [docs/LOCAL-LLM.md](docs/LOCAL-LLM.md) | Local model benchmarks, hardware requirements |
 | [docs/DATA-OWNERSHIP.md](docs/DATA-OWNERSHIP.md) | GDPR compliance, retention, PII handling |

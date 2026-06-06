@@ -544,6 +544,8 @@ curl http://127.0.0.1:8010/api/v1/dlq \
 curl http://127.0.0.1:8010/metrics/
 ```
 
+**Full observability stack (Prometheus + Grafana + PagerDuty):** See [docs/guidence/observability/README.md](../guidence/observability/README.md). Required before Week 1 gap remediation kickoff.
+
 ### OpenTelemetry (optional)
 
 Tracing exports to `OTEL_EXPORTER_OTLP_ENDPOINT` (default `4317`; local override e.g. `4347`). App continues if collector is down.

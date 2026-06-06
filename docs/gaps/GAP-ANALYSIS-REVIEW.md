@@ -1,20 +1,30 @@
-# Gap Analysis Review — IBM Recommendations vs Current Implementation
+# Gap Analysis Review — IBM + Claude Zero-Trust Comprehensive Analysis
 
-**Date:** June 4, 2026  
+**Date:** June 4-6, 2026  
 **Proposal:** `007-01-ai-daily-briefing-assistant5.md` v1.5.0  
-**Guidance Source:** `docs/example-code/examples/2026-12-01-youtube-IBM.md`  
-**Gap Reference:** `docs/example-code/examples/2026-12-01-youtube-IBM-gap.md`
+**Guidance Sources:**
+- `docs/example-code/examples/2026-12-01-youtube-IBM.md` (IBM Multi-Agent AI)
+- `docs/example-code/examples/2026-12-01-zero-trust-ai-agents-summary.md` (Claude/Anthropic Zero-Trust)
+**Alignment Analysis:** `docs/gaps/CLAUDE-ZERO-TRUST-ALIGNMENT.md`
 
 ---
 
 ## Executive Summary
 
-This document reviews the AI Daily Briefing Assistant proposal against IBM's multi-agent AI best practices and identifies **99 gaps** requiring remediation before production deployment. The gaps span architecture, security, observability, memory systems, and operational practices.
+This document reviews the AI Daily Briefing Assistant proposal against **IBM's multi-agent AI best practices** and **Claude/Anthropic's Zero-Trust framework for AI agents**, identifying **121 total gaps** requiring remediation before production deployment.
+
+**Update (June 6, 2026):** Added 22 new gaps (#114-#135) from Claude Zero-Trust analysis, covering critical supply chain, memory protection, and advanced threat defenses not captured in the original IBM-based review.
 
 **Status Overview:**
-- ✅ **Already Implemented:** 23 gaps
-- 🟡 **Partially Implemented:** 31 gaps  
-- 🔴 **Not Implemented:** 45 gaps
+- ✅ **Already Implemented:** 23 gaps (19%)
+- 🟡 **Partially Implemented:** 31 gaps (26%)  
+- 🔴 **Not Implemented:** 67 gaps (55%)
+
+**Critical Priorities:**
+- **P0 (Critical):** 24 gaps — Immediate action required (was 18, added 6 from Claude)
+- **P1 (High):** 52 gaps — Required before production (was 39, added 13 from Claude)
+- **P2 (Medium):** 38 gaps — Enhancement and optimization (was 35, added 3 from Claude)
+- **P3 (Low):** 7 gaps — Nice-to-have
 
 ---
 
@@ -247,31 +257,225 @@ This document reviews the AI Daily Briefing Assistant proposal against IBM's mul
 
 ---
 
+## Claude Zero-Trust Specific Gaps (Gaps #114-#135)
+
+**Source:** `docs/example-code/examples/2026-12-01-zero-trust-ai-agents-summary.md`  
+**Analysis:** `docs/gaps/CLAUDE-ZERO-TRUST-ALIGNMENT.md`
+
+These 22 gaps were identified from Claude/Anthropic's Zero-Trust framework and represent critical security concerns not covered in the IBM-based analysis.
+
+### Supply Chain Security (Gaps #114-#116, #127)
+
+| Gap # | Description | Status | Priority |
+|-------|-------------|--------|----------|
+| 114 | **Spotlighting for indirect injection** (calendar/email data) | 🔴 Not Implemented | P0 |
+| 115 | AI-BOM for model provenance (OWASP AI-BOM) | 🔴 Not Implemented | P1 |
+| 116 | OpenSSF Scorecard in CI pipeline | 🔴 Not Implemented | P1 |
+| 127 | Vendor security assessments (include FOSS) | 🔴 Not Implemented | P1 |
+
+### Identity & Credential Security (Gaps #117-#119, #128)
+
+| Gap # | Description | Status | Priority |
+|-------|-------------|--------|----------|
+| 117 | **Tool poisoning & rug-pull defense** (MCP validation) | 🔴 Not Implemented | P0 |
+| 118 | **Confused deputy attack prevention** (delegation framework) | 🔴 Not Implemented | P0 |
+| 119 | Memory-based privilege retention prevention | 🔴 Not Implemented | P1 |
+| 128 | Per-action authorization with real-time policy evaluation | 🔴 Not Implemented | P1 |
+
+### Memory Protection & Integrity (Gaps #120-#122, #132)
+
+| Gap # | Description | Status | Priority |
+|-------|-------------|--------|----------|
+| 120 | **RAG poisoning defense** (if using RAG) | 🔴 Not Implemented | P0* |
+| 121 | Shared context poisoning (if multi-user) | 🔴 Not Implemented | P2 |
+| 122 | Long-term behavioral drift detection | 🔴 Not Implemented | P1 |
+| 132 | Memory quarantine workflow for suspected poisoning | 🔴 Not Implemented | P1 |
+
+### Observability & Detection (Gaps #123, #129, #134-#135)
+
+| Gap # | Description | Status | Priority |
+|-------|-------------|--------|----------|
+| 123 | Cryptographically sealed audit logs (immutable) | 🔴 Not Implemented | P1 |
+| 129 | MITRE ATT&CK detection coverage mapping | 🔴 Not Implemented | P1 |
+| 134 | Dwell time SLO (<1hr anomaly→awareness) | 🔴 Not Implemented | P1 |
+| 135 | Alert investigation coverage tracking (95%+) | 🔴 Not Implemented | P1 |
+
+### Advanced Defenses (Gaps #126, #133)
+
+| Gap # | Description | Status | Priority |
+|-------|-------------|--------|----------|
+| 126 | Constitutional classifiers (95% jailbreak block) | 🔴 Not Implemented | P1 |
+| 133 | Blast radius quantification per agent | 🔴 Not Implemented | P1 |
+
+### Governance & Operations (Gaps #130-#131)
+
+| Gap # | Description | Status | Priority |
+|-------|-------------|--------|----------|
+| 130 | Multi-incident chaos testing (5 simultaneous) | 🔴 Not Implemented | P1 |
+| 131 | Emergency change authorization procedures | 🔴 Not Implemented | P1 |
+
+### Advanced Tier (Future/Regulated) (Gaps #124-#125)
+
+| Gap # | Description | Status | Priority |
+|-------|-------------|--------|----------|
+| 124 | Hardware-backed identity (HSM/TPM) | 🔴 Not Implemented | P2 (P0 if regulated) |
+| 125 | Confidential computing readiness (AMD SEV/Intel TDX) | 🔴 Not Implemented | P2 (P0 if regulated) |
+
+**Notes:**
+- Gap #120 is P0 only if using RAG for documentation/policies
+- Gaps #124-#125 are P2 for general use, P0 for regulated industries
+
+---
+
+## Prompt Engineering & LLM Best Practices (Gap #136)
+
+**Source:** Claude Prompting Best Practices + OpenAI GPT-5.5 Prompt Guidance  
+**Analysis Date:** 2026-06-06
+
+| Gap # | Description | Status | Priority |
+|-------|-------------|--------|----------|
+| 136 | **Prompt engineering standards** (Claude + OpenAI best practices) | 🟡 Partial → ✅ (Focus v2) | P0 |
+
+### Current State (Before Remediation)
+- **Minimal prompts:** 3-9 lines per agent (vague instructions)
+- **No examples:** Zero-shot prompting only (no few-shot)
+- **No security:** Generic guardrails, no spotlighting
+- **No validation:** No quality self-checks or output schemas
+- **No reasoning:** No thinking guidance for complex decisions
+
+### Required Changes (Claude + OpenAI Guidance)
+1. **Clear, explicit instructions** — No vague language
+2. **3-5 examples per agent** — Few-shot prompting for consistency
+3. **XML structure** — Organize complex prompts unambiguously
+4. **Context and motivation** — Explain why quality matters
+5. **Explicit output schemas** — JSON validation with constraints
+6. **Reasoning guidance** — Thinking patterns for complex tasks
+7. **Tool use instructions** — Explicit triggers and anti-patterns
+8. **Edge case handling** — Empty inputs, errors, failures
+9. **Quality self-check** — 10-15 point validation checklist
+10. **Security (spotlighting)** — Microsoft technique for external data
+11. **Communication style** — Tone, voice, tense, perspective
+12. **Model configuration** — Effort, temperature, thinking settings
+
+### Implementation Status
+- ✅ **Focus Agent:** Complete v2.0.0 rewrite (reference implementation)
+  - 500+ line system prompt (was 3 lines)
+  - 5 complete examples (was 0)
+  - Spotlighting for external data
+  - 15-point quality checklist
+  - Comprehensive security (5 defense layers)
+- 🔴 **Task Agent:** Not started
+- 🔴 **Calendar Agent:** Not started
+- 🔴 **Critic Agent:** Not started
+- 🔴 **Orchestrator Agent:** Not started
+- 🔴 **Security Agent:** Not started
+
+### Files Created
+- `prompts/focus/system.md` — Comprehensive system prompt (v2.0.0)
+- `prompts/focus/examples.md` — 5 complete examples with reasoning
+- `prompts/focus/input-security.md` — Security defenses (spotlighting, validation)
+- `prompts/focus/CHANGELOG.md` — Version history and migration notes
+- `docs/PROMPT-ENGINEERING-GUIDE.md` — Standards for all agents
+
+### Success Criteria
+- [ ] All agents upgraded to v2.0.0 prompt structure
+- [ ] 3-5 examples per agent
+- [ ] Spotlighting implemented for all external data
+- [ ] Quality self-check in all prompts
+- [ ] Security testing for all agents (>95% jailbreak block rate)
+- [ ] Accuracy >90% on evaluation sets
+- [ ] Token efficiency improvement >10%
+
+### References
+- **Claude Best Practices:** https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices
+- **OpenAI Best Practices:** https://developers.openai.com/api/docs/guides/prompt-guidance?model=gpt-5.5
+- **Guide:** `docs/PROMPT-ENGINEERING-GUIDE.md`
+- **Reference Implementation:** `prompts/focus/` (v2.0.0)
+
+---
+
 ## Remediation Roadmap
 
 ### Phase 1: Critical Security & Architecture (Weeks 1-3)
+
+**Original Gaps:**
 - [ ] Gap #1-7: Multi-agent verification architecture
 - [ ] Gap #18-20: Last-mile identity & JIT credentials
 - [ ] Gap #49-50: IAM maturity baseline
 - [ ] Gap #92-94: NHI observability & assessment
 - [ ] Gap #99: Rogue agent drift detection
 
+**NEW from Claude:**
+- [ ] **Gap #114: Spotlighting** (Week 2-3) — Calendar/email indirect injection defense
+- [ ] **Gap #117: Tool Poisoning** (Week 2-3) — MCP tool validation layer
+- [ ] **Gap #118: Confused Deputy** (Week 3-4) — Delegation framework
+- [ ] **Gap #133: Blast Radius** (Week 2-3) — Risk quantification per agent
+
 ### Phase 2: Memory & Observability (Weeks 4-5)
+
+**Original Gaps:**
 - [ ] Gap #8-13: Four-layer memory architecture
 - [ ] Gap #58-61: AgentOps metrics & context layers
 - [ ] Gap #62-65: OWASP Agent Top 10 compliance
 - [ ] Gap #87-88: Reliability engineering & red teaming
 
-### Phase 3: Governance & Operations (Weeks 6-7)
+**NEW from Claude:**
+- [ ] **Gap #119: Memory-Based Privilege Retention** (Week 4-5) — Prevent privilege escalation via memory
+- [ ] **Gap #120: RAG Poisoning** (Week 4-5) — If using RAG for docs/policies
+- [ ] **Gap #128: Per-Action Authorization** (Week 3-4) — Real-time policy evaluation
+- [ ] **Gap #132: Memory Quarantine** (Week 4-5) — Poisoned memory containment
+
+### Phase 3: Supply Chain & Advanced Defenses (Weeks 5-6)
+
+**Original Gaps:**
+- [ ] Gap #62-65: OWASP Agent Top 10 compliance (continued)
+- [ ] Gap #87-88: Reliability engineering & red teaming
+
+**NEW from Claude:**
+- [ ] **Gap #115: AI-BOM** (Week 5-6) — Model provenance tracking
+- [ ] **Gap #116: OpenSSF Scorecard** (Week 5-6) — Dependency health in CI
+- [ ] **Gap #123: Cryptographic Log Sealing** (Week 5-6) — Immutable audit logs
+- [ ] **Gap #127: Vendor Assessments (FOSS)** (Week 5-6) — Include open-source dependencies
+
+### Phase 4: Governance & Operations (Weeks 6-7)
+
+**Original Gaps:**
 - [ ] Gap #31-32: Dynamic consent & JIT prompting
 - [ ] Gap #66-69: Full HITL layers & reasoning observability
 - [ ] Gap #86: Organizational governance
 - [ ] Gap #95-98: Human-on-the-loop & trust controls
 
-### Phase 4: Optimization & Scaling (Weeks 8-10)
+**NEW from Claude:**
+- [ ] **Gap #126: Constitutional Classifiers** (Week 6-7) — 95% jailbreak block rate
+- [ ] **Gap #122: Long-Term Drift** (Week 6-7) — Extends #99 for gradual degradation
+- [ ] **Gap #129: MITRE ATT&CK** (Week 6-7) — Detection coverage mapping
+- [ ] **Gap #134: Dwell Time SLO** (Week 6-7) — <1hr anomaly→awareness target
+- [ ] **Gap #135: Alert Coverage** (Week 6-7) — Track % of alerts investigated
+
+### Phase 5: Governance Hardening (Weeks 7-8)
+
+**Original Gaps:**
+- [ ] Gap #31-32: Dynamic consent (continued)
+- [ ] Gap #66-69: Full HITL layers (continued)
+- [ ] Gap #86: Organizational governance (continued)
+
+**NEW from Claude:**
+- [ ] **Gap #130: Multi-Incident Chaos Testing** (Week 7-8) — 5 simultaneous incidents tabletop
+- [ ] **Gap #131: Emergency Change Authorization** (Week 7-8) — Fast-track procedures
+
+### Phase 6: Optimization & Scaling (Weeks 9-10)
+
+**Original Gaps:**
 - [ ] Gap #33-40: Agentic RAG & context engineering
 - [ ] Gap #41-48: Agent roles & orchestration patterns
 - [ ] Gap #72-82: Hierarchical decomposition & storage
+
+### Phase 7: Future/Regulated (As Needed)
+
+**NEW from Claude:**
+- [ ] **Gap #121: Shared Context Poisoning** — If/when multi-user implemented
+- [ ] **Gap #124: Hardware-Backed Identity** — HSM/TPM (P0 for regulated industries)
+- [ ] **Gap #125: Confidential Computing** — AMD SEV / Intel TDX (P0 for regulated industries)
 
 ---
 
@@ -359,16 +563,34 @@ This document reviews the AI Daily Briefing Assistant proposal against IBM's mul
 
 ## Conclusion
 
-The current proposal (v1.5.0) provides a solid foundation with strong OWASP GenAI Top 10 coverage and robust security controls. However, **45 critical gaps** must be addressed before production deployment, particularly:
+The current proposal (v1.5.0) provides a solid foundation with strong OWASP GenAI Top 10 coverage and robust security controls. However, **121 total gaps** (99 from IBM analysis + 22 from Claude Zero-Trust) must be addressed before production deployment.
 
-1. **Multi-agent verification architecture** (consensus model)
-2. **Last-mile identity & JIT credentials** (zero-trust completion)
-3. **Four-layer memory architecture** (CoALA compliance)
-4. **Rogue agent drift detection** (OWASP Agent #10)
-5. **NHI observability** (non-human identity management)
+**Critical Findings (67 gaps not implemented):**
 
-**Estimated Effort:** 8-10 weeks for full remediation across all phases.
+### From IBM Analysis
+1. **Multi-agent verification architecture** (consensus model) — Gaps #1-7
+2. **Last-mile identity & JIT credentials** (zero-trust completion) — Gaps #18-20
+3. **Four-layer memory architecture** (CoALA compliance) — Gaps #8-13
+4. **Rogue agent drift detection** (OWASP Agent #10) — Gap #99
+5. **NHI observability** (non-human identity management) — Gaps #92-94
+
+### NEW from Claude Zero-Trust Analysis
+6. **Spotlighting for indirect injection** (calendar/email attacks) — Gap #114 ⚠️ P0
+7. **Tool poisoning defense** (MCP validation) — Gap #117 ⚠️ P0
+8. **Confused deputy prevention** (delegation framework) — Gap #118 ⚠️ P0
+9. **Supply chain security** (AI-BOM, OpenSSF Scorecard) — Gaps #115-#116
+10. **Constitutional classifiers** (95% jailbreak block) — Gap #126
+
+**Priority Breakdown:**
+- **P0 Critical:** 24 gaps (18 original + 6 Claude)
+- **P1 High:** 52 gaps (39 original + 13 Claude)
+- **P2 Medium:** 38 gaps (35 original + 3 Claude)
+- **P3 Low:** 7 gaps
+
+**Estimated Effort:** 9-10 weeks for full remediation across all 7 phases.
+
+**For detailed Claude alignment analysis, see:** `docs/gaps/CLAUDE-ZERO-TRUST-ALIGNMENT.md`
 
 ---
 
-*Gap Analysis Review — Created June 4, 2026*
+*Gap Analysis Review — Created June 4, 2026 | Updated June 6, 2026 (Claude Zero-Trust alignment)*

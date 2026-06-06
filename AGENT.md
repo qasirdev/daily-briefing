@@ -35,7 +35,8 @@ co-located AGENT.md files alongside the code they govern.
 | DLQ Handling | Failed agents or unrecoverable MCP timeouts MUST route to the DLQ |
 | Orchestrator-as-Presenter | Only the Orchestrator synthesizes user-facing markdown; sub-agents return JSON |
 | JIT Consent | Never hardcode credentials; respect Agentic Consent for Google Calendar MCP |
-| Prompt creation | New agents in `prompts/` require all 6 files in XML format (see `prompts/AGENT.md`) |
+| Prompt creation | New agents in `prompts/` require all 11 files following v2.0.0 standards: system.md, context.md, instructions.md, examples.md, output-schema.md, tools.md, reasoning.md, guardrails.md, quality-checklist.md, CHANGELOG.md, CONTRACT.md (see `prompts/AGENT.md` and `prompts/focus/` for structure) |
+| Prompt caching | Structure prompts for caching: static content (system, examples) before dynamic (user input), >1024 tokens for OpenAI auto-cache, use Claude's cache_control markers |
 | Agent creation | New agents in `backend/agents/` require a co-located `AGENT.md` |
 | Knowledge capture | New techniques or non-trivial fixes go in `docs/learning/` |
 | Task tracking | Update `docs/tasks/todo.md` and `docs/tasks/lessons.md` on completion |

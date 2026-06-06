@@ -1,25 +1,36 @@
 # AI Daily Briefing Assistant — Proposal Review Summary
 
-**Date:** June 4, 2026  
+**Date:** June 4-6, 2026  
 **Reviewer:** AI Agent (Claude Sonnet 4.5)  
 **Proposal Version:** 1.5.0 (Revision 7)  
-**Guidance Source:** IBM Multi-Agent AI Best Practices
+**Guidance Sources:**
+- IBM Multi-Agent AI Best Practices
+- Claude/Anthropic Zero-Trust for AI Agents Framework
 
 ---
 
 ## ✅ Review Completed
 
-I've completed a comprehensive review of the proposal against IBM's multi-agent AI recommendations and identified **99 gaps** that require attention before production deployment.
+I've completed a comprehensive review of the proposal against **IBM's multi-agent AI recommendations** and **Claude/Anthropic's Zero-Trust framework** and identified **121 total gaps** (99 from IBM + 22 from Claude) that require attention before production deployment.
+
+**Update (June 6, 2026):** Added Claude Zero-Trust alignment analysis identifying 22 additional critical gaps in supply chain security, memory protection, and advanced threat defenses.
 
 ### Documents Created/Updated
 
-1. **✅ Created:** `docs/GAP-ANALYSIS-REVIEW.md`
-   - Complete gap-by-gap analysis
+1. **✅ Created:** `docs/gaps/GAP-ANALYSIS-REVIEW.md`
+   - Complete gap-by-gap analysis (121 total gaps)
    - Priority ratings (P0-P3)
    - Implementation status tracking
-   - Remediation roadmap (4 phases over 8-10 weeks)
+   - Remediation roadmap (7 phases over 9-10 weeks)
 
-2. **✅ Updated:** `docs/OBSERVABILITY.md`
+2. **✅ Created:** `docs/gaps/CLAUDE-ZERO-TRUST-ALIGNMENT.md` (June 6, 2026)
+   - Comprehensive mapping of Claude/Anthropic Zero-Trust framework
+   - 22 new gaps (#114-#135) identified
+   - Three-tier security model (Foundation/Enterprise/Advanced)
+   - 8-phase implementation workflow
+   - Detailed threat analysis & mitigation strategies
+
+3. **✅ Updated:** `docs/OBSERVABILITY.md`
    - Added rogue agent drift detection (Gap #99)
    - New SLO: Guardrail violation rate < 0.1%
    - Alert rules for 2× baseline violation rate over 7 days
@@ -33,6 +44,8 @@ I've completed a comprehensive review of the proposal against IBM's multi-agent 
 
 ### Top Priority Gaps (P0 — Immediate Action Required)
 
+**From IBM Analysis:**
+
 | Gap # | Issue | Current State | Required Action |
 |-------|-------|---------------|-----------------|
 | **1-7** | Multi-agent verification architecture | Missing Verification & Adversarial agents | Add Generator→Verification→Adversarial→Consensus workflow |
@@ -40,6 +53,15 @@ I've completed a comprehensive review of the proposal against IBM's multi-agent 
 | **49-50** | IAM maturity baseline | No NHI framework | Reach IAM Foundation level (non-human identities, delegation) |
 | **92-94** | NHI observability | No NHI registry | Track all agents as non-human identities with audit trails |
 | **99** | Rogue agent drift detection | No drift monitoring | ✅ **NOW IMPLEMENTED** in OBSERVABILITY.md |
+
+**NEW from Claude Zero-Trust Analysis:**
+
+| Gap # | Issue | Current State | Required Action |
+|-------|-------|---------------|-----------------|
+| **114** | **Spotlighting for indirect injection** | No defense for calendar/email | Implement Microsoft spotlighting technique (>50%→<2% success rate) |
+| **117** | **Tool poisoning & rug-pull defense** | No MCP validation layer | Add tool response validation, chaining policy, version pinning |
+| **118** | **Confused deputy attack prevention** | No delegation framework | Implement proper credential delegation (no ambient authority) |
+| **120** | **RAG poisoning defense** | No RAG security layer | Add content validation, provenance tracking, retrieval scanning |
 
 ### Strengths of Current Proposal
 
@@ -64,18 +86,26 @@ I've completed a comprehensive review of the proposal against IBM's multi-agent 
 
 ## 📊 Gap Distribution
 
-**Total Gaps:** 99
+**Total Gaps:** 121 (99 from IBM + 22 from Claude)
 
-- ✅ **Already Implemented:** 23 (23%)
-- 🟡 **Partially Implemented:** 31 (31%)
-- 🔴 **Not Implemented:** 45 (46%)
+- ✅ **Already Implemented:** 23 (19%)
+- 🟡 **Partially Implemented:** 31 (26%)
+- 🔴 **Not Implemented:** 67 (55%)
 
 ### By Priority
 
-- **P0 (Critical):** 18 gaps — Immediate action required
-- **P1 (High):** 39 gaps — Required before MVP completion
-- **P2 (Medium):** 35 gaps — Enhancement and optimization
+- **P0 (Critical):** 24 gaps — Immediate action required (18 IBM + 6 Claude)
+- **P1 (High):** 52 gaps — Required before MVP completion (39 IBM + 13 Claude)
+- **P2 (Medium):** 38 gaps — Enhancement and optimization (35 IBM + 3 Claude)
 - **P3 (Low):** 7 gaps — Nice-to-have
+
+### Claude-Specific Gap Breakdown (22 New Gaps)
+
+| Priority | Count | Key Examples |
+|----------|-------|--------------|
+| P0 | 6 | Spotlighting (#114), Tool Poisoning (#117), Confused Deputy (#118), RAG Poisoning (#120) |
+| P1 | 13 | AI-BOM (#115), OpenSSF (#116), Constitutional Classifiers (#126), MITRE ATT&CK (#129) |
+| P2 | 3 | Hardware Identity (#124), Confidential Computing (#125), Shared Context Poisoning (#121) |
 
 ### By Category
 
@@ -256,18 +286,27 @@ I've completed a comprehensive review of the proposal against IBM's multi-agent 
 ### 1. Review Gap Analysis (30 min)
 Read `docs/GAP-ANALYSIS-REVIEW.md` in detail to understand all 99 gaps and their priorities.
 
-### 2. Drift Detection Implementation (4 hours)
-- [ ] Update `backend/schemas/envelope.py` to add `GuardrailViolation` model
-- [ ] Update `backend/observability/metrics.py` to add `GUARDRAIL_VIOLATIONS` counter
-- [ ] Create `backend/observability/logging.py` with `log_guardrail_violation()`
-- [ ] Test Prometheus metrics locally
+### 2. Observability stack setup (60–90 min) — BEFORE Day 1 code
 
-### 3. NHI Registry Design (2 hours)
+Follow [docs/guidence/observability/README.md](../guidence/observability/README.md):
+
+- [ ] Prometheus scraping `/metrics` (target UP)
+- [ ] Grafana SLO dashboard imported
+- [ ] PagerDuty test alert via Alertmanager
+
+### 3. Drift Detection Implementation (4 hours)
+
+- [ ] Consolidate `backend/metrics.py` into `backend/observability/metrics.py`
+- [ ] Update `backend/schemas/envelope.py` to add `GuardrailViolation` model
+- [ ] Add `GUARDRAIL_VIOLATIONS` counter and `log_guardrail_violation()`
+- [ ] Verify metrics in Prometheus UI (`guardrail_violations_total`)
+
+### 4. NHI Registry Design (2 hours)
 - [ ] Create `docs/NHI-OBSERVABILITY.md` with requirements
 - [ ] Design `backend/security/nhi_registry.py` interface
 - [ ] Document pre-merge gate in `backend/AGENT.md`
 
-### 4. Verification Agent Design (4 hours)
+### 5. Verification Agent Design (4 hours)
 - [ ] Create `backend/agents/verification/AGENT.md`
 - [ ] Define verification criteria (fact-checking, consistency)
 - [ ] Design verification-adversarial-consensus workflow
@@ -336,26 +375,37 @@ Read `docs/GAP-ANALYSIS-REVIEW.md` in detail to understand all 99 gaps and their
 
 ## 🎉 Summary
 
-The AI Daily Briefing Assistant proposal (v1.5.0) provides a **strong foundation** with excellent OWASP GenAI Top 10 coverage and security-first design. However, **99 gaps** must be addressed before production, with **18 P0 critical gaps** requiring immediate attention.
+The AI Daily Briefing Assistant proposal (v1.5.0) provides a **strong foundation** with excellent OWASP GenAI Top 10 coverage and security-first design. However, **121 total gaps** (99 IBM + 22 Claude) must be addressed before production, with **24 P0 critical gaps** requiring immediate attention.
 
 **Key Achievements:**
 - ✅ Rogue agent drift detection implemented in observability
-- ✅ Gap analysis document created with full remediation roadmap
+- ✅ Comprehensive gap analysis with IBM + Claude frameworks (121 gaps)
 - ✅ Priority ratings assigned (P0-P3)
-- ✅ 4-phase implementation plan (8-10 weeks)
+- ✅ 7-phase implementation plan (9-10 weeks)
+- ✅ Claude Zero-Trust alignment document created
+
+**Critical New Findings from Claude Analysis:**
+1. **Spotlighting** (Gap #114): Indirect injection defense for calendar/email (P0)
+2. **Tool Poisoning** (Gap #117): MCP validation layer (P0)
+3. **Confused Deputy** (Gap #118): Delegation framework (P0)
+4. **Supply Chain Security** (Gaps #115-#116): AI-BOM + OpenSSF Scorecard (P1)
+5. **Constitutional Classifiers** (Gap #126): 95% jailbreak block rate (P1)
 
 **Next Steps:**
-1. Review `docs/GAP-ANALYSIS-REVIEW.md` in detail
-2. Complete drift detection implementation (update schemas & metrics)
-3. Begin Phase 1: Multi-agent verification architecture & JIT credentials
-4. Establish red team evaluation cadence tied to drift alerts
+1. Review `docs/gaps/CLAUDE-ZERO-TRUST-ALIGNMENT.md` for detailed Claude analysis
+2. Review `docs/gaps/GAP-ANALYSIS-REVIEW.md` (updated with 121 total gaps)
+3. Prioritize Claude P0 gaps: #114, #117, #118, #120 for Week 2-3 integration
+4. Complete drift detection implementation (update schemas & metrics)
+5. Begin Phase 1: Multi-agent verification architecture & JIT credentials
+6. Establish red team evaluation cadence tied to drift alerts
 
 **Implementation Tracking:**
 - ✅ Week 1 Epic: `docs/jira-tickets-json/DB-E8-gap-remediation.json` (Created)
 - 📋 Week 2-8: Create epic tickets AFTER each week completes (see `docs/gaps/WEEK2-PLANNING.md`)
+- 📋 Week 2-3: Integrate Claude P0 gaps (#114, #117, #118) into implementation
 
-**Estimated Effort:** 8-10 weeks for full remediation across all phases.
+**Estimated Effort:** 9-10 weeks for full remediation across all 7 phases.
 
 ---
 
-*Proposal Review Summary — Created June 4, 2026*
+*Proposal Review Summary — Created June 4, 2026 | Updated June 6, 2026 (Claude Zero-Trust alignment)*

@@ -4,7 +4,9 @@
 **Integration Branch:** `epic/autonomus-implementation-gap`  
 **Feature Branch:** `epic/week1-gap-remediation`  
 **Duration:** 5 days (40 hours)  
-**Implementation Agents:** Coding → Refactor → Testing → Documentation (see `.cursor/rules/`)
+**Implementation Workflow:** Single pass per day — implement, refactor, test, and document inline (same deliverables as the 4-agent pattern in `.cursor/rules/`).
+
+**Execution cadence:** Complete Day 1 → verify tests → Day 2 → … through Day 5. One commit per day; PR after Week 1.
 
 ---
 
@@ -39,9 +41,10 @@ Implement the multi-agent consensus model (Generator → Verification → Advers
 7. ✅ `docs/example-code/examples/s*.md` — Reference implementations (30 min)
 8. ✅ `docs/gaps/WEEK1-IMPLEMENTATION-GUIDE.md` — Complete implementation guide (45 min)
 9. ✅ `docs/gaps/GAP-ANALYSIS-REVIEW.md` — Context for gaps being addressed (20 min)
-10. ✅ `docs/guidence/2026-12-01-youtube-IBM.md` — IBM multi-agent recommendations (30 min)
+10. ✅ `docs/example-code/examples/2026-12-01-youtube-IBM.md` — IBM multi-agent recommendations (30 min)
+11. ✅ `docs/guidence/observability/README.md` — Prometheus, Grafana, PagerDuty setup (30 min)
 
-**Total Reading Time:** ~3 hours (REQUIRED before writing any code)
+**Total Reading Time:** ~3.5 hours (REQUIRED before writing any code)
 
 ---
 
@@ -60,8 +63,10 @@ git pull origin epic/autonomus-implementation-gap
 git checkout -b epic/week1-gap-remediation
 git push -u origin epic/week1-gap-remediation
 
-# 3. Verify Python version
-python --version  # Must be 3.12+
+# 3. Verify Python and Node versions
+nvm use 22              # Calendar MCP requires Node 22+
+node --version          # Must be 22+
+uv run python --version # Must be 3.12+
 
 # 4. Update dependencies
 uv sync
@@ -72,9 +77,17 @@ uv run pytest -v
 # 6. Create logs directory for test output capture
 mkdir -p logs
 
-# 7. Verify MCP connections
-# Test PostgreSQL MCP
-# Test Calendar MCP
+# 7. Verify MCP connections (live stdio — requires .env secrets)
+LIVE_STDIO_E2E=1 uv run pytest backend/tests/integration/test_live_stdio_briefing.py -v
+
+# 8. Set up observability stack (REQUIRED before Day 1)
+# Follow: docs/guidence/observability/README.md
+cd docs/guidence/observability
+cp observability.env.example .env
+# Edit .env — set GRAFANA_ADMIN_PASSWORD and PAGERDUTY_ROUTING_KEY
+docker compose -f docker-compose.observability.yml up -d
+# Verify: http://localhost:9090/targets (daily-briefing UP)
+# Complete: docs/guidence/observability/05-verify-before-kickoff.md
 ```
 
 ### Task Planning (CRITICAL — Per EXECUTION-RULES.md §2.2)
@@ -93,10 +106,11 @@ Status: in_progress
 Started: [DATE]
 
 ### Day 1: Drift Detection & Observability (Gap #99)
+- [ ] Consolidate backend/metrics.py into backend/observability/metrics.py
 - [ ] Update backend/schemas/envelope.py with GuardrailViolation
-- [ ] Create backend/observability/metrics.py
 - [ ] Write tests: backend/tests/observability/test_drift_detection.py
 - [ ] Verify: All tests pass with ACTUAL metrics (not mocked)
+- [ ] Verify: guardrail_violations_total visible in Prometheus UI
 - [ ] Update docs/tasks/todo.md — mark Day 1 complete
 - [ ] Update docs/tasks/lessons.md with insights
 - [ ] Commit: "Day 1: Drift detection implementation with tests"
@@ -163,9 +177,11 @@ echo "ENABLE_CONSENSUS_WORKFLOW=false" >> .env
 
 ---
 
-## 🤖 Cursor Agent Workflow (4-Agent Sequential Pattern)
+## 🤖 Cursor Agent Workflow
 
-Per `AGENT.md` and `.cursor/rules/`, execute in this order:
+**Week 1 uses a single-pass workflow:** implement, refactor (`mypy`/`ruff`), test, and document in one session per day. The 4-agent roles below map to inline steps (not separate hand-offs).
+
+Per `AGENT.md` and `.cursor/rules/`, each day covers:
 
 ### 1️⃣ Coding Agent (`.cursor/rules/coding.mdc`)
 
@@ -232,12 +248,14 @@ Per `AGENT.md` and `.cursor/rules/`, execute in this order:
 
 ### 4️⃣ Documentation Agent (`.cursor/rules/docs.mdc`)
 
-**Scope:** AGENT.md creation, architecture updates, knowledge capture
+**Scope:** AGENT.md creation, 11-file prompt structure, architecture updates, knowledge capture
 
 **Day 3 Responsibilities:**
 - Create `backend/agents/verification/AGENT.md` (all required sections)
 - Create `backend/agents/adversarial/AGENT.md` (all required sections)
-- Review for consistency with existing agent AGENT.md files
+- Create `prompts/verification/` with all 11 files (system.md, context.md, instructions.md, examples.md, output-schema.md, tools.md, reasoning.md, guardrails.md, quality-checklist.md, CHANGELOG.md, CONTRACT.md)
+- Create `prompts/adversarial/` with all 11 files
+- Review for consistency with existing agent AGENT.md files and `prompts/focus/` structure
 
 **Day 5 Responsibilities:**
 - Update `docs/ARCHITECTURE.md` with consensus workflow
@@ -248,6 +266,7 @@ Per `AGENT.md` and `.cursor/rules/`, execute in this order:
 
 **Final Deliverable:**
 - All documentation complete and cross-referenced
+- All 11 prompt files per agent following v2.0.0 standards
 - All learnings captured for future reference
 
 ---
@@ -277,10 +296,12 @@ uv run pytest -v
 
 **Follow WEEK1-IMPLEMENTATION-GUIDE.md for specific code examples**
 
-1. **Coding Agent** — Implement functionality
-2. **Refactor Agent** — Optimize and validate schemas
-3. **Testing Agent** — Write tests and verify
-4. **Documentation Agent** — Update docs
+Single pass per day:
+
+1. Implement functionality
+2. Refactor — `mypy --strict`, `ruff check`, Pydantic v2 validation
+3. Test — write/run tests; capture output to `logs/day-N-test-output.txt`
+4. Document — update `lessons.md`, AGENT.md, or architecture docs as required
 
 ### End of Day: Verification Gate
 
@@ -325,9 +346,17 @@ git push origin epic/week1-gap-remediation
 - ✅ All 17 tests pass (7 drift + 7 NHI + 3 consensus)
 - ✅ Test output captured in `logs/` directory
 - ✅ Integration tests use actual `AgentResultEnvelope` schemas
+- ✅ `guardrail_violations_total` visible in Prometheus after Day 1
+
+### Observability
+- ✅ Prometheus scraping `/metrics` (target UP)
+- ✅ Grafana SLO dashboard imported
+- ✅ PagerDuty test alert delivered via Alertmanager
+- ✅ Cache metrics visible (cache_hit_rate, cache_miss_total, cache_hit_total, cache_size_bytes)
 
 ### Documentation
 - ✅ 2 AGENT.md files created (verification, adversarial)
+- ✅ 22 prompt files created (11 per agent: verification and adversarial)
 - ✅ `docs/ARCHITECTURE.md` updated with consensus workflow
 - ✅ `docs/learning/week1-consensus-pattern.md` created
 - ✅ `docs/tasks/todo.md` — all tasks marked complete
@@ -470,21 +499,22 @@ git push origin epic/week1-gap-remediation
 
 **Confirm checklist complete:**
 
-- [ ] Read all 10 mandatory documents (3 hours)
+- [ ] Read all 11 mandatory documents (~3.5 hours)
+- [ ] Observability stack running — see `docs/guidence/observability/05-verify-before-kickoff.md`
 - [ ] Created epic branch: `epic/week1-gap-remediation`
 - [ ] Written plan to `docs/tasks/todo.md`
 - [ ] Created `logs/` directory
-- [ ] Verified Python 3.12+ and `uv sync` complete
-- [ ] Baseline tests pass
-- [ ] Feature flag added to `.env`
+- [ ] Node.js 22+ (`nvm use 22`) and Python 3.12+ (`uv sync`)
+- [ ] Baseline tests pass (`uv run pytest -v`)
+- [ ] MCP live tests pass (`LIVE_STDIO_E2E=1`)
+- [ ] Feature flag added to `.env` (`ENABLE_CONSENSUS_WORKFLOW=false`)
 
 **When ready, execute:**
 
 ```bash
-# Start Day 1 implementation
-# Coding Agent → Refactor Agent → Testing Agent → Documentation Agent
-
+# Start Day 1 — single pass: implement → refactor → test → document → commit
 # Follow docs/gaps/WEEK1-IMPLEMENTATION-GUIDE.md for detailed code examples
+# Do NOT start Day 2 until Day 1 tests pass and are committed
 ```
 
 ---
