@@ -10,11 +10,18 @@ import structlog
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
+from backend.agents.adversarial.node import adversarial_agent_node
 from backend.agents.calendar.node import calendar_agent_node
+from backend.agents.consensus.node import consensus_evaluator_node
 from backend.agents.critic.node import critic_agent_node
 from backend.agents.focus.node import focus_agent_node
-from backend.agents.orchestrator.node import orchestrator_present_node, orchestrator_route_node
+from backend.agents.orchestrator.node import (
+    human_escalation_node,
+    orchestrator_present_node,
+    orchestrator_route_node,
+)
 from backend.agents.task.node import task_agent_node
+from backend.agents.verification.node import verification_agent_node
 from backend.dependencies import MCPClients, build_llm_router
 from backend.graph.dlq_handler import dlq_handler_node
 from backend.graph.state import BriefingGraphState
@@ -24,6 +31,8 @@ from backend.security.token_budget import evaluate_token_budget
 from backend.settings import Settings, get_settings
 
 logger = structlog.get_logger()
+
+ConsensusRoute = Literal["agreement", "minor_disagreement", "major_disagreement"]
 
 
 def should_circuit_break(state: BriefingGraphState, settings: Settings) -> bool:
@@ -39,6 +48,22 @@ def should_circuit_break(state: BriefingGraphState, settings: Settings) -> bool:
     return False
 
 
+def route_consensus(state: BriefingGraphState) -> ConsensusRoute:
+    """Route based on consensus evaluation result."""
+    consensus_result = state.get("consensus_result")
+    if not consensus_result:
+        return "agreement"
+
+    major_concerns = consensus_result.get("major_concerns", 0)
+    moderate_concerns = consensus_result.get("moderate_concerns", 0)
+
+    if isinstance(major_concerns, int) and major_concerns >= 2:
+        return "major_disagreement"
+    if isinstance(moderate_concerns, int) and moderate_concerns >= 1:
+        return "minor_disagreement"
+    return "agreement"
+
+
 def build_briefing_graph(
     mcp: MCPClients,
     llm: LLMRouter | None = None,
@@ -47,6 +72,7 @@ def build_briefing_graph(
     """Build and compile the full briefing graph."""
     resolved_settings = settings or get_settings()
     resolved_llm = llm or build_llm_router(resolved_settings)
+    consensus_enabled = resolved_settings.enable_consensus_workflow
 
     async def parallel_task_calendar_node(state: BriefingGraphState) -> dict[str, Any]:
         task_update, calendar_update = await asyncio.gather(
@@ -86,9 +112,23 @@ def build_briefing_graph(
                 return "orchestrator_present"
         return "focus_agent"
 
-    def route_after_focus(state: BriefingGraphState) -> Literal["dlq_handler", "critic_agent"]:
+    def route_after_focus(
+        state: BriefingGraphState,
+    ) -> Literal["dlq_handler", "critic_agent", "verification_agent"]:
         if should_circuit_break(state, resolved_settings):
             return "dlq_handler"
+        if consensus_enabled:
+            return "verification_agent"
+        return "critic_agent"
+
+    def route_after_consensus(
+        state: BriefingGraphState,
+    ) -> Literal["dlq_handler", "critic_agent", "human_escalation"]:
+        if should_circuit_break(state, resolved_settings):
+            return "dlq_handler"
+        decision = route_consensus(state)
+        if decision == "major_disagreement":
+            return "human_escalation"
         return "critic_agent"
 
     def route_after_critic(
@@ -110,6 +150,12 @@ def build_briefing_graph(
     graph.add_node("orchestrator_present", orchestrator_present_node)
     graph.add_node("dlq_handler", dlq_wrapper)
 
+    if consensus_enabled:
+        graph.add_node("verification_agent", verification_agent_node)
+        graph.add_node("adversarial_agent", adversarial_agent_node)
+        graph.add_node("consensus_evaluator", consensus_evaluator_node)
+        graph.add_node("human_escalation", human_escalation_node)
+
     graph.add_edge(START, "orchestrator_route")
     graph.add_edge("orchestrator_route", "parallel_task_calendar")
     graph.add_conditional_edges(
@@ -121,11 +167,36 @@ def build_briefing_graph(
             "dlq_handler": "dlq_handler",
         },
     )
-    graph.add_conditional_edges(
-        "focus_agent",
-        route_after_focus,
-        {"critic_agent": "critic_agent", "dlq_handler": "dlq_handler"},
-    )
+
+    if consensus_enabled:
+        graph.add_conditional_edges(
+            "focus_agent",
+            route_after_focus,
+            {
+                "verification_agent": "verification_agent",
+                "critic_agent": "critic_agent",
+                "dlq_handler": "dlq_handler",
+            },
+        )
+        graph.add_edge("verification_agent", "adversarial_agent")
+        graph.add_edge("adversarial_agent", "consensus_evaluator")
+        graph.add_conditional_edges(
+            "consensus_evaluator",
+            route_after_consensus,
+            {
+                "critic_agent": "critic_agent",
+                "human_escalation": "human_escalation",
+                "dlq_handler": "dlq_handler",
+            },
+        )
+        graph.add_edge("human_escalation", END)
+    else:
+        graph.add_conditional_edges(
+            "focus_agent",
+            route_after_focus,
+            {"critic_agent": "critic_agent", "dlq_handler": "dlq_handler"},
+        )
+
     graph.add_conditional_edges(
         "critic_agent",
         route_after_critic,

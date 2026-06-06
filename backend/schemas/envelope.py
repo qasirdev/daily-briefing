@@ -1,11 +1,46 @@
 """Canonical envelope for all inter-agent communication."""
 
+from datetime import UTC, datetime
 from typing import Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator, model_validator
 
 from backend.logging_config import get_security_logger
 from backend.security.pii import PIIDetector
+
+
+class GuardrailViolation(BaseModel):
+    """Guardrail violation metadata for drift detection and security monitoring."""
+
+    model_config = ConfigDict(strict=True, frozen=True)
+
+    violation_type: str = Field(
+        ...,
+        description="Type of violation detected (e.g., prompt_injection_detected)",
+    )
+    severity: Literal["low", "medium", "high", "critical"] = Field(
+        ...,
+        description="Violation severity level for alerting",
+    )
+    confidence: float = Field(
+        ...,
+        ge=0.0,
+        le=1.0,
+        description="Confidence score from detection algorithm",
+    )
+    matched_pattern: str | None = Field(
+        default=None,
+        description="Regex pattern or signature that triggered detection",
+    )
+    context_snippet: str | None = Field(
+        default=None,
+        max_length=200,
+        description="Truncated context showing where violation occurred",
+    )
+    timestamp: datetime = Field(
+        default_factory=lambda: datetime.now(UTC),
+        description="When the violation was detected",
+    )
 
 
 class ExecutionMetadata(BaseModel):
@@ -24,6 +59,15 @@ class ExecutionMetadata(BaseModel):
         "confidential",
         "confidential_pii",
     ]
+    guardrail_violations: list[GuardrailViolation] = Field(
+        default_factory=list,
+        description="Violations detected during agent execution",
+    )
+    violation_count: int = Field(
+        default=0,
+        ge=0,
+        description="Total count of violations (cached for performance)",
+    )
 
 
 class EscalationPayload(BaseModel):
@@ -49,7 +93,15 @@ class AgentResultEnvelope(BaseModel):
     model_config = ConfigDict(strict=True, frozen=True, extra="forbid")
 
     agent_id: str = Field(..., min_length=1, max_length=50, pattern=r"^[a-z_]+$")
-    canonical_role: Literal["doer", "planner", "critic", "tool_operator", "supervisor"]
+    canonical_role: Literal[
+        "doer",
+        "planner",
+        "critic",
+        "tool_operator",
+        "supervisor",
+        "verifier",
+        "adversarial",
+    ]
     status: Literal["success", "failure", "escalated"]
     result: dict[str, object] | None = None
     metadata: ExecutionMetadata

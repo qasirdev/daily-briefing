@@ -24,7 +24,12 @@ This document serves as the absolute source of truth for execution standards and
 
 1. **Plan Mode**: Any task with 3 or more steps, or involving architectural decisions, must begin with a written plan.
 2. **Task Logging**: The plan must be written to `docs/tasks/todo.md` before any implementation code is touched.
-3. **Verification Gate**: Do not proceed to the next step on `docs/tasks/todo.md` until the current step is proven to work via tests, linters, or logs.
+3. **Verification Gate**: Do not proceed to the next step on `docs/tasks/todo.md` until the current step is proven to work via tests, linters, or logs. **Backend tasks** must pass this sequence before marking done:
+   ```bash
+   uv run ruff check backend
+   uv run mypy backend
+   uv run pytest
+   ```
 4. **Lessons Review**: At the start of every session, read `docs/tasks/lessons.md` to avoid repeating past mistakes.
 5. **Correction Loop**: If a mistake is made or corrected by a user, immediately update `docs/tasks/lessons.md` with the root cause and a new rule.
 6. **Done Gate**: Never mark a task as complete without providing proof (e.g., test output, build success logs, diffs).
@@ -116,7 +121,9 @@ Even when the user explicitly triggers "YOLO mode" (authorizing high-velocity, l
 - **HTTP Status**: ALWAYS use `fastapi.status` constants (e.g., `status.HTTP_404_NOT_FOUND`)
 - **Logging**: Use `structlog` with JSON output, always include `trace_id`
 - **Retry Logic**: Use `tenacity` with exponential backoff for external APIs
-- **Typing**: `mypy --strict` must pass with zero errors
+- **Typing**: `uv run mypy backend` must pass with zero errors
+- **Linting**: `uv run ruff check backend` must pass with zero warnings
+- **Tests**: `uv run pytest` must pass before any backend task is marked complete
 
 ### Frontend (TypeScript/React 19)
 

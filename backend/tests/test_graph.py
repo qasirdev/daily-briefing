@@ -6,11 +6,12 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from backend.dependencies import MCPClients
-from backend.graph.builder import build_briefing_graph
+from backend.graph.builder import build_briefing_graph, route_consensus
 from backend.graph.state import BriefingGraphState
 from backend.llm.models import LLMResponse
 from backend.mcp.calendar import CalendarMCPClient
 from backend.mcp.postgres import PostgresMCPClient
+from backend.settings import Settings
 
 
 @pytest.mark.asyncio
@@ -87,3 +88,42 @@ async def test_graph_compiles_and_runs() -> None:
 
     await mcp.close()
     assert result["status"] in {"success", "degraded", "failure", "pending"}
+
+
+def test_route_consensus_major_disagreement() -> None:
+    """Verify 2+ major concerns route to human escalation path."""
+    state: BriefingGraphState = {
+        "consensus_result": {
+            "major_concerns": 2,
+            "moderate_concerns": 0,
+            "agreement_level": "major_disagreement",
+        },
+    }
+    assert route_consensus(state) == "major_disagreement"
+
+
+def test_route_consensus_minor_disagreement() -> None:
+    """Verify moderate concerns proceed with warning path."""
+    state: BriefingGraphState = {
+        "consensus_result": {
+            "major_concerns": 0,
+            "moderate_concerns": 1,
+            "agreement_level": "minor_disagreement",
+        },
+    }
+    assert route_consensus(state) == "minor_disagreement"
+
+
+@pytest.mark.asyncio
+async def test_graph_compiles_with_consensus_enabled() -> None:
+    """Verify consensus workflow graph compiles when feature flag is enabled."""
+    postgres = PostgresMCPClient(host="localhost", port=5443)
+    calendar = CalendarMCPClient(host="localhost", port=5444)
+    mcp = MCPClients(postgres=postgres, calendar=calendar)
+    settings = Settings(enable_consensus_workflow=True)
+    llm = AsyncMock()
+
+    graph = build_briefing_graph(mcp, llm=llm, settings=settings)
+    assert graph is not None
+
+    await mcp.close()

@@ -176,8 +176,21 @@ git push -u origin epic/E{n}-{short-description}
 - Capture learnings in docs/learning/
 - Update CHANGELOG if applicable
 
-### 6. Merge Criteria
+### 6. Backend Verification Gate (Every Backend Task)
+
+After completing any backend task, run **in order** before marking done or committing:
+
+```bash
+uv run ruff check backend
+uv run mypy backend
+uv run pytest
+```
+
+All three must pass. See `backend/AGENT.md` for details.
+
+### 7. Merge Criteria
 - [ ] All tasks in epic marked done
+- [ ] Backend verification gate passed (`ruff check backend`, `mypy backend`, `pytest`)
 - [ ] All tests pass (`pytest`, `vitest`)
 - [ ] Linting passes (`ruff`, `eslint`)
 - [ ] Type checking passes (`mypy --strict`, `tsc`)
@@ -185,7 +198,7 @@ git push -u origin epic/E{n}-{short-description}
 - [ ] `docs/PLAN.md` shows epic as ✅ Completed
 - [ ] PR approved and merged to `epic/autonomus-implementation`
 
-### 7. GitHub Actions (Post-Epic)
+### 8. GitHub Actions (Post-Epic)
 
 After merge criteria are met on the epic branch:
 
@@ -214,7 +227,7 @@ git checkout -b epic/E{n+1}-{short-description}
 git push -u origin epic/E{n+1}-{short-description}
 ```
 
-### 8. Context Checkpoint (Long Sessions)
+### 9. Context Checkpoint (Long Sessions)
 
 When context reaches ~75% capacity during epic implementation:
 
