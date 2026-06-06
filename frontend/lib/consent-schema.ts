@@ -15,6 +15,14 @@ export const consentRecordSchema = z.object({
   revocation_reason: z.string().nullable().optional(),
 });
 
+export const consentActionPayloadSchema = z.object({
+  service: z.enum(["google_calendar", "postgres_mcp"]),
+  scope: z.array(z.string()),
+  agent_id: z.string(),
+  intent: z.string(),
+  resource: z.string().optional(),
+});
+
 export const consentPromptSchema = z.object({
   request_id: z.string(),
   service: z.enum(["google_calendar", "postgres_mcp"]),
@@ -22,6 +30,7 @@ export const consentPromptSchema = z.object({
   suggested_ttl_hours: z.number().int().nonnegative(),
   agent_requesting: z.string(),
   message: z.string(),
+  action_payload: consentActionPayloadSchema.optional().nullable(),
 });
 
 export const consentGrantSchema = z.object({

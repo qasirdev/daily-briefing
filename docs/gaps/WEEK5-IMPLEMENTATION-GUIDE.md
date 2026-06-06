@@ -41,6 +41,12 @@ Week 5 tasks use the **DB-E2 Description pattern** — each task `Description` i
 
 Coding agents must implement every edge case before marking a task done.
 
+**Backend verification gate (every day, before marking tasks done):**
+
+```bash
+uv run ruff check backend && uv run ruff format backend && uv run mypy backend && uv run pytest
+```
+
 ---
 
 ## Day 1: AI-BOM (DB-121, Gap #115)

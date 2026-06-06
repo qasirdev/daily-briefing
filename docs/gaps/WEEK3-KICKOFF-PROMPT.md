@@ -66,7 +66,7 @@ Write plan to `docs/tasks/todo.md` before touching code.
 | 4 | DB-114 | Cross-layer retrieval + Focus integration |
 | 5 | DB-115 | Tests, proof package, learning doc |
 
-**Per-day gate:** `uv run ruff check backend` → `uv run ruff format backend` → `uv run mypy backend` → `uv run pytest`
+**Per-day gate:** `uv run ruff check backend && uv run ruff format backend && uv run mypy backend && uv run pytest`
 
 ---
 

@@ -22,10 +22,8 @@
 ```bash
 uv sync --all-extras
 uv run python scripts/validate_ai_bom.py
-uv run ruff check backend
-uv run mypy backend
+uv run ruff check backend && uv run ruff format backend && uv run mypy backend && uv run pytest
 uv run pytest backend/tests/security/ -v
-uv run pytest -q
 ```
 
 ---

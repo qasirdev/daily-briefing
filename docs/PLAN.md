@@ -177,7 +177,7 @@ Fresh autonomous kickoff only (not every "hi"): then read `docs/KICKOFF-PROMPT.m
 | 3 | DB-E10 | Procedural/Episodic memory + prompt versioning | ✅ |
 | 4 | DB-E11 | Memory security, AgentOps, live embeddings | ✅ |
 | 5 | DB-E12 | Supply chain + JIT credentials | ✅ |
-| 6 | DB-E13 | OWASP Agent Top 10 + red teaming | ⬜ |
+| 6 | DB-E13 | OWASP Agent Top 10 + red teaming | ✅ |
 | 7 | DB-E14 | HITL + governance hardening | ⬜ |
 | 8 | DB-E15 | Production optimization | ⬜ |
 
@@ -194,6 +194,18 @@ Fresh autonomous kickoff only (not every "hi"): then read `docs/KICKOFF-PROMPT.m
 | DB-125 | Day 5: Vendor Assessments, Integration Tests & Proof (Gap #127) | ✅ |
 
 **Week 5 guides:** `docs/gaps/WEEK5-KICKOFF-PROMPT.md`, `docs/gaps/WEEK5-IMPLEMENTATION-GUIDE.md`
+
+**Week 6 tasks:** DB-126 through DB-130 — see `docs/jira-tickets-json/DB-E13-gap-remediation-week6.json`
+
+| Task ID | Summary | Status |
+|---|---|---|
+| DB-126 | Day 1: OWASP Agent Top 10 Compliance Matrix (Gaps #62-65) | ✅ |
+| DB-127 | Day 2: Constitutional Classifiers (Gap #126) | ✅ |
+| DB-128 | Day 3: MITRE ATT&CK Detection Coverage (Gap #129) | ✅ |
+| DB-129 | Day 4: Long-Term Drift, Dwell Time SLO & Alert Coverage (Gaps #122, #134, #135) | ✅ |
+| DB-130 | Day 5: Red Teaming, Consent Hardening & Proof (Gaps #88, #98) | ✅ |
+
+**Week 6 guides:** `docs/gaps/WEEK6-KICKOFF-PROMPT.md`, `docs/gaps/WEEK6-IMPLEMENTATION-GUIDE.md`
 
 ---
 

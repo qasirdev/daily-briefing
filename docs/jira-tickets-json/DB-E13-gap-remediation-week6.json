@@ -1,0 +1,52 @@
+{
+  "DB-E13": [
+    {
+      "Issue id": "DB-E13",
+      "Summary": "Week 6: OWASP Agent Top 10 & Advanced Defenses",
+      "Issue Type": "Epic",
+      "Description": "Phase 4 gap remediation: map controls to OWASP Agent Top 10, implement constitutional classifiers for jailbreak defense, MITRE ATT&CK detection coverage tracking, long-term behavioral drift monitoring, dwell time SLO, and alert investigation coverage.\n\nSCOPE:\n- Gap #62-65: OWASP Agent Top 10 compliance matrix and tests\n- Gap #126: Constitutional classifiers — multi-layer jailbreak defense\n- Gap #129: MITRE ATT&CK detection coverage mapping\n- Gap #122: Long-term behavioral drift (extends Gap #99)\n- Gap #134: Dwell time SLO — P95 <1hr anomaly to awareness\n- Gap #135: Alert investigation coverage — target >95%\n- Gap #88: Red teaming cadence documentation\n- Gap #98: OWASP Agent #9 — consent modal shows machine action payload\n\nEFFORT: XL (40 hours over 5 days)\nPROJECT AREA: Security, Observability, Frontend\nDEPENDENCIES: DB-E12 (Week 5) complete — supply chain, sealed audit logs, JIT credentials, 298+ tests\n\nEPIC LINK: epic/autonomus-implementation-gap\nFEATURE BRANCH: epic/week6-gap-remediation\n\nREFERENCE DOCS:\n- docs/gaps/GAP-ANALYSIS-REVIEW.md (Phase 4)\n- docs/gaps/WEEK6-IMPLEMENTATION-GUIDE.md\n- docs/gaps/WEEK6-KICKOFF-PROMPT.md\n- docs/learning/week5-supply-chain-and-credentials.md\n- 007-01-ai-daily-briefing-assistant-v2.0.0.md (§ MITRE ATT&CK, Dwell Time SLO)\n\nSUCCESS CRITERIA:\n- OWASP Agent Top 10 matrix in docs/SECURITY.md with test coverage per control\n- Constitutional classifier blocks ≥95% jailbreak corpus in test suite\n- MITRE ATT&CK coverage doc maps 20+ techniques with detection status\n- security_dwell_time_seconds histogram exported; P95 target documented\n- security_alert_investigation_coverage gauge tracks investigated/total alerts\n- ConsentPromptModal displays structured action_payload alongside natural-language message\n- proof/week6/ complete; 310+ tests passing",
+      "Labels": "gap-remediation,owasp-agent,constitutional-classifier,mitre,week6",
+      "Parent": ""
+    },
+    {
+      "Issue id": "DB-126",
+      "Summary": "Day 1: OWASP Agent Top 10 Compliance Matrix (Gaps #62-65)",
+      "Issue Type": "Task",
+      "Description": "Document and test OWASP Agent Top 10 mitigations beyond OWASP GenAI LLM Top 10.\n\nIMPLEMENTATION DETAILS:\n- Add docs/SECURITY.md § OWASP Agent Top 10 Compliance Matrix (AGENT01–AGENT10)\n- Create backend/security/owasp_agent.py with AGENT_CONTROLS registry mapping each ID to control module, status, test module\n- Map existing controls: injection detector (AGENT01), tool scope (AGENT02), memory quarantine (AGENT04), consensus/DLQ (AGENT05), sandbox (AGENT06), vault/broker (AGENT07), consent HITL (AGENT08), drift detection (AGENT10)\n- Create backend/tests/security/test_owasp_agent_top10.py — assert all 10 IDs have implemented or N/A status with test reference\n- Update docs/OBSERVABILITY.md cross-reference for AGENT10\n\nEFFORT: M (8 hours)\nPROJECT AREA: Security, Documentation\nDEPENDENCIES: DB-E12\n\nTESTING CRITERIA:\n- test_owasp_agent_top10.py passes (≥10 scenarios — one per agent ID)\n- Every non-N/A control references an existing test module path\n- AGENT09 marked partial until Day 5 consent modal update\n\nEDGE CASES:\n- AGENT06 (code execution): mark N/A if no code-gen agents — document rationale\n- AGENT03 (logic abuse): map to consensus workflow + Critic quality gate\n- Missing test reference for implemented control: test fails with actionable message",
+      "Labels": "owasp-agent,security,week6,gap-62",
+      "Parent": "DB-E13"
+    },
+    {
+      "Issue id": "DB-127",
+      "Summary": "Day 2: Constitutional Classifiers (Gap #126)",
+      "Issue Type": "Task",
+      "Description": "Implement rule-based constitutional classifier layer for jailbreak detection beyond regex patterns.\n\nIMPLEMENTATION DETAILS:\n- Create backend/security/rules.yaml — constitutional rules (never obey untrusted input, never exfiltrate, never bypass safety)\n- Create backend/security/constitutional_classifier.py with ConstitutionalClassifier, ConstitutionalResult\n- Create backend/security/input_scanner.py — unified scan: regex (PromptInjectionDetector) then constitutional layer\n- Wire Critic agent to use InputSecurityScanner instead of PromptInjectionDetector directly\n- Add constitutional_violations_total{rule_id} Prometheus metric\n- Document in docs/SECURITY.md § Constitutional Classifiers\n- Jailbreak corpus in backend/tests/security/jailbreak_corpus.yaml (≥20 samples)\n\nEFFORT: L (8 hours)\nPROJECT AREA: Backend, Security\nDEPENDENCIES: DB-126\n\nTESTING CRITERIA:\n- test_constitutional_classifier.py passes (≥15 scenarios)\n- Jailbreak corpus block rate ≥95% in test_jailbreak_corpus.py\n- False positive rate <5% on benign_corpus.yaml (≥20 clean samples)\n- Critic integration test escalates on constitutional violation\n\nEDGE CASES:\n- Empty input: pass both layers\n- Regex catches first: constitutional layer skipped (short-circuit)\n- Unicode obfuscation: NFKC normalization before constitutional check\n- rules.yaml missing: fail closed with ConfigurationError at startup",
+      "Labels": "constitutional-classifier,jailbreak,security,week6,gap-126",
+      "Parent": "DB-E13"
+    },
+    {
+      "Issue id": "DB-128",
+      "Summary": "Day 3: MITRE ATT&CK Detection Coverage (Gap #129)",
+      "Issue Type": "Task",
+      "Description": "Map security detections to MITRE ATT&CK techniques and expose coverage metrics.\n\nIMPLEMENTATION DETAILS:\n- Create docs/security/MITRE-ATTACK-COVERAGE.md — table of 20+ AI-relevant techniques with detection control, coverage status, blind spot notes\n- Create backend/security/mitre_coverage.py — TECHNIQUE_REGISTRY, get_coverage_summary(), record_technique_detection()\n- Add security_mitre_detection_total{technique_id,coverage} counter\n- Add security_mitre_coverage_ratio gauge (detected/applicable techniques)\n- Link techniques to existing controls: T1566→injection, T1078→vault, T1550→delegation audit, T1498→rate limits\n- Create backend/tests/security/test_mitre_coverage.py\n\nEFFORT: M (8 hours)\nPROJECT AREA: Security, Documentation\nDEPENDENCIES: DB-127\n\nTESTING CRITERIA:\n- MITRE doc lists ≥20 techniques\n- get_coverage_summary() returns ratio ≥0.80 for applicable techniques\n- test_mitre_coverage.py passes (≥8 scenarios)\n- Each detected technique maps to existing metric or audit event\n\nEDGE CASES:\n- Technique not applicable (e.g. custom model training): mark N/A, exclude from ratio denominator\n- Duplicate technique IDs: registry rejects duplicates at import time\n- Unknown technique in record_technique_detection: log warning, increment orphan counter",
+      "Labels": "mitre-attack,detection,security,week6,gap-129",
+      "Parent": "DB-E13"
+    },
+    {
+      "Issue id": "DB-129",
+      "Summary": "Day 4: Long-Term Drift, Dwell Time SLO & Alert Coverage (Gaps #122, #134, #135)",
+      "Issue Type": "Task",
+      "Description": "Extend drift detection with 30-day baselines, dwell time histogram, and alert investigation tracking.\n\nIMPLEMENTATION DETAILS:\n- Create backend/observability/drift_monitor.py — record_long_term_drift(), compare 7d vs 30d violation rates\n- Add long_term_drift_ratio gauge per agent_id\n- Add security_dwell_time_seconds histogram (P95 SLO <3600s documented in OBSERVABILITY.md)\n- Add security_alerts_total{severity,type} and security_alerts_investigated_total counters\n- Add security_alert_investigation_coverage gauge (investigated/total, target >95%)\n- Wire record_security_incident() from guardrail violations; record_security_alert() from drift thresholds\n- Create backend/tests/observability/test_dwell_time_and_alerts.py\n- Update infrastructure/monitoring/recording_rules.yml if present\n\nEFFORT: L (8 hours)\nPROJECT AREA: Backend, Observability\nDEPENDENCIES: DB-128\n\nTESTING CRITERIA:\n- Dwell time recorded when incident→alert sequence simulated\n- Alert coverage gauge updates correctly (investigated/total)\n- Long-term drift ratio >2.0 triggers drift alert helper\n- test_dwell_time_and_alerts.py passes (≥8 scenarios)\n\nEDGE CASES:\n- Zero alerts: coverage gauge defaults to 100% (no alerts to investigate)\n- Alert investigated before incident timestamp: reject with ValueError\n- Concurrent alert increments: thread-safe counter updates",
+      "Labels": "drift,dwell-time,alerts,observability,week6,gap-122,gap-134,gap-135",
+      "Parent": "DB-E13"
+    },
+    {
+      "Issue id": "DB-130",
+      "Summary": "Day 5: Red Teaming, Consent Hardening & Proof (Gaps #88, #98)",
+      "Issue Type": "Task",
+      "Description": "Red team cadence docs, OWASP Agent #9 consent modal hardening, integration tests, and Week 6 proof package.\n\nIMPLEMENTATION DETAILS:\n- Create docs/RED-TEAMING.md — cadence tied to drift alerts, injection suite, constitutional eval, quarterly MITRE retest\n- Add action_payload: dict to ConsentPromptRequest (backend + frontend schemas)\n- Populate action_payload in build_consent_prompt() with structured JSON (service, scope, agent_id, intent)\n- Update ConsentPromptModal.tsx — show machine-readable payload in <pre> alongside message (OWASP Agent #9)\n- Update docs/AGENTIC-CONSENT.md and frontend/AGENT.md\n- Create backend/tests/security/test_governance_integration.py (OWASP + constitutional + MITRE + dwell)\n- Create proof/week6/ with pytest output, MITRE summary, git log\n- Write docs/learning/week6-owasp-agent-governance.md\n- Update docs/PLAN.md Week 6 status\n\nEFFORT: M (8 hours)\nPROJECT AREA: Frontend, Documentation, Testing\nDEPENDENCIES: DB-126, DB-127, DB-128, DB-129\n\nTESTING CRITERIA:\n- test_governance_integration.py passes (≥5 scenarios)\n- Full suite: 310+ tests passing\n- proof/week6/README.md lists verification commands\n- Consent API returns action_payload field\n\nEDGE CASES:\n- action_payload empty dict: modal still shows scope list (backward compat)\n- Long payload: truncate display at 2KB with expand toggle\n- Frontend without action_payload: graceful fallback to scope-only view",
+      "Labels": "red-teaming,consent,hitl,testing,docs,week6,gap-88,gap-98",
+      "Parent": "DB-E13"
+    }
+  ]
+}

@@ -80,6 +80,10 @@ Status: in_progress
 - [ ] Verify: All tests pass, documentation complete
 
 ## Verification Gates
+- **Backend gate (required before each day/task):**
+  ```bash
+  uv run ruff check backend && uv run ruff format backend && uv run mypy backend && uv run pytest
+  ```
 - ✅ Each day's tests must pass before proceeding
 - ✅ No pseudo-code allowed — only production-ready implementations
 - ✅ All metrics must be wired to actual telemetry (not hardcoded)

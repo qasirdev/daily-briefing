@@ -24,13 +24,12 @@ This document serves as the absolute source of truth for execution standards and
 
 1. **Plan Mode**: Any task with 3 or more steps, or involving architectural decisions, must begin with a written plan.
 2. **Task Logging**: The plan must be written to `docs/tasks/todo.md` before any implementation code is touched.
-3. **Verification Gate**: Do not proceed to the next step on `docs/tasks/todo.md` until the current step is proven to work via tests, linters, or logs. **Backend tasks** must pass this sequence before marking done:
+3. **Verification Gate**: Do not proceed to the next step on `docs/tasks/todo.md` until the current step is proven to work. **Backend tasks** must pass this command before marking done:
+
    ```bash
-   uv run ruff check backend
-   uv run ruff format backend
-   uv run mypy backend
-   uv run pytest
+   uv run ruff check backend && uv run ruff format backend && uv run mypy backend && uv run pytest
    ```
+
    If Ruff reports `I001` (import block unsorted), run `uv run ruff check backend --fix` — keep imports at module top level, never inline inside functions.
 4. **Lessons Review**: At the start of every session, read `docs/tasks/lessons.md` to avoid repeating past mistakes.
 5. **Correction Loop**: If a mistake is made or corrected by a user, immediately update `docs/tasks/lessons.md` with the root cause and a new rule.

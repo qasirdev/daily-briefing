@@ -12,17 +12,21 @@ from backend.graph.state import BriefingGraphState
 from backend.llm.prompt_cache import build_llm_messages, resolve_model_name
 from backend.llm.router import LLMError, LLMRouter
 from backend.logging_config import agent_log_context
-from backend.metrics import observe_agent_execution, record_security_violation
+from backend.metrics import (
+    observe_agent_execution,
+    record_constitutional_violation,
+    record_security_violation,
+)
 from backend.prompt_version import resolve_prompt_version
 from backend.schemas.envelope import AgentResultEnvelope, EscalationPayload, ExecutionMetadata
-from backend.security.injection import PromptInjectionDetector
+from backend.security.input_scanner import InputSecurityScanner
 from backend.settings import get_settings
 from backend.telemetry import start_async_span
 
 logger = structlog.get_logger()
 
 MAX_REVISION_CYCLES = 2
-_detector = PromptInjectionDetector()
+_scanner = InputSecurityScanner()
 
 
 def _collect_external_texts(state: BriefingGraphState) -> dict[str, str]:
@@ -102,10 +106,15 @@ async def critic_agent_node(
     with agent_log_context(trace_id=trace_id, agent_id="critic"):
         async with start_async_span("agent.critic.execute", agent_id="critic", agent_role="critic"):
             with observe_agent_execution(agent_id="critic", role="critic"):
-                injection = _detector.scan_many(_collect_external_texts(state), trace_id=trace_id)
-                if injection.is_suspicious:
+                scan = _scanner.scan_many(_collect_external_texts(state), trace_id=trace_id)
+                if scan.is_blocked:
+                    if scan.layer == "constitutional" and scan.constitutional_rule:
+                        record_constitutional_violation(
+                            rule_id=scan.constitutional_rule,
+                            severity="critical",
+                        )
                     record_security_violation(
-                        violation_type=injection.matched_pattern or "injection",
+                        violation_type=scan.violation_type or "injection",
                         agent_id="critic",
                     )
                     execution_ms = int((time.perf_counter() - start) * 1000)
@@ -116,7 +125,7 @@ async def critic_agent_node(
                         escalation=EscalationPayload(
                             reason="security_violation_detected",
                             target_agent="dlq_handler",
-                            context=injection.matched_pattern or "injection_detected",
+                            context=scan.violation_type or "injection_detected",
                         ),
                         metadata=ExecutionMetadata(
                             execution_ms=execution_ms,

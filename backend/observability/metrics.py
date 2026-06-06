@@ -173,6 +173,53 @@ CREDENTIAL_ISSUANCE_TOTAL = Counter(
     ["service", "intent"],
 )
 
+CONSTITUTIONAL_VIOLATIONS_TOTAL = Counter(
+    "constitutional_violations_total",
+    "Constitutional classifier rule violations",
+    ["rule_id", "severity"],
+)
+
+SECURITY_MITRE_DETECTION_TOTAL = Counter(
+    "security_mitre_detection_total",
+    "MITRE ATT&CK technique detections",
+    ["technique_id", "coverage"],
+)
+
+SECURITY_MITRE_COVERAGE_RATIO = Gauge(
+    "security_mitre_coverage_ratio",
+    "Ratio of detected MITRE ATT&CK techniques to applicable techniques",
+)
+
+LONG_TERM_DRIFT_RATIO = Gauge(
+    "long_term_drift_ratio",
+    "7d vs 30d guardrail violation rate ratio per agent",
+    ["agent_id"],
+)
+
+SECURITY_DWELL_TIME_SECONDS = Histogram(
+    "security_dwell_time_seconds",
+    "Time from security incident to alert awareness",
+    ["alert_type", "severity"],
+    buckets=[60, 300, 600, 1800, 3600, 7200, 14400, 86400],
+)
+
+SECURITY_ALERTS_TOTAL = Counter(
+    "security_alerts_total",
+    "Security alerts fired by type and severity",
+    ["alert_type", "severity"],
+)
+
+SECURITY_ALERTS_INVESTIGATED_TOTAL = Counter(
+    "security_alerts_investigated_total",
+    "Security alerts marked as investigated",
+    ["alert_type", "severity"],
+)
+
+SECURITY_ALERT_INVESTIGATION_COVERAGE = Gauge(
+    "security_alert_investigation_coverage",
+    "Fraction of security alerts investigated (target >0.95)",
+)
+
 
 @contextmanager
 def observe_agent_execution(
@@ -332,12 +379,72 @@ def record_credential_issuance(*, service: str, intent: str) -> None:
     CREDENTIAL_ISSUANCE_TOTAL.labels(service=service, intent=intent).inc()
 
 
+def record_constitutional_violation(*, rule_id: str, severity: str) -> None:
+    """Increment constitutional classifier violation counter."""
+    CONSTITUTIONAL_VIOLATIONS_TOTAL.labels(rule_id=rule_id, severity=severity).inc()
+
+
+def record_mitre_detection(*, technique_id: str, coverage: str = "detected") -> None:
+    """Increment MITRE ATT&CK technique detection counter."""
+    SECURITY_MITRE_DETECTION_TOTAL.labels(
+        technique_id=technique_id,
+        coverage=coverage,
+    ).inc()
+
+
+def set_mitre_coverage_ratio(*, ratio: float) -> None:
+    """Set MITRE ATT&CK coverage ratio gauge."""
+    SECURITY_MITRE_COVERAGE_RATIO.set(min(max(ratio, 0.0), 1.0))
+
+
+def set_long_term_drift_ratio(*, agent_id: str, ratio: float) -> None:
+    """Set long-term drift ratio gauge for an agent."""
+    LONG_TERM_DRIFT_RATIO.labels(agent_id=agent_id).set(max(ratio, 0.0))
+
+
+def record_security_dwell_time(
+    *,
+    alert_type: str,
+    severity: str,
+    dwell_seconds: float,
+) -> None:
+    """Record dwell time from incident to alert."""
+    SECURITY_DWELL_TIME_SECONDS.labels(
+        alert_type=alert_type,
+        severity=severity,
+    ).observe(max(dwell_seconds, 0.0))
+
+
+def record_security_alert_metric(*, alert_type: str, severity: str) -> None:
+    """Increment security alert counter."""
+    SECURITY_ALERTS_TOTAL.labels(alert_type=alert_type, severity=severity).inc()
+
+
+def record_alert_investigated_metric(*, alert_type: str, severity: str) -> None:
+    """Increment investigated alert counter and update coverage gauge."""
+    SECURITY_ALERTS_INVESTIGATED_TOTAL.labels(
+        alert_type=alert_type,
+        severity=severity,
+    ).inc()
+    from backend.observability.drift_monitor import get_alert_investigation_coverage
+
+    SECURITY_ALERT_INVESTIGATION_COVERAGE.set(get_alert_investigation_coverage())
+
+
 def log_guardrail_violation(
     trace_id: str,
     agent_id: str,
     violation: GuardrailViolation,
 ) -> None:
     """Log guardrail violation and increment Prometheus counter for drift detection."""
+    from backend.observability.drift_monitor import (
+        get_long_term_drift_ratio,
+        is_long_term_drift_alert,
+        record_agent_violation,
+        record_security_alert,
+        record_security_incident,
+    )
+
     logger.warning(
         "guardrail_violation_detected",
         trace_id=trace_id,
@@ -354,3 +461,25 @@ def log_guardrail_violation(
         violation_type=violation.violation_type,
         severity=violation.severity,
     ).inc()
+
+    record_agent_violation(agent_id=agent_id, window="7d")
+    record_agent_violation(agent_id=agent_id, window="30d")
+    drift_ratio = get_long_term_drift_ratio(agent_id=agent_id)
+    set_long_term_drift_ratio(agent_id=agent_id, ratio=drift_ratio)
+
+    incident_id = f"{trace_id}:{violation.violation_type}"
+    record_security_incident(incident_id=incident_id)
+
+    if is_long_term_drift_alert(agent_id=agent_id):
+        dwell = record_security_alert(
+            alert_type="long_term_drift",
+            severity="critical",
+            incident_id=incident_id,
+        )
+        record_security_alert_metric(alert_type="long_term_drift", severity="critical")
+        if dwell is not None:
+            record_security_dwell_time(
+                alert_type="long_term_drift",
+                severity="critical",
+                dwell_seconds=dwell,
+            )

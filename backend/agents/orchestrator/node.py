@@ -15,6 +15,7 @@ from backend.memory.working import WorkingMemoryManager
 from backend.metrics import record_consent_request
 from backend.schemas.consent import (
     DEFAULT_TTL_HOURS,
+    ConsentActionPayload,
     ConsentPromptRequest,
     coerce_consent_service,
 )
@@ -23,6 +24,11 @@ from backend.security.sanitization import sanitize_markdown
 from backend.settings import get_settings
 
 logger = structlog.get_logger()
+
+SERVICE_RESOURCE_LABELS: dict[str, str] = {
+    "google_calendar": "primary calendar events",
+    "postgres_mcp": "user tasks database",
+}
 
 
 def _render_focus_plan(plan: dict[str, object]) -> str:
@@ -105,14 +111,23 @@ def build_consent_prompt(state: BriefingGraphState) -> ConsentPromptRequest:
     else:
         ttl = DEFAULT_TTL_HOURS.get(service, 4)
 
+    agent_id = str(context_data.get("agent_id", "calendar"))
+    intent = str(context_data.get("intent", "read_events"))
     record_consent_request(mcp_server=service, outcome="requested")
     return ConsentPromptRequest(
         request_id=state.get("request_id", state.get("trace_id", "0" * 32)),
         service=service,
         scope=scope,
         suggested_ttl_hours=ttl,
-        agent_requesting=str(context_data.get("agent_id", "calendar")),
+        agent_requesting=agent_id,
         message=str(context_data.get("message", state.get("consent_context") or "")),
+        action_payload=ConsentActionPayload(
+            service=service,
+            scope=scope,
+            agent_id=agent_id,
+            intent=intent,
+            resource=str(context_data.get("resource", SERVICE_RESOURCE_LABELS.get(service, ""))),
+        ),
     )
 
 

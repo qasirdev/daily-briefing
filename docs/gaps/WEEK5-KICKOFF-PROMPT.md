@@ -67,7 +67,7 @@ Write plan to `docs/tasks/todo.md` before touching code.
 | 4 | DB-124 | JIT CredentialBroker + MCP integration |
 | 5 | DB-125 | Vendor assessments, integration tests, proof |
 
-**Per-day gate:** `uv run ruff check backend` → `uv run ruff format backend` → `uv run mypy backend` → `uv run pytest`
+**Per-day gate:** `uv run ruff check backend && uv run ruff format backend && uv run mypy backend && uv run pytest`
 
 **Edge cases:** Implement every `EDGE CASES` block from the task `Description` in `DB-E12-gap-remediation-week5.json`.
 

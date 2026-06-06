@@ -116,7 +116,13 @@ backend/
 
 ## Backend Verification Gate
 
-After completing **every** backend task (implementation, refactor, or test changes), run these commands **in order** from the repository root:
+After completing **every** backend task (implementation, refactor, or test changes), run from the repository root **before marking the task complete**:
+
+```bash
+uv run ruff check backend && uv run ruff format backend && uv run mypy backend && uv run pytest
+```
+
+Equivalent step-by-step (same order):
 
 ```bash
 uv run ruff check backend
@@ -128,11 +134,11 @@ uv run pytest
 | Step | Command | Pass criteria |
 |---|---|---|
 | 1 | `uv run ruff check backend` | Zero lint warnings (run `--fix` for import sort `I001`) |
-| 2 | `uv run ruff format backend` | Formatting applied (optional but recommended before commit) |
+| 2 | `uv run ruff format backend` | Formatting applied |
 | 3 | `uv run mypy backend` | Zero type errors |
 | 4 | `uv run pytest` | All tests pass |
 
-Do not mark a backend task complete or commit until all three pass. Capture test output in `logs/` when required by the epic verification gate.
+Do not mark a backend task complete or commit until **all four** pass. If Ruff reports `I001`, run `uv run ruff check backend --fix`. Capture test output in `logs/` or `proof/` when required by the epic verification gate.
 
 ---
 
