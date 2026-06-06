@@ -1,0 +1,10 @@
+* 089b05a Day 4: Consensus model implementation in LangGraph
+* d4a44af Day 3: Verification and Adversarial agent design specs
+* 5b38ecf Day 2: NHI registry with 5 registered agents
+* 52f8fdc Day 1: Drift detection implementation with tests
+* 9a825c0 observability apps setup
+* 11b3e34 gap analysis for prompt cache, security, observability
+* bd7a2c7 update kickoff prompt
+* aaf3b3e build fixes
+* 3c141e7 dob pii fixes
+* 48794ce final changes for gap analysis

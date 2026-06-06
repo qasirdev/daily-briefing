@@ -182,6 +182,53 @@ The system operates on a rigorous supervisor-worker pattern with defined roles:
 
 ---
 
+## Multi-Agent Verification Architecture
+
+When `ENABLE_CONSENSUS_WORKFLOW=true`, the briefing pipeline adds a **Generator → Verification → Adversarial → Consensus** stage between Focus and Critic. Default (`false`) preserves the legacy Focus → Critic path for production stability during Week 1 rollout.
+
+### Workflow Diagram
+
+```mermaid
+graph TD
+    TASK[Task Agent] --> FOCUS[Focus Agent]
+    CAL[Calendar Agent] --> FOCUS
+    FOCUS --> VERIFY[Verification Agent]
+    VERIFY --> ADV[Adversarial Agent]
+    ADV --> CONSENSUS[Consensus Evaluator]
+
+    CONSENSUS -->|Agreement| CRITIC[Critic Agent]
+    CONSENSUS -->|Minor Disagreement| CRITIC
+    CONSENSUS -->|Major Disagreement| HUMAN[Human Escalation]
+
+    CRITIC --> ORCH[Orchestrator]
+    HUMAN --> END_NODE[End — awaiting_human_review]
+```
+
+### Agent Roles (Consensus Path)
+
+| Agent | Role | Purpose |
+|---|---|---|
+| Task Agent | Doer | Fetches tasks from PostgreSQL MCP |
+| Calendar Agent | Tool Operator | Fetches events from Google Calendar MCP |
+| Focus Agent | Planner | Generates briefing plan from aggregated data |
+| Verification Agent | Verifier | Fact-checks Focus output against raw MCP data |
+| Adversarial Agent | Red Team | Challenges assumptions and identifies edge cases |
+| Consensus Evaluator | Aggregator | Counts concerns and selects routing path |
+| Critic Agent | Safety + Quality | Final security scan and quality check |
+| Orchestrator | Supervisor + Presenter | Synthesizes final sanitized markdown |
+
+### Consensus Decision Matrix
+
+| Major Concerns | Moderate Concerns | Route |
+|---|---|---|
+| 0 | 0 | Agreement → Proceed to Critic |
+| 0 | 1+ | Minor Disagreement → Proceed to Critic with warning |
+| 2+ | Any | Major Disagreement → Human Escalation (`awaiting_human_review`) |
+
+Major concerns are counted from Verification `critical` discrepancies (when escalated) and Adversarial `severe` challenges. See `backend/agents/consensus/node.py` and `docs/learning/week1-consensus-pattern.md`.
+
+---
+
 ## Data Flow Sequence
 
 ```
@@ -222,6 +269,9 @@ class BriefingGraphState(TypedDict):
     task_result: AgentResultEnvelope | None
     calendar_result: AgentResultEnvelope | None
     focus_result: AgentResultEnvelope | None
+    verification_result: AgentResultEnvelope | None
+    adversarial_result: AgentResultEnvelope | None
+    consensus_result: dict[str, object] | None
     critic_result: AgentResultEnvelope | None
     
     # Execution tracking
@@ -231,7 +281,7 @@ class BriefingGraphState(TypedDict):
     
     # Final output
     final_briefing: str | None
-    status: Literal["pending", "success", "failure", "degraded"]
+    status: Literal["pending", "success", "failure", "degraded", "awaiting_consent", "awaiting_human_review"]
 ```
 
 ---

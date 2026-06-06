@@ -26,8 +26,9 @@
 
 ## Epic: Gap Remediation Week 1
 Branch: epic/week1-gap-remediation
-Status: in_progress
+Status: completed
 Started: 2026-06-06
+Completed: 2026-06-06
 
 ### Day 1: Drift Detection & Observability (Gap #99)
 - [x] Consolidate backend/metrics.py into backend/observability/metrics.py
@@ -70,13 +71,13 @@ Started: 2026-06-06
 - [x] Commit: "Day 4: Consensus model implementation in LangGraph"
 
 ### Day 5: Testing & Documentation
-- [ ] Write integration tests: backend/tests/architecture/test_consensus.py
-- [ ] Update docs/ARCHITECTURE.md with consensus workflow
-- [ ] Create docs/learning/week1-consensus-pattern.md
-- [ ] Capture proof package in proof/week1/
-- [ ] Update docs/tasks/todo.md — mark Day 5 complete
-- [ ] Update docs/tasks/lessons.md with all Week 1 learnings
-- [ ] Commit: "Week 1 complete: Multi-agent consensus implementation"
+- [x] Write integration tests: backend/tests/architecture/test_consensus.py
+- [x] Update docs/ARCHITECTURE.md with consensus workflow
+- [x] Create docs/learning/week1-consensus-pattern.md
+- [x] Capture proof package in proof/week1/
+- [x] Update docs/tasks/todo.md — mark Day 5 complete
+- [x] Update docs/tasks/lessons.md with all Week 1 learnings
+- [x] Commit: "Week 1 complete: Multi-agent consensus implementation"
 
 ## Verification Gates
 - ✅ Each day's tests must pass before proceeding

@@ -1,0 +1,18 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.1, pytest-9.0.3, pluggy-1.6.0 -- /Users/qasirmehmood/Projects/qasir-proflle-2026/daily-briefing/.venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /Users/qasirmehmood/Projects/qasir-proflle-2026/daily-briefing
+configfile: pyproject.toml
+plugins: asyncio-1.4.0, langsmith-0.8.7, httpx-0.36.2, anyio-4.13.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collecting ... collected 7 items
+
+backend/tests/security/test_nhi.py::test_nhi_registry_registration PASSED [ 14%]
+backend/tests/security/test_nhi.py::test_nhi_duplicate_registration_fails PASSED [ 28%]
+backend/tests/security/test_nhi.py::test_nhi_dynamic_credentials_flag PASSED [ 42%]
+backend/tests/security/test_nhi.py::test_nhi_list_all PASSED             [ 57%]
+backend/tests/security/test_nhi.py::test_nhi_id_pattern_validation PASSED [ 71%]
+backend/tests/security/test_nhi.py::test_nhi_external_connections_tracking PASSED [ 85%]
+backend/tests/security/test_nhi.py::test_production_registry_has_five_agents PASSED [100%]
+
+============================== 7 passed in 0.03s ===============================

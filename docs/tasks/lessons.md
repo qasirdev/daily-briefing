@@ -69,6 +69,11 @@
 - **Design Decision:** `route_consensus` uses `major_concerns >= 2` for human escalation; single major concern routes via minor disagreement to Critic (matches WEEK1 guide matrix).
 - **New Rule:** Consensus nodes only added to graph when flag enabled; `human_escalation` terminates at END with `status=awaiting_human_review` (Orchestrator does not overwrite).
 
+### Day 5: 2026-06-06
+- **Lesson:** Consensus integration tests must patch nodes at `backend.graph.builder` import sites (not source modules) — LangGraph captures function references at graph compile time.
+- **Lesson:** Critic tests through consensus path need a configured `LLMResponse` mock (`{"approved": true}`) or `llm=None` heuristic path.
+- **Week 1 Summary:** 17 new tests (7 drift + 7 NHI + 3 consensus), 143 total passing; proof package in `proof/week1/`; ready for PR to `epic/autonomus-implementation-gap`.
+
 ## Pre-Week 1 — Existing Test Failures
 
 ### Issue: PII Detector Too Aggressive on Trace IDs
