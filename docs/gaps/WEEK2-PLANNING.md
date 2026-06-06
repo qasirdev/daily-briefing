@@ -90,7 +90,17 @@ Based on `docs/gaps/GAP-ANALYSIS-REVIEW.md` and v2.0.0 proposal, Week 2 will add
 
 ---
 
-## 📋 Week 2 Epic Ticket Template
+## 📋 Epic Ticket Format (Updated — DB-E12 onward)
+
+**New gap-remediation epics (Week 5+) MUST use the DB-E2 flat-array format** with a rich `Description` column per task. Canonical examples: `DB-E2-mvp2-agents.json`, `DB-E12-gap-remediation-week5.json`. Full spec: `docs/jira-tickets-json/README.md`.
+
+Each task `Description` must include: `IMPLEMENTATION DETAILS`, `EFFORT`, `PROJECT AREA`, `DEPENDENCIES`, `TESTING CRITERIA`, `EDGE CASES`.
+
+Weeks DB-E8–DB-E11 use the legacy `{ "epic": {...}, "tasks": [...] }` shape — do not copy that for new weeks.
+
+---
+
+## 📋 Week 2 Epic Ticket Template (Legacy)
 
 **Create this file AFTER Week 1 complete:**  
 `docs/jira-tickets-json/DB-E9-gap-remediation-week2.json`
@@ -234,7 +244,7 @@ Based on `docs/gaps/GAP-ANALYSIS-REVIEW.md` and v2.0.0 proposal, Week 2 will add
 - DB-E9: Week 2 — **Prompt Caching + Memory Architecture** (Days 1-2: Caching, Days 3-5: CoALA)
 - DB-E10: Week 3 — Prompt Version Management (Gaps #13-18)
 - DB-E11: Week 4 — AgentOps & Evaluation (Gaps #19-25)
-- DB-E12: Week 5 — Dynamic Credentials (JIT) (Gap #19)
+- DB-E12: Week 5 — Supply Chain + JIT Credentials (Gaps #115-116, #19, #123, #127) ✅ ticket created
 - DB-E13: Week 6 — Multi-Region & DR
 - DB-E14: Week 7 — Security Hardening
 - DB-E15: Week 8 — Production Optimization

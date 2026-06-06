@@ -20,7 +20,7 @@ co-located AGENT.md files alongside the code they govern.
 |---|---|
 | Token usage | Follow `docs/TOKEN-EFFICIENCY.md` — read before `docs/KICKOFF-PROMPT.md` |
 | Plan mode | Required for any epic/task or task with 3+ steps — check `docs/jira-tickets-json/*.json` |
-| Edge cases | Review the `Description` field in the relevant JSON and implement associated fail-safes |
+| Edge cases | Review the `Description` field in `docs/jira-tickets-json/*.json` — implement every item under `EDGE CASES` (DB-E2 format: `IMPLEMENTATION DETAILS`, `TESTING CRITERIA`, `EDGE CASES` sections per task) |
 | Task log | Write plan to `docs/tasks/todo.md` before any implementation |
 | Verify plan | Check in before starting — do not build on an unconfirmed plan |
 | Subagents | Offload research, exploration, parallel analysis to subagents |
@@ -72,7 +72,7 @@ co-located AGENT.md files alongside the code they govern.
 | **Supabase setup** | docs/guidence/supabase-setup.md | Option 1 |
 | **Google Calendar OAuth** | docs/guidence/google-calandar-setup.md | Option 1 |
 | Engineering Standards (FE/BE/DB) | docs/ENGINEERING-STANDARDS.md | MVP 1 |
-| Details of epics and tasks | docs/jira-tickets-json/*.json | MVP 1–6 |
+| Details of epics and tasks | docs/jira-tickets-json/*.json (DB-E2 `Description` format — see `docs/jira-tickets-json/README.md`) | MVP 1–6, Gap Weeks 1–8 |
 | Observability & Tracing | docs/OBSERVABILITY.md | MVP 3 |
 | Data Ownership & Learner Loops | docs/DATA-OWNERSHIP.md | MVP 4 |
 | Agentic Consent | docs/AGENTIC-CONSENT.md | MVP 4 |

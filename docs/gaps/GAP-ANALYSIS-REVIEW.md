@@ -534,9 +534,13 @@ These 22 gaps were identified from Claude/Anthropic's Zero-Trust framework and r
 - ✅ Kickoff Prompt: `docs/gaps/KICKOFF-PROMPT.md`
 
 **Future Weeks (Create AFTER previous week completes):**
-- [ ] Week 2: `DB-E9-gap-remediation-week2.json` + guides
-- [ ] Week 3: `DB-E10-gap-remediation-week3.json` + guides
-- [ ] Week 4-8: Continue pattern (DB-E11 through DB-E15)
+- [x] Week 2: `DB-E9-gap-remediation-week2.json` + guides
+- [x] Week 3: `DB-E10-gap-remediation-week3.json` + guides
+- [x] Week 4: `DB-E11-gap-remediation-week4.json` + guides
+- [x] Week 5: `DB-E12-gap-remediation-week5.json` + guides (**DB-E2 `Description` format required**)
+- [ ] Week 6-8: Continue pattern (DB-E13 through DB-E15)
+
+**Ticket format (required for DB-E12 onward):** Use flat-array DB-E2 shape with rich `Description` per task — sections `IMPLEMENTATION DETAILS`, `EFFORT`, `PROJECT AREA`, `DEPENDENCIES`, `TESTING CRITERIA`, `EDGE CASES`. Canonical reference: `docs/jira-tickets-json/DB-E2-mvp2-agents.json`, `docs/jira-tickets-json/README.md`.
 
 **See:** `docs/gaps/WEEK2-PLANNING.md` for guidance on creating subsequent week materials.
 
