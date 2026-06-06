@@ -99,6 +99,8 @@ class SemanticMemoryRow(Base):
     source_trust: Mapped[str] = mapped_column(String(16), nullable=False, default="internal")
     content_hash: Mapped[str] = mapped_column(String(64), nullable=False, default="")
     quarantined: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    quarantine_reason: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    quarantined_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
@@ -144,6 +146,9 @@ class EpisodicMemoryRow(Base):
         nullable=False,
         default=dict,
     )
+    quarantined: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    quarantine_reason: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    quarantined_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,

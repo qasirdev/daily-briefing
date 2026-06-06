@@ -22,11 +22,11 @@
 - [x] Verify: ruff + mypy + pytest (235 passed)
 
 ### Day 3: Memory Quarantine (DB-118)
-- [ ] Create `backend/memory/quarantine.py`
-- [ ] Exclude quarantined rows from semantic/episodic retrieval
-- [ ] Add `memory_quarantine_total` metric
-- [ ] Write tests: `backend/tests/memory/test_quarantine.py`
-- [ ] Verify: ruff + mypy + pytest
+- [x] Create `backend/memory/quarantine.py`
+- [x] Exclude quarantined rows from semantic/episodic retrieval
+- [x] Add `memory_quarantine_total` metric
+- [x] Write tests: `backend/tests/memory/test_quarantine.py`
+- [x] Verify: ruff + mypy + pytest (240 passed)
 
 ### Day 4: Privilege Retention + AgentOps (DB-119)
 - [ ] Episodic privilege sanitization
@@ -47,7 +47,7 @@
 
 ## Verification Gates
 - Backend gate: `uv run ruff check backend` → `uv run ruff format backend` → `uv run mypy backend` → `uv run pytest`
-- Apply migrations: `uv run alembic upgrade head` (005 when Day 2 lands)
+- Apply migrations: `uv run alembic upgrade head` (005 + 006)
 
 ---
 

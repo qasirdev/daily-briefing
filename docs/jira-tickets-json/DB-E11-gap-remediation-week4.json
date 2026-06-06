@@ -83,7 +83,7 @@
       "task_type": "Implementation",
       "story_points": 8,
       "priority": "High",
-      "status": "To Do",
+      "status": "Done",
       "acceptance_criteria": [
         "backend/memory/quarantine.py implements quarantine/restore/delete",
         "Quarantined rows excluded from semantic and episodic retrieval",

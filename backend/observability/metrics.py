@@ -137,6 +137,12 @@ EMBEDDING_DURATION = Histogram(
     buckets=[10, 25, 50, 100, 250, 500, 1000, 2500],
 )
 
+MEMORY_QUARANTINE_TOTAL = Counter(
+    "memory_quarantine_total",
+    "Memory quarantine workflow actions",
+    ["memory_layer", "action"],
+)
+
 
 @contextmanager
 def observe_agent_execution(
@@ -264,6 +270,11 @@ def record_embedding_request(
     EMBEDDING_REQUESTS_TOTAL.labels(provider=provider, model=model, status=status).inc()
     if status == "success":
         EMBEDDING_DURATION.labels(provider=provider, model=model).observe(max(duration_ms, 0.0))
+
+
+def record_memory_quarantine(*, memory_layer: str, action: str) -> None:
+    """Increment memory quarantine workflow counter."""
+    MEMORY_QUARANTINE_TOTAL.labels(memory_layer=memory_layer, action=action).inc()
 
 
 def log_guardrail_violation(

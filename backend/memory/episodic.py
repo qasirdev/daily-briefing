@@ -114,7 +114,10 @@ class EpisodicMemoryStore:
             await self._set_user_context(session, user_id)
             stmt = (
                 select(EpisodicMemoryRow)
-                .where(EpisodicMemoryRow.user_id == user_id)
+                .where(
+                    EpisodicMemoryRow.user_id == user_id,
+                    EpisodicMemoryRow.quarantined.is_(False),
+                )
                 .order_by(EpisodicMemoryRow.created_at.desc())
                 .limit(resolved_limit * 2 if exclude_superseded else resolved_limit)
             )
@@ -141,6 +144,7 @@ class EpisodicMemoryStore:
                     EpisodicMemoryRow.user_id == user_id,
                     EpisodicMemoryRow.session_id == session_id,
                     EpisodicMemoryRow.superseded_by.is_(None),
+                    EpisodicMemoryRow.quarantined.is_(False),
                 )
                 .order_by(EpisodicMemoryRow.created_at.asc())
             )
