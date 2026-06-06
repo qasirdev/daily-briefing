@@ -15,6 +15,7 @@ from backend.schemas.consent import (
     ConsentRecord,
     calculate_expires_at,
 )
+from backend.security.audit import audit_log_writer
 
 logger = structlog.get_logger()
 
@@ -43,6 +44,16 @@ class ConsentStore:
             details=details,
         )
         self._audit.append(entry)
+        if action == "consent_granted":
+            audit_log_writer.append(
+                event_type="consent_granted",
+                actor_id=user_id,
+                resource=service or "unknown",
+                payload={
+                    "consent_id": str(consent_id) if consent_id else None,
+                    "details": details,
+                },
+            )
         logger.info(
             "consent_audit",
             user_id=user_id,

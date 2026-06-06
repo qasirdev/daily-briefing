@@ -513,6 +513,43 @@ confidence scoring, injection quarantine, security escalation protocol, no-retry
 
 ---
 
+## Cryptographic Audit Integrity (Gaps #123, #51)
+
+Security and delegation events are appended to a **hash-chained audit log** in `backend/security/audit.py`.
+
+| Property | Implementation |
+|---|---|
+| Chain algorithm | `entry_hash = sha256(prev_hash + canonical_json)` |
+| Genesis hash | 64 zero hex characters |
+| PII handling | Store `payload_hash` only — never raw payload |
+| Verification | `verify_audit_chain(entries)` returns `False` on tampering |
+| Persistence | `audit_log` table (Alembic `007_audit_log_sealed`) |
+| Events | `credential_issued`, `credential_revoked`, `consent_granted`, `guardrail_violation`, `delegation_created` |
+
+Consent grants via `backend/consent/store.py` append `consent_granted` entries automatically.
+
+---
+
+## JIT Credential Issuance (Gap #19)
+
+The `CredentialBroker` in `backend/security/vault.py` issues short-lived credentials for MCP integrations.
+
+| Setting | Default | Description |
+|---|---|---|
+| `VAULT_MODE` | `env` | `env` = mediated refresh token; `memory` = OAuth access-token exchange |
+| `CREDENTIAL_TTL_SECONDS` | `900` | Maximum credential lifetime (15 minutes) |
+
+**Flow:**
+
+1. Validate user consent for the target service
+2. Issue or return cached credential within TTL
+3. Append `credential_issued` to sealed audit log
+4. Increment `credential_issuance_total` Prometheus metric
+
+Calendar MCP (`backend/mcp/calendar_stdio.py`) resolves credentials via the broker on every tool call — raw refresh tokens are not read directly by the client.
+
+---
+
 ## 📚 Related Documentation
 
 | Document | Purpose |

@@ -162,6 +162,9 @@ generate_briefing (root span)
 | `memory_quarantine_total` | Counter | `memory_layer`, `action` | Quarantine, restore, and delete actions |
 | `consensus_disagreement_total` | Counter | `agreement_level` | Multi-agent consensus disagreements |
 | `memory_consolidation_duration_seconds` | Histogram | — | Semantic consolidation job duration |
+| `audit_log_entries_total` | Counter | `event_type` | Sealed security audit log entries appended |
+| `audit_chain_verification_failures_total` | Counter | — | Hash-chain tamper detection failures |
+| `credential_issuance_total` | Counter | `service`, `intent` | JIT credential broker issuance events |
 
 ---
 

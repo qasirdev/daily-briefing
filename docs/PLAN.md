@@ -176,7 +176,7 @@ Fresh autonomous kickoff only (not every "hi"): then read `docs/KICKOFF-PROMPT.m
 | 2 | DB-E9 | Prompt caching + Working/Semantic memory | ✅ |
 | 3 | DB-E10 | Procedural/Episodic memory + prompt versioning | ✅ |
 | 4 | DB-E11 | Memory security, AgentOps, live embeddings | ✅ |
-| 5 | DB-E12 | Supply chain + JIT credentials | 🔄 |
+| 5 | DB-E12 | Supply chain + JIT credentials | ✅ |
 | 6 | DB-E13 | OWASP Agent Top 10 + red teaming | ⬜ |
 | 7 | DB-E14 | HITL + governance hardening | ⬜ |
 | 8 | DB-E15 | Production optimization | ⬜ |
@@ -187,11 +187,11 @@ Fresh autonomous kickoff only (not every "hi"): then read `docs/KICKOFF-PROMPT.m
 
 | Task ID | Summary | Status |
 |---|---|---|
-| DB-121 | Day 1: AI-BOM & Supply Chain Documentation (Gap #115) | ⬜ |
-| DB-122 | Day 2: OpenSSF Scorecard & Dependency Audit CI (Gap #116) | ⬜ |
-| DB-123 | Day 3: Cryptographic Audit Log Sealing (Gaps #123, #51) | ⬜ |
-| DB-124 | Day 4: JIT Credential Broker (Gap #19) | ⬜ |
-| DB-125 | Day 5: Vendor Assessments, Integration Tests & Proof (Gap #127) | ⬜ |
+| DB-121 | Day 1: AI-BOM & Supply Chain Documentation (Gap #115) | ✅ |
+| DB-122 | Day 2: OpenSSF Scorecard & Dependency Audit CI (Gap #116) | ✅ |
+| DB-123 | Day 3: Cryptographic Audit Log Sealing (Gaps #123, #51) | ✅ |
+| DB-124 | Day 4: JIT Credential Broker (Gap #19) | ✅ |
+| DB-125 | Day 5: Vendor Assessments, Integration Tests & Proof (Gap #127) | ✅ |
 
 **Week 5 guides:** `docs/gaps/WEEK5-KICKOFF-PROMPT.md`, `docs/gaps/WEEK5-IMPLEMENTATION-GUIDE.md`
 
@@ -209,8 +209,8 @@ Fresh autonomous kickoff only (not every "hi"): then read `docs/KICKOFF-PROMPT.m
 | MVP 6 | DB-E6 | 8 | 8 | 100% |
 | Option 1 | DB-E7 | 5 | 5 | 100% |
 | Gap Week 4 | DB-E11 | 5 | 5 | 100% |
-| Gap Week 5 | DB-E12 | 5 | 0 | 0% |
-| **Total** | **9 Epics** | **67** | **62** | **93%** |
+| Gap Week 5 | DB-E12 | 5 | 5 | 100% |
+| **Total** | **9 Epics** | **67** | **67** | **100%** |
 
 ---
 

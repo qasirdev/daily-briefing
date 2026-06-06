@@ -66,6 +66,9 @@ class Settings(BaseSettings):
     embedding_provider: Literal["deterministic", "openrouter"] = "deterministic"
     embedding_model: str = "openai/text-embedding-3-small"
 
+    vault_mode: Literal["env", "memory"] = "env"
+    credential_ttl_seconds: int = 900
+
     enable_procedural_memory: bool = True
     procedural_memory_top_k: int = 5
     enable_episodic_memory: bool = True

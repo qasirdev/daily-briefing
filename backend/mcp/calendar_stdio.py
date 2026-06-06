@@ -11,6 +11,7 @@ from backend.mcp.calendar import CalendarEvent
 from backend.mcp.client import MCPConsentRequired, MCPError
 from backend.mcp.stdio_transport import StdioMCPTransport
 from backend.security.ssrf import SSRFValidationError, SSRFValidator
+from backend.security.vault import CredentialBroker, credential_broker
 from backend.settings import Settings, get_settings
 
 logger = structlog.get_logger()
@@ -20,21 +21,49 @@ _ssrf = SSRFValidator()
 class CalendarMCPStdioClient(StdioMCPTransport):
     """Stdio MCP client for Google Calendar read access."""
 
-    def __init__(self, settings: Settings | None = None) -> None:
+    def __init__(
+        self,
+        settings: Settings | None = None,
+        *,
+        broker: CredentialBroker | None = None,
+        user_id: str = "default",
+    ) -> None:
         resolved = settings or get_settings()
+        self._settings = resolved
+        self._broker = broker or credential_broker
+        self._user_id = user_id
         super().__init__(
             command="npx",
             args=["-y", "@franciscpd/calendar-mcp-server"],
             server_name="calendar",
-            env={
-                "GOOGLE_CALENDAR_CLIENT_ID": resolved.google_client_id,
-                "GOOGLE_CALENDAR_CLIENT_SECRET": resolved.google_client_secret,
-                "GOOGLE_CALENDAR_REFRESH_TOKEN": resolved.google_refresh_token,
-                "NODE_TLS_REJECT_UNAUTHORIZED": "0",
-                "NPM_CONFIG_CACHE": "/tmp/npm-cache",
-            },
+            env={},
         )
         self._calendar_id = resolved.calendar_id
+
+    async def _build_calendar_env(self, user_id: str) -> dict[str, str]:
+        """Resolve JIT credentials via broker instead of reading refresh token directly."""
+        credential = await self._broker.get_credential(
+            user_id,
+            "google_calendar",
+            "read_events",
+        )
+        env: dict[str, str] = {
+            "GOOGLE_CALENDAR_CLIENT_ID": self._settings.google_client_id,
+            "GOOGLE_CALENDAR_CLIENT_SECRET": self._settings.google_client_secret,
+            "NODE_TLS_REJECT_UNAUTHORIZED": "0",
+            "NPM_CONFIG_CACHE": "/tmp/npm-cache",
+        }
+        if credential.token_type == "refresh":
+            env["GOOGLE_CALENDAR_REFRESH_TOKEN"] = credential.access_token
+        else:
+            env["GOOGLE_CALENDAR_ACCESS_TOKEN"] = credential.access_token
+            if self._settings.google_refresh_token:
+                env["GOOGLE_CALENDAR_REFRESH_TOKEN"] = self._settings.google_refresh_token
+        return env
+
+    async def call_tool(self, tool_name: str, args: dict[str, Any]) -> dict[str, Any]:
+        self._env = await self._build_calendar_env(self._user_id)
+        return await super().call_tool(tool_name, args)
 
     def _validate_outbound_urls(self, payload: dict[str, Any]) -> None:
         try:
@@ -43,6 +72,7 @@ class CalendarMCPStdioClient(StdioMCPTransport):
             raise MCPError(str(exc)) from exc
 
     async def list_calendars(self, *, user_id: str) -> dict[str, Any]:
+        self._user_id = user_id
         payload = await self.call_tool("calendar_list_calendars", {})
         self._validate_outbound_urls(payload if isinstance(payload, dict) else {})
         calendars = payload.get("calendars", payload.get("items", []))
@@ -55,6 +85,7 @@ class CalendarMCPStdioClient(StdioMCPTransport):
         target_date: date,
         calendar_id: str = "primary",
     ) -> list[CalendarEvent]:
+        self._user_id = user_id
         resolved_calendar = calendar_id or self._calendar_id
         start = datetime.combine(target_date, time.min, tzinfo=UTC)
         end = datetime.combine(target_date, time.max, tzinfo=UTC)

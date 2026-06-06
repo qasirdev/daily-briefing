@@ -156,6 +156,23 @@ MEMORY_CONSOLIDATION_DURATION = Histogram(
     buckets=[0.01, 0.05, 0.1, 0.5, 1, 2, 5, 10, 30, 60],
 )
 
+AUDIT_LOG_ENTRIES_TOTAL = Counter(
+    "audit_log_entries_total",
+    "Cryptographically sealed audit log entries appended",
+    ["event_type"],
+)
+
+AUDIT_CHAIN_VERIFICATION_FAILURES_TOTAL = Counter(
+    "audit_chain_verification_failures_total",
+    "Audit hash-chain verification failures detected",
+)
+
+CREDENTIAL_ISSUANCE_TOTAL = Counter(
+    "credential_issuance_total",
+    "JIT credential broker issuance events",
+    ["service", "intent"],
+)
+
 
 @contextmanager
 def observe_agent_execution(
@@ -298,6 +315,21 @@ def record_consensus_disagreement(*, agreement_level: str) -> None:
 def record_memory_consolidation_duration(*, operation: str, duration_seconds: float) -> None:
     """Record memory consolidation job latency."""
     MEMORY_CONSOLIDATION_DURATION.labels(operation=operation).observe(max(duration_seconds, 0.0))
+
+
+def record_audit_log_entry(*, event_type: str) -> None:
+    """Increment sealed audit log entry counter."""
+    AUDIT_LOG_ENTRIES_TOTAL.labels(event_type=event_type).inc()
+
+
+def record_audit_chain_verification_failure() -> None:
+    """Increment audit chain tamper detection counter."""
+    AUDIT_CHAIN_VERIFICATION_FAILURES_TOTAL.inc()
+
+
+def record_credential_issuance(*, service: str, intent: str) -> None:
+    """Increment JIT credential issuance counter."""
+    CREDENTIAL_ISSUANCE_TOTAL.labels(service=service, intent=intent).inc()
 
 
 def log_guardrail_violation(

@@ -1,0 +1,87 @@
+metadata:
+  version: "1.0"
+  last_updated: "2026-06-06"
+  owner: platform-security
+  supply_chain:
+    openssf_scorecard_minimum: 7.0
+    pip_audit_block_severity:
+      - critical
+      - high
+    scorecard_manual_command: >-
+      ossf-scorecard --repo=github.com/qasirdev/daily-briefing --format=json
+      > scorecard-results/scorecard.json
+
+models:
+  - name: openai/gpt-oss-120b
+    provider: openrouter
+    version: "2025-03"
+    license: Commercial
+    provenance: https://openrouter.ai/docs
+    security_posture: vendor-managed
+    role: primary
+
+  - name: openai/gpt-oss-120b:free
+    provider: openrouter
+    version: "2025-03"
+    license: Commercial
+    provenance: https://openrouter.ai/docs
+    security_posture: vendor-managed
+    role: openrouter-fallback
+
+  - name: openai/gpt-4o-mini
+    provider: openrouter
+    version: "2024-07-18"
+    license: Commercial
+    provenance: https://openrouter.ai/docs
+    security_posture: vendor-managed
+    role: openrouter-fallback
+
+  - name: nvidia/nemotron-3-super-120b-a12b:free
+    provider: openrouter
+    version: "2025-01"
+    license: Commercial
+    provenance: https://openrouter.ai/docs
+    security_posture: vendor-managed
+    role: openrouter-fallback
+
+  - name: local/llama-3-8b
+    provider: ollama
+    version: "3.8"
+    license: Llama Community License
+    provenance: https://ollama.com
+    security_posture: self-hosted
+    role: local-fallback
+
+embeddings:
+  - name: openai/text-embedding-3-small
+    provider: openrouter
+    dimensions: 1536
+    license: Commercial
+    security_posture: vendor-managed
+
+libraries:
+  - name: langgraph
+    version: "1.2.2"
+    license: MIT
+  - name: fastapi
+    version: "0.136.3"
+    license: MIT
+  - name: pydantic
+    version: "2.13.4"
+    license: MIT
+  - name: sqlalchemy
+    version: "2.0.50"
+    license: MIT
+  - name: httpx
+    version: "0.28.1"
+    license: BSD-3-Clause
+
+mcp_servers:
+  - name: "@franciscpd/calendar-mcp-server"
+    transport: stdio
+    license: MIT
+    foss: true
+  - name: "@modelcontextprotocol/server-postgres"
+    transport: stdio
+    license: MIT
+    foss: true
