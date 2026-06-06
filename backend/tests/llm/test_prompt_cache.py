@@ -31,6 +31,20 @@ def test_verification_openai_cache_eligible_helper() -> None:
     assert openai_cache_eligible("verification")
 
 
+def test_critic_cached_prompt_exceeds_openai_threshold() -> None:
+    assembly = build_cached_prompt_assembly("critic")
+    assert assembly.estimated_tokens >= OPENAI_AUTO_CACHE_MIN_TOKENS
+    assert openai_cache_eligible("critic")
+
+
+def test_critic_cached_prompt_has_v2_structure() -> None:
+    assembly = build_cached_prompt_assembly("critic")
+    block_names = {block.name for block in assembly.blocks}
+    assert "instructions" in block_names
+    assert "examples" in block_names
+    assert len(assembly.blocks) >= 7
+
+
 def test_focus_cached_prompt_exceeds_openai_threshold() -> None:
     assembly = build_cached_prompt_assembly("focus")
     assert assembly.estimated_tokens >= OPENAI_AUTO_CACHE_MIN_TOKENS

@@ -2,7 +2,7 @@
 
 **Epic:** DB-E11  
 **Branch:** `epic/week4-gap-remediation`  
-**Status:** in progress  
+**Status:** complete  
 **Started:** 2026-06-06  
 **Scope:** Phase 2 gap remediation — embeddings, memory security, AgentOps, Critic v2.0.0
 
@@ -36,12 +36,13 @@
 - [x] Verify: ruff + mypy + pytest (250 passed)
 
 ### Day 5: Critic v2.0.0 + Proof (DB-120)
-- [ ] Upgrade `prompts/critic/` to 11-file v2.0.0 structure
-- [ ] Wire Critic node to `resolve_prompt_version()` + `build_llm_messages()`
-- [ ] Memory security integration tests (10+ scenarios)
-- [ ] Proof package in `proof/week4/`
-- [ ] `docs/learning/week4-memory-security-and-agentops.md`
-- [ ] Verify: ruff + mypy + pytest
+- [x] Upgrade `prompts/critic/` to 11-file v2.0.0 structure
+- [x] Wire Critic node to `resolve_prompt_version()` + `build_llm_messages()`
+- [x] Memory security integration tests (12 scenarios)
+- [x] Proof package in `proof/week4/`
+- [x] `docs/learning/week4-memory-security-and-agentops.md`
+- [x] Updated `docs/OBSERVABILITY.md` with Week 4 metrics
+- [x] Verify: ruff + mypy + pytest
 
 ---
 

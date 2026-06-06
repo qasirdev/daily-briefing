@@ -118,7 +118,7 @@
       "task_type": "Testing + Documentation",
       "story_points": 8,
       "priority": "High",
-      "status": "To Do",
+      "status": "Done",
       "acceptance_criteria": [
         "prompts/critic/ has full v2.0.0 structure with CONTRACT.md bump",
         "Critic node uses resolve_prompt_version() and build_llm_messages()",
