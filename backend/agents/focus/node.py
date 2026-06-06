@@ -11,23 +11,67 @@ import structlog
 from backend.graph.state import BriefingGraphState
 from backend.llm.prompt_cache import build_llm_messages, resolve_model_name
 from backend.llm.router import DataClassification, LLMError, LLMRouter
+from backend.memory.audit import memory_audit_trail
+from backend.memory.embeddings import embed_text
+from backend.memory.retrieval import (
+    build_focus_retrieval_query,
+    format_semantic_context,
+    retrieve_semantic_context,
+)
+from backend.memory.semantic import SemanticMemoryStore
+from backend.memory.working import WorkingMemoryManager
 from backend.preferences.store import preference_store
 from backend.schemas.envelope import AgentResultEnvelope, EscalationPayload, ExecutionMetadata
-from backend.settings import get_settings
+from backend.settings import Settings, get_settings
 
 logger = structlog.get_logger()
 
 FOCUS_INPUT_BUDGET = 8_000
 FOCUS_OUTPUT_BUDGET = 2_000
 
+_default_semantic_store = SemanticMemoryStore()
+_working_memory = WorkingMemoryManager()
+
+
+async def _persist_focus_summary(
+    *,
+    user_id: str,
+    request_id: str,
+    plan: dict[str, object],
+    store: SemanticMemoryStore,
+    settings: Settings,
+) -> None:
+    summary = plan.get("summary")
+    if not isinstance(summary, str) or not summary.strip():
+        return
+    try:
+        await store.store(
+            user_id=user_id,
+            content=summary.strip(),
+            embedding=embed_text(summary, settings),
+            source_type="briefing",
+            source_id=request_id or None,
+        )
+    except Exception as exc:
+        logger.warning(
+            "semantic_memory_store_failed",
+            user_id=user_id,
+            request_id=request_id,
+            error=str(exc),
+        )
+
 
 async def focus_agent_node(
     state: BriefingGraphState,
     llm: LLMRouter,
+    semantic_store: SemanticMemoryStore | None = None,
 ) -> dict[str, Any]:
     """Generate a structured daily focus plan using the LLM router."""
     start = time.perf_counter()
     trace_id = state.get("trace_id", "0" * 32)
+    request_id = state.get("request_id", "")
+    settings = get_settings()
+    store = semantic_store or _default_semantic_store
 
     tasks: list[dict[str, object]] = []
     events: list[dict[str, object]] = []
@@ -44,11 +88,48 @@ async def focus_agent_node(
 
     user_id = state.get("user_id", "")
     preferences = preference_store.top_context_snippets(user_id)
+    working_context = state.get("working_memory_context", [])
+    normalized_working = (
+        [str(item) for item in working_context]
+        if isinstance(working_context, list)
+        else []
+    )
+
+    if normalized_working:
+        memory_audit_trail.log_read(
+            trace_id=trace_id,
+            request_id=request_id,
+            user_id=user_id or "anonymous",
+            agent_id="focus",
+            memory_layer="working",
+            operation="snapshot",
+            result_count=len(normalized_working),
+            query_summary="working_memory_context",
+        )
+
+    retrieval_query = build_focus_retrieval_query(
+        tasks=tasks,
+        events=events,
+        working_context=normalized_working,
+    )
+    semantic_records = await retrieve_semantic_context(
+        user_id=user_id,
+        query_text=retrieval_query,
+        trace_id=trace_id,
+        request_id=request_id,
+        agent_id="focus",
+        store=store,
+        settings=settings,
+        working_context=normalized_working,
+    )
+    semantic_context = format_semantic_context(semantic_records)
+
     user_context = json.dumps(
         {
             "tasks": tasks,
             "events": events,
             "preferences": preferences,
+            "semantic_memory": semantic_context,
         },
         ensure_ascii=True,
     )
@@ -58,7 +139,6 @@ async def focus_agent_node(
         "</user_data>\n"
         "Create a JSON plan with time_blocks including task references."
     )
-    settings = get_settings()
     messages = build_llm_messages(
         "focus",
         user_content,
@@ -154,8 +234,28 @@ async def focus_agent_node(
             data_classification="confidential",
         ),
     )
+
+    if user_id:
+        await _persist_focus_summary(
+            user_id=user_id,
+            request_id=request_id,
+            plan=plan,
+            store=store,
+            settings=settings,
+        )
+
+    summary_snippet = plan.get("summary")
+    context_snippet = str(summary_snippet) if isinstance(summary_snippet, str) else None
+    working_update = _working_memory.record_agent_turn(
+        state,
+        agent_id="focus",
+        tokens_used=llm_response.tokens_used,
+        context_snippet=context_snippet,
+    )
+
     return {
         "focus_result": envelope,
         "current_agent": "focus",
         "total_tokens": total_tokens + llm_response.tokens_used,
+        **working_update,
     }

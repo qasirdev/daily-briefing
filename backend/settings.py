@@ -62,6 +62,7 @@ class Settings(BaseSettings):
     working_memory_max_snippets: int = 10
     semantic_memory_embedding_dim: int = 1536
     semantic_memory_search_top_k: int = 5
+    enable_semantic_memory_retrieval: bool = True
 
     otel_exporter_otlp_endpoint: str = "http://localhost:4317"
     admin_api_key: str = ""

@@ -146,6 +146,23 @@ uv run alembic upgrade head
 - Working memory token budget exposed via metrics
 - Memory reads in audit trail
 
+### Key Files
+
+- `backend/memory/retrieval.py` — cross-layer working → semantic query
+- `backend/memory/audit.py` — structured memory read audit trail
+- `backend/memory/consolidation.py` — nightly consolidation stub
+- `backend/agents/focus/node.py` — semantic retrieval + working memory updates
+- `backend/observability/metrics.py` — `working_memory_utilization`, `memory_reads_total`
+
+### Verification
+
+```bash
+uv run ruff check backend
+uv run mypy backend
+uv run pytest backend/tests/memory/ backend/tests/agents/test_focus_memory.py -v
+curl http://localhost:8010/metrics | grep -E 'working_memory|memory_reads'
+```
+
 ---
 
 ## Day 5: Validation & Documentation (DB-110)

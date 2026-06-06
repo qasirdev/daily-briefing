@@ -39,9 +39,12 @@
 - [x] Commit: "Day 3: Working memory and pgvector semantic memory foundation"
 
 ### Day 4: Memory Integration (DB-109)
-- [ ] Wire semantic retrieval into Focus agent
-- [ ] Working memory token budget in graph state
-- [ ] Memory read audit logging
+- [x] Wire semantic retrieval into Focus agent
+- [x] Working memory token budget in graph state + Prometheus metrics
+- [x] Memory read audit logging
+- [x] Write tests: `backend/tests/memory/test_retrieval.py`, `test_audit.py`, `test_focus_memory.py`
+- [x] Verify: ruff + mypy + pytest
+- [x] Commit: "Day 4: Focus memory integration with semantic retrieval and audit trail"
 
 ### Day 5: Validation & Documentation (DB-110)
 - [ ] Cache ROI measurement vs Week 1 baseline

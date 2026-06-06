@@ -99,6 +99,12 @@
 - **Design Decision:** Working memory fields (`working_memory_tokens`, `working_memory_limit`, `working_memory_context`) initialized in orchestrator route node.
 - **New Rule:** `SemanticMemoryStore` always filters by `user_id` in queries even with RLS enabled — defense in depth for Supabase.
 
+### Day 4: 2026-06-06
+- **Lesson:** Semantic retrieval belongs in `backend/memory/retrieval.py` — keeps audit + metrics out of the store layer.
+- **Design Decision:** Focus agent reads working memory context first, then queries semantic memory with a merged retrieval string.
+- **Design Decision:** Memory read failures (DB unavailable) log a warning and fall back — focus planning must not fail on retrieval errors.
+- **New Rule:** Every memory read emits `memory_read_audit` structured log + `memory_reads_total` Prometheus counter.
+
 ## Pre-Week 1 — Existing Test Failures
 
 ### Issue: PII Detector Too Aggressive on Trace IDs

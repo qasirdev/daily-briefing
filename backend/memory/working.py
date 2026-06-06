@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from backend.graph.state import BriefingGraphState
-from backend.metrics import set_token_budget_utilization
+from backend.metrics import set_token_budget_utilization, set_working_memory_utilization
 from backend.settings import Settings, get_settings
 
 
@@ -41,12 +41,13 @@ class WorkingMemoryManager:
 
     def initialize_state(self, state: BriefingGraphState) -> dict[str, object]:
         """Seed working memory fields at graph start."""
+        tokens = state.get("working_memory_tokens", state.get("total_tokens", 0))
+        limit = self._token_limit
+        utilization = int(tokens) / limit if limit else 0.0
+        set_working_memory_utilization(utilization=utilization)
         return {
-            "working_memory_tokens": state.get(
-                "working_memory_tokens",
-                state.get("total_tokens", 0),
-            ),
-            "working_memory_limit": self._token_limit,
+            "working_memory_tokens": tokens,
+            "working_memory_limit": limit,
             "working_memory_context": list(state.get("working_memory_context", ())),
         }
 
@@ -82,6 +83,7 @@ class WorkingMemoryManager:
 
         utilization = updated_tokens / limit if limit else 0.0
         set_token_budget_utilization(agent_id=agent_id, utilization=utilization)
+        set_working_memory_utilization(utilization=utilization)
 
         return {
             "working_memory_tokens": updated_tokens,
