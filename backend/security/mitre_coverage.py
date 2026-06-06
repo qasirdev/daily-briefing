@@ -131,9 +131,9 @@ TECHNIQUE_REGISTRY: tuple[TechniqueMapping, ...] = (
         "T1087",
         "Account Discovery",
         "Discovery",
-        "partial",
-        "Agent scope boundaries limit enumeration",
-        "test_agent_scope.py",
+        "detected",
+        "EnumerationDetector on consent/credential probes",
+        "security_enumeration_attempts_total",
     ),
     TechniqueMapping(
         "T1059",

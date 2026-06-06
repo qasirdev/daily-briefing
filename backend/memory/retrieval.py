@@ -8,13 +8,26 @@ from typing import Any
 
 import structlog
 
+from backend.memory.agentic_rag import (
+    RetrievalDecision,
+    decide_retrieval,
+    refine_query,
+    should_retry_retrieval,
+)
 from backend.memory.audit import memory_audit_trail
+from backend.memory.context_compression import compress_memory_payload
 from backend.memory.embeddings import embed_text_async
 from backend.memory.episodic import EpisodicLessonRecord, EpisodicMemoryStore
 from backend.memory.ingestion import validate_semantic_content
 from backend.memory.procedural import ProceduralMemoryStore, ProceduralSkillRecord
 from backend.memory.semantic import SemanticMemoryRecord, SemanticMemoryStore
-from backend.metrics import record_memory_read, record_semantic_search_duration
+from backend.memory.source_validation import validate_source_provenance
+from backend.metrics import (
+    record_agentic_rag_decision,
+    record_context_compression,
+    record_memory_read,
+    record_semantic_search_duration,
+)
 from backend.settings import Settings, get_settings
 
 logger = structlog.get_logger()
@@ -32,12 +45,21 @@ class AgentMemoryContext:
     procedural: tuple[ProceduralSkillRecord, ...]
     episodic: tuple[EpisodicLessonRecord, ...]
 
-    def to_payload(self) -> dict[str, list[dict[str, Any]]]:
-        return {
+    def to_payload(
+        self,
+        *,
+        compress: bool = False,
+        max_chars: int = 6_000,
+    ) -> dict[str, list[dict[str, Any]]]:
+        payload = {
             "semantic_memory": format_semantic_context(list(self.semantic)),
             "procedural_skills": format_procedural_context(list(self.procedural)),
             "episodic_lessons": format_episodic_context(list(self.episodic)),
         }
+        if compress:
+            compressed, _ = compress_memory_payload(payload, max_chars=max_chars)
+            return compressed
+        return payload
 
 
 def build_focus_retrieval_query(
@@ -167,7 +189,16 @@ async def retrieve_semantic_context(
                 matched_pattern=validation.matched_pattern,
             )
 
-    records = safe_records
+    records, dropped = validate_source_provenance(safe_records)
+    if dropped:
+        logger.info(
+            "semantic_source_validation_dropped",
+            trace_id=trace_id,
+            user_id=user_id,
+            agent_id=agent_id,
+            dropped=dropped,
+        )
+
     memory_audit_trail.log_read(
         trace_id=trace_id,
         request_id=request_id,
@@ -276,8 +307,11 @@ async def retrieve_agent_memory(
     tasks: list[dict[str, object]] | None = None,
     events: list[dict[str, object]] | None = None,
     settings: Settings | None = None,
+    has_prior_briefings: bool = False,
+    compress_payload: bool = False,
 ) -> AgentMemoryContext:
     """Retrieve semantic, procedural, and episodic context for an agent."""
+    resolved_settings = settings or get_settings()
     resolved_query = query_text.strip()
     if not resolved_query:
         resolved_query = build_focus_retrieval_query(
@@ -286,31 +320,111 @@ async def retrieve_agent_memory(
             working_context=working_context,
         )
 
-    semantic = await retrieve_semantic_context(
+    working_count = len(working_context) if working_context else 0
+    decision = decide_retrieval(
         user_id=user_id,
+        agent_id=agent_id,
         query_text=resolved_query,
-        trace_id=trace_id,
-        agent_id=agent_id,
-        request_id=request_id,
-        settings=settings,
-        working_context=working_context,
+        task_count=len(tasks or []),
+        event_count=len(events or []),
+        working_context_count=working_count,
+        has_prior_briefings=has_prior_briefings,
+        settings=resolved_settings,
     )
-    procedural = await retrieve_procedural_skills(
-        user_id=user_id,
-        agent_id=agent_id,
-        trace_id=trace_id,
-        request_id=request_id,
-        settings=settings,
-    )
-    episodic = await retrieve_episodic_lessons(
-        user_id=user_id,
-        agent_id=agent_id,
-        trace_id=trace_id,
-        request_id=request_id,
-        settings=settings,
-    )
-    return AgentMemoryContext(
+    record_agentic_rag_decision(decision=decision.kind, layer="all")
+
+    semantic: list[SemanticMemoryRecord] = []
+    procedural: list[ProceduralSkillRecord] = []
+    episodic: list[EpisodicLessonRecord] = []
+
+    refinement_pass = 0
+    active_query = decision.query
+
+    if "semantic" in decision.layers:
+        while True:
+            semantic = await retrieve_semantic_context(
+                user_id=user_id,
+                query_text=active_query,
+                trace_id=trace_id,
+                agent_id=agent_id,
+                request_id=request_id,
+                settings=resolved_settings,
+                working_context=working_context,
+            )
+            if not should_retry_retrieval(
+                decision=decision,
+                semantic_hit_count=len(semantic),
+                refinement_pass=refinement_pass,
+            ):
+                break
+            active_query, refinement_pass, _ = refine_query(
+                base_query=active_query,
+                semantic_hit_count=len(semantic),
+                refinement_pass=refinement_pass,
+            )
+            record_agentic_rag_decision(decision="refine", layer="semantic")
+
+    if "procedural" in decision.layers:
+        procedural = await retrieve_procedural_skills(
+            user_id=user_id,
+            agent_id=agent_id,
+            trace_id=trace_id,
+            request_id=request_id,
+            settings=resolved_settings,
+        )
+
+    if "episodic" in decision.layers:
+        episodic = await retrieve_episodic_lessons(
+            user_id=user_id,
+            agent_id=agent_id,
+            trace_id=trace_id,
+            request_id=request_id,
+            settings=resolved_settings,
+        )
+
+    context = AgentMemoryContext(
         semantic=tuple(semantic),
         procedural=tuple(procedural),
         episodic=tuple(episodic),
+    )
+
+    if compress_payload:
+        payload = context.to_payload()
+        _, bytes_saved = compress_memory_payload(
+            payload,
+            max_chars=resolved_settings.context_compression_max_chars,
+        )
+        record_context_compression(bytes_saved=bytes_saved)
+        if bytes_saved > 0:
+            logger.info(
+                "memory_context_compressed",
+                trace_id=trace_id,
+                agent_id=agent_id,
+                bytes_saved=bytes_saved,
+            )
+
+    return context
+
+
+def get_retrieval_decision_for_state(
+    *,
+    user_id: str,
+    agent_id: str,
+    query_text: str,
+    task_count: int = 0,
+    event_count: int = 0,
+    working_context_count: int = 0,
+    has_prior_briefings: bool = False,
+    settings: Settings | None = None,
+) -> RetrievalDecision:
+    """Expose agentic RAG decision for tests and observability."""
+    return decide_retrieval(
+        user_id=user_id,
+        agent_id=agent_id,
+        query_text=query_text,
+        task_count=task_count,
+        event_count=event_count,
+        working_context_count=working_context_count,
+        has_prior_briefings=has_prior_briefings,
+        settings=settings,
     )

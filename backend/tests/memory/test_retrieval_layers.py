@@ -77,7 +77,7 @@ async def test_retrieve_agent_memory_combines_all_layers() -> None:
             agent_id="focus",
             trace_id="a" * 32,
             query_text="daily plan",
-            settings=Settings(),
+            settings=Settings(enable_agentic_rag=False),
         )
 
     assert len(context.semantic) == 1

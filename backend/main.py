@@ -14,6 +14,7 @@ from backend.api.v1.briefing import router as briefing_router
 from backend.api.v1.consent import router as consent_router
 from backend.api.v1.dlq import router as dlq_router
 from backend.api.v1.export import router as export_router
+from backend.api.v1.feedback import router as feedback_router
 from backend.api.v1.preferences import router as preferences_router
 from backend.dependencies import build_llm_router
 from backend.health.router import router as health_router
@@ -120,6 +121,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(briefing_router)
     app.include_router(consent_router)
     app.include_router(preferences_router)
+    app.include_router(feedback_router)
     app.include_router(export_router)
     app.include_router(dlq_router)
     app.mount("/metrics", make_asgi_app())

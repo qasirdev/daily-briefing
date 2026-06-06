@@ -226,6 +226,23 @@ SECURITY_ALERT_INVESTIGATION_COVERAGE = Gauge(
     "Fraction of security alerts investigated (target >0.95)",
 )
 
+AGENTIC_RAG_DECISIONS_TOTAL = Counter(
+    "agentic_rag_decisions_total",
+    "Agentic RAG retrieval decisions by kind and layer",
+    ["decision", "layer"],
+)
+
+CONTEXT_COMPRESSION_BYTES_SAVED_TOTAL = Counter(
+    "context_compression_bytes_saved_total",
+    "Bytes removed by memory context compression",
+)
+
+SECURITY_ENUMERATION_ATTEMPTS_TOTAL = Counter(
+    "security_enumeration_attempts_total",
+    "Suspected account enumeration probe events",
+    ["probe_type", "outcome"],
+)
+
 
 @contextmanager
 def observe_agent_execution(
@@ -440,6 +457,22 @@ def record_alert_investigated_metric(*, alert_type: str, severity: str) -> None:
     from backend.observability.drift_monitor import get_alert_investigation_coverage
 
     SECURITY_ALERT_INVESTIGATION_COVERAGE.set(get_alert_investigation_coverage())
+
+
+def record_agentic_rag_decision(*, decision: str, layer: str) -> None:
+    """Record an agentic RAG retrieval decision."""
+    AGENTIC_RAG_DECISIONS_TOTAL.labels(decision=decision, layer=layer).inc()
+
+
+def record_context_compression(*, bytes_saved: int) -> None:
+    """Record bytes saved by context compression."""
+    if bytes_saved > 0:
+        CONTEXT_COMPRESSION_BYTES_SAVED_TOTAL.inc(bytes_saved)
+
+
+def record_enumeration_attempt(*, probe_type: str, outcome: str) -> None:
+    """Record a suspected enumeration probe."""
+    SECURITY_ENUMERATION_ATTEMPTS_TOTAL.labels(probe_type=probe_type, outcome=outcome).inc()
 
 
 def log_guardrail_violation(

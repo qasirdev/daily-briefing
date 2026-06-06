@@ -73,6 +73,10 @@ class Settings(BaseSettings):
     procedural_memory_top_k: int = 5
     enable_episodic_memory: bool = True
     episodic_memory_top_k: int = 5
+    enable_agentic_rag: bool = True
+    context_compression_max_chars: int = 6_000
+    enumeration_probe_threshold: int = 10
+    enumeration_window_seconds: int = 60
 
     otel_exporter_otlp_endpoint: str = "http://localhost:4317"
     admin_api_key: str = ""

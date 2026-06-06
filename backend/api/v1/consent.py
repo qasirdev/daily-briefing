@@ -4,13 +4,19 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, Header, HTTPException, Query, status
 
 from backend.consent.store import consent_store
 from backend.schemas.consent import ConsentGrantRequest, ConsentRecord
+from backend.security.enumeration_detector import enumeration_detector
 from backend.settings import get_settings
 
 router = APIRouter(prefix="/api/v1/consent", tags=["consent"])
+
+
+def _is_admin_request(admin_key: str | None) -> bool:
+    settings = get_settings()
+    return bool(settings.admin_api_key and admin_key == settings.admin_api_key)
 
 
 @router.post("", response_model=ConsentRecord)
@@ -22,8 +28,14 @@ async def grant_consent(body: ConsentGrantRequest) -> ConsentRecord:
 @router.get("", response_model=list[ConsentRecord])
 async def list_consents(
     user_id: str = Query(..., min_length=1),
+    x_admin_api_key: str | None = Header(default=None, alias="X-Admin-Api-Key"),
 ) -> list[ConsentRecord]:
     """List active consents for a user."""
+    enumeration_detector.record_probe(
+        probe_type="consent_list",
+        subject=user_id,
+        is_admin=_is_admin_request(x_admin_api_key),
+    )
     return consent_store.list_active(user_id)
 
 
