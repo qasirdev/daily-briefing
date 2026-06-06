@@ -96,9 +96,11 @@ Write plan to `docs/tasks/todo.md` before touching code.
 
 ## Week 5 Preview
 
-- Supply chain security (AI-BOM, OpenSSF Scorecard) — DB-E12
-- Cryptographic log sealing (Gap #123)
-- JIT credential broker (Gap #19)
+Week 5 materials are ready — start with `docs/gaps/WEEK5-KICKOFF-PROMPT.md`:
+
+- **Epic:** DB-E12 — Supply chain security + JIT credentials
+- **Tasks:** DB-121 (AI-BOM) → DB-125 (vendor assessments + proof)
+- **Ticket format:** `docs/jira-tickets-json/DB-E12-gap-remediation-week5.json` (DB-E2 `Description` pattern)
 
 ---
 

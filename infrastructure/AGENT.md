@@ -32,7 +32,7 @@ CI/CD, GitHub branch policy, container signing, alerting runbooks, and deploymen
 
 | Workflow | Trigger | Purpose |
 |---|---|---|
-| `.github/workflows/ci.yml` | PR + push to integration | Lint, typecheck, unit/e2e tests, docker build |
+| `.github/workflows/ci.yml` | PR + push to integration | Lint, typecheck, AI-BOM validation, pip-audit, unit/e2e tests, docker build |
 | `.github/workflows/docker-publish.yml` | Push to integration + tags | Build, push GHCR, Cosign sign/verify |
 
 ---

@@ -1,6 +1,6 @@
 # JIRA Tickets JSON Directory — AI Daily Briefing Assistant
 
-**Version:** 1.5.0 | **Last Updated:** May 2026
+**Version:** 1.6.0 | **Last Updated:** June 2026
 
 ---
 
@@ -14,20 +14,71 @@ This directory contains JSON exports of epics and tasks that drive the implement
 
 ```
 docs/jira-tickets-json/
-├── README.md                    # This file
-├── DB-E1-mvp1-scaffold.json     # MVP 1: Project scaffold (10 tasks)
-├── DB-E2-mvp2-agents.json       # MVP 2: Core agents (10 tasks)
-├── DB-E3-mvp3-observability.json # MVP 3: Observability (8 tasks)
-├── DB-E4-mvp4-consent.json      # MVP 4: Agentic consent (8 tasks)
-├── DB-E5-mvp5-security.json     # MVP 5: Security hardening (8 tasks)
-└── DB-E6-mvp6-production.json   # MVP 6: Production deployment (8 tasks)
+├── README.md                              # This file
+├── DB-E1-mvp1-scaffold.json               # MVP 1: Project scaffold (10 tasks)
+├── DB-E2-mvp2-agents.json                 # MVP 2: Core agents (10 tasks) — canonical format
+├── DB-E3-mvp3-observability.json          # MVP 3: Observability (8 tasks)
+├── DB-E4-mvp4-consent.json                # MVP 4: Agentic consent (8 tasks)
+├── DB-E5-mvp5-security.json               # MVP 5: Security hardening (8 tasks)
+├── DB-E6-mvp6-production.json             # MVP 6: Production deployment (8 tasks)
+├── DB-E7-option1-hybrid.json              # Option 1: Supabase + stdio MCP (5 tasks)
+├── DB-E8-gap-remediation.json             # Gap Week 1 (legacy epic+tasks shape)
+├── DB-E9-gap-remediation-week2.json       # Gap Week 2
+├── DB-E10-gap-remediation-week3.json      # Gap Week 3
+├── DB-E11-gap-remediation-week4.json      # Gap Week 4
+└── DB-E12-gap-remediation-week5.json      # Gap Week 5 — canonical format (required for new epics)
 ```
 
-**Total: 52 tasks across 6 epics**
+**Total: 62+ tasks across 12 epics**
 
 ---
 
-## JSON Schema
+## Canonical Task Format (Required for New Epics)
+
+**All new epic and task JSON files MUST use the DB-E2 flat-array format** with a rich `Description` column. Reference: `DB-E2-mvp2-agents.json`, `DB-E12-gap-remediation-week5.json`.
+
+```json
+{
+  "DB-E12": [
+    {
+      "Issue id": "DB-E12",
+      "Summary": "Week 5: Supply Chain Security & JIT Credentials",
+      "Issue Type": "Epic",
+      "Description": "Epic scope...\n\nSCOPE:\n...\n\nSUCCESS CRITERIA:\n...",
+      "Labels": "gap-remediation,week5",
+      "Parent": ""
+    },
+    {
+      "Issue id": "DB-121",
+      "Summary": "Day 1: AI-BOM",
+      "Issue Type": "Task",
+      "Description": "One-line summary.\n\nIMPLEMENTATION DETAILS:\n- Bullet list of files and changes\n\nEFFORT: M (8 hours)\nPROJECT AREA: Backend\nDEPENDENCIES: DB-120\n\nTESTING CRITERIA:\n- Measurable pass conditions\n\nEDGE CASES:\n- Failure modes agents must handle",
+      "Labels": "supply-chain,week5",
+      "Parent": "DB-E12"
+    }
+  ]
+}
+```
+
+### Description Field Sections (Required per Task)
+
+| Section | Required | Purpose |
+|---|---|---|
+| Summary line | Yes | One-sentence task goal before sections |
+| `IMPLEMENTATION DETAILS` | Yes | Files to create/modify, APIs, config |
+| `EFFORT` | Yes | T-shirt size and hours (e.g. `M (8 hours)`) |
+| `PROJECT AREA` | Yes | Backend, Frontend, CI/CD, Docs, etc. |
+| `DEPENDENCIES` | Yes | Prior task IDs or epic prerequisites |
+| `TESTING CRITERIA` | Yes | Tests and measurable acceptance checks |
+| `EDGE CASES` | Yes | Fail-safe behaviour — **Coding Agent must implement all** |
+
+Epic entries (`Issue Type: Epic`) use `SCOPE`, `REFERENCE DOCS`, and `SUCCESS CRITERIA` instead of implementation sections.
+
+**Legacy format:** Gap weeks DB-E8–DB-E11 use `{ "epic": {...}, "tasks": [...] }`. Do not use for new weeks; migrate to DB-E2 shape when those epics are next edited.
+
+---
+
+## JSON Schema (Legacy Reference)
 
 ### Epic Schema
 
@@ -238,7 +289,8 @@ docs/jira-tickets-json/
 | Rule | Behaviour |
 |---|---|
 | JSON Sync | When JSON files change, update `docs/PLAN.md` to reflect changes |
-| Edge Cases | Coding Agent MUST implement all edge cases listed in task description |
+| Description format | New epics use DB-E2 flat-array format with `IMPLEMENTATION DETAILS`, `TESTING CRITERIA`, `EDGE CASES` sections |
+| Edge Cases | Coding Agent MUST implement all `EDGE CASES` listed in the task `Description` field |
 | Test Requirements | Coding Agent MUST create tests matching `test_requirements` |
 | File Tracking | Update `files_affected` when task scope changes |
 | Status Updates | Update task status as work progresses |
@@ -343,4 +395,4 @@ def generate_plan_md(epics_dir: Path) -> str:
 
 ---
 
-*JIRA Tickets JSON README — Version 1.5.0 — May 2026*
+*JIRA Tickets JSON README — Version 1.6.0 — June 2026*

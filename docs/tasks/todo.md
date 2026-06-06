@@ -1,54 +1,60 @@
-# Week 4 Implementation — Memory Security, AgentOps & Live Embeddings
+# Week 5 Implementation — Supply Chain Security & JIT Credentials
 
-**Epic:** DB-E11  
-**Branch:** `epic/week4-gap-remediation`  
+**Epic:** DB-E12  
+**Branch:** `epic/week5-gap-remediation`  
 **Status:** complete  
 **Started:** 2026-06-06  
-**Scope:** Phase 2 gap remediation — embeddings, memory security, AgentOps, Critic v2.0.0
+**Scope:** Phase 3 gap remediation — AI-BOM, CI supply chain gates, sealed audit logs, JIT credential broker
 
-### Day 1: Live Embedding API (DB-116)
-- [x] Add `embedding_provider` + `embedding_model` settings
-- [x] Implement `embed_text_async()` with OpenRouter client
-- [x] Update Focus agent + retrieval to use async embeddings
-- [x] Add embedding Prometheus metrics
-- [x] Extend tests: `backend/tests/memory/test_embeddings.py`
-- [x] Verify: ruff + mypy + pytest (221 passed)
+**Ticket file:** `docs/jira-tickets-json/DB-E12-gap-remediation-week5.json`  
+**Kickoff:** `docs/gaps/WEEK5-KICKOFF-PROMPT.md`  
+**Guide:** `docs/gaps/WEEK5-IMPLEMENTATION-GUIDE.md`
 
-### Day 2: RAG Poisoning Defense (DB-117)
-- [x] Create `backend/memory/ingestion.py`
-- [x] Alembic migration 005: provenance + quarantine columns
-- [x] Wire validation into `SemanticMemoryStore.store()`
-- [x] Write tests: `backend/tests/memory/test_ingestion.py`
-- [x] Verify: ruff + mypy + pytest (235 passed)
-
-### Day 3: Memory Quarantine (DB-118)
-- [x] Create `backend/memory/quarantine.py`
-- [x] Exclude quarantined rows from semantic/episodic retrieval
-- [x] Add `memory_quarantine_total` metric
-- [x] Write tests: `backend/tests/memory/test_quarantine.py`
-- [x] Verify: ruff + mypy + pytest (240 passed)
-
-### Day 4: Privilege Retention + AgentOps (DB-119)
-- [x] Episodic privilege sanitization (`backend/memory/privilege.py`)
-- [x] Orchestrator post-session distillation hook
-- [x] `consensus_disagreement_total`, `memory_consolidation_duration` metrics
-- [x] Create `docs/MEMORY-ARCHITECTURE.md`
-- [x] Verify: ruff + mypy + pytest (250 passed)
-
-### Day 5: Critic v2.0.0 + Proof (DB-120)
-- [x] Upgrade `prompts/critic/` to 11-file v2.0.0 structure
-- [x] Wire Critic node to `resolve_prompt_version()` + `build_llm_messages()`
-- [x] Memory security integration tests (12 scenarios)
-- [x] Proof package in `proof/week4/`
-- [x] `docs/learning/week4-memory-security-and-agentops.md`
-- [x] Updated `docs/OBSERVABILITY.md` with Week 4 metrics
+### Day 1: AI-BOM (DB-121, Gap #115)
+- [x] Create `infrastructure/ai-bom.yaml`
+- [x] Create `docs/SUPPLY-CHAIN-SECURITY.md`
+- [x] Create `backend/security/bom.py` + `scripts/validate_ai_bom.py`
+- [x] Write tests: `backend/tests/security/test_ai_bom.py`
 - [x] Verify: ruff + mypy + pytest
+
+### Day 2: OpenSSF Scorecard & pip-audit (DB-122, Gap #116)
+- [x] Add pip-audit step to `.github/workflows/ci.yml`
+- [x] Ensure `SECURITY.md` at repo root
+- [x] Document Scorecard ≥7.0 threshold in `docs/SUPPLY-CHAIN-SECURITY.md`
+- [x] Write tests: `backend/tests/security/test_supply_chain_ci.py`
+- [x] Verify: ruff + mypy + pytest
+
+### Day 3: Cryptographic Audit Sealing (DB-123, Gaps #123, #51)
+- [x] Create `backend/security/audit.py` (hash chain — distinct from `memory/audit.py`)
+- [x] Alembic migration 007: `audit_log` sealed table
+- [x] Add `audit_log_entries_total` metric
+- [x] Document in `docs/SECURITY.md`
+- [x] Write tests: `backend/tests/security/test_audit_sealing.py`
+- [x] Verify: ruff + mypy + pytest
+
+### Day 4: JIT Credential Broker (DB-124, Gap #19)
+- [x] Create `backend/security/vault.py` (`CredentialBroker`)
+- [x] Wire `backend/mcp/calendar_stdio.py` to broker
+- [x] Add `credential_issuance_total` metric
+- [x] Update `.env.example` with `VAULT_MODE`, `CREDENTIAL_TTL_SECONDS`
+- [x] Write tests: `backend/tests/security/test_vault.py`
+- [x] Verify: ruff + mypy + pytest
+
+### Day 5: Vendor Assessments & Proof (DB-125, Gap #127)
+- [x] Vendor assessment table in `docs/SUPPLY-CHAIN-SECURITY.md`
+- [x] `docs/adr/ADR-supply-chain-week5.md`
+- [x] Integration tests: `backend/tests/security/test_supply_chain_integration.py`
+- [x] Proof package in `proof/week5/`
+- [x] `docs/learning/week5-supply-chain-and-credentials.md`
+- [x] Updated `docs/PLAN.md` + `docs/OBSERVABILITY.md`
+- [x] Verify: 298 passed, 2 skipped
 
 ---
 
 ## Verification Gates
 - Backend gate: `uv run ruff check backend` → `uv run ruff format backend` → `uv run mypy backend` → `uv run pytest`
-- Apply migrations: `uv run alembic upgrade head` (005 + 006)
+- AI-BOM: `uv run python scripts/validate_ai_bom.py`
+- pip-audit: `uv run pip-audit --desc on`
 
 ---
 
