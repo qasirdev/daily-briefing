@@ -22,6 +22,11 @@ def test_parse_contract_version_reads_contract_md() -> None:
     assert version == "v1.1.0"
 
 
+def test_parse_contract_version_reads_critic_v2() -> None:
+    version = prompt_version.parse_contract_version("critic")
+    assert version == "v2.0.0"
+
+
 def test_parse_contract_version_defaults_when_missing() -> None:
     version = prompt_version.parse_contract_version("nonexistent_agent_xyz")
     assert version == "v1.5.0"
@@ -48,4 +53,6 @@ def test_list_agent_prompt_versions_includes_known_agents() -> None:
     versions = prompt_version.list_agent_prompt_versions()
     assert "focus" in versions
     assert "verification" in versions
+    assert "critic" in versions
+    assert versions["critic"] == "v2.0.0"
     assert prompt_version.VERSION_PATTERN.match(versions["focus"])

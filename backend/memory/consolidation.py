@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from datetime import UTC, datetime, timedelta
 
 import structlog
@@ -9,6 +10,7 @@ from sqlalchemy import text
 
 from backend.db.session import session_scope
 from backend.memory.episodic import EpisodicMemoryStore
+from backend.metrics import record_memory_consolidation_duration
 from backend.settings import Settings, get_settings
 
 logger = structlog.get_logger()
@@ -37,13 +39,20 @@ async def distill_working_to_episodic(
     if not summary:
         return None
     resolved_store = store or _default_episodic
-    lesson_id = await resolved_store.store_lesson(
-        user_id=user_id,
-        session_id=session_id,
-        lesson_type="session_summary",
-        summary=summary,
-        metadata={"snippet_count": len(working_context)},
-    )
+    start = time.perf_counter()
+    try:
+        lesson_id = await resolved_store.store_lesson(
+            user_id=user_id,
+            session_id=session_id,
+            lesson_type="session_summary",
+            summary=summary,
+            metadata={"snippet_count": len(working_context)},
+        )
+    finally:
+        record_memory_consolidation_duration(
+            operation="episodic_distill",
+            duration_seconds=time.perf_counter() - start,
+        )
     logger.info(
         "working_memory_distilled",
         user_id=user_id,
@@ -64,22 +73,29 @@ async def consolidate_semantic_memory(
     if not resolved_settings.enable_semantic_memory_retrieval:
         return 0
 
+    start = time.perf_counter()
     cutoff = datetime.now(UTC) - timedelta(days=max_age_days)
-    async with session_scope() as session:
-        await session.execute(
-            text("SELECT set_config('app.user_id', :user_id, true)"),
-            {"user_id": user_id},
+    try:
+        async with session_scope() as session:
+            await session.execute(
+                text("SELECT set_config('app.user_id', :user_id, true)"),
+                {"user_id": user_id},
+            )
+            result = await session.execute(
+                text(
+                    """
+                    DELETE FROM semantic_memory
+                    WHERE user_id = :user_id AND created_at < :cutoff
+                    """,
+                ),
+                {"user_id": user_id, "cutoff": cutoff},
+            )
+        deleted = int(getattr(result, "rowcount", 0) or 0)
+    finally:
+        record_memory_consolidation_duration(
+            operation="semantic_prune",
+            duration_seconds=time.perf_counter() - start,
         )
-        result = await session.execute(
-            text(
-                """
-                DELETE FROM semantic_memory
-                WHERE user_id = :user_id AND created_at < :cutoff
-                """,
-            ),
-            {"user_id": user_id, "cutoff": cutoff},
-        )
-    deleted = int(getattr(result, "rowcount", 0) or 0)
     logger.info(
         "semantic_memory_consolidated",
         user_id=user_id,

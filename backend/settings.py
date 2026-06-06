@@ -63,6 +63,8 @@ class Settings(BaseSettings):
     semantic_memory_embedding_dim: int = 1536
     semantic_memory_search_top_k: int = 5
     enable_semantic_memory_retrieval: bool = True
+    embedding_provider: Literal["deterministic", "openrouter"] = "deterministic"
+    embedding_model: str = "openai/text-embedding-3-small"
 
     enable_procedural_memory: bool = True
     procedural_memory_top_k: int = 5

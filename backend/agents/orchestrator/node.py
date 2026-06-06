@@ -10,6 +10,7 @@ import structlog
 
 from backend.datetime_format import format_time_range
 from backend.graph.state import BriefingGraphState
+from backend.memory.consolidation import distill_working_to_episodic
 from backend.memory.working import WorkingMemoryManager
 from backend.metrics import record_consent_request
 from backend.schemas.consent import (
@@ -19,6 +20,7 @@ from backend.schemas.consent import (
 )
 from backend.schemas.envelope import AgentResultEnvelope, ExecutionMetadata
 from backend.security.sanitization import sanitize_markdown
+from backend.settings import get_settings
 
 logger = structlog.get_logger()
 
@@ -112,6 +114,40 @@ def build_consent_prompt(state: BriefingGraphState) -> ConsentPromptRequest:
         agent_requesting=str(context_data.get("agent_id", "calendar")),
         message=str(context_data.get("message", state.get("consent_context") or "")),
     )
+
+
+async def _distill_session_memory(state: BriefingGraphState) -> None:
+    """Distill working memory into episodic lessons at session end."""
+    settings = get_settings()
+    if not settings.enable_episodic_memory:
+        return
+
+    user_id = state.get("user_id", "")
+    if not user_id:
+        return
+
+    working_context = state.get("working_memory_context", [])
+    if not isinstance(working_context, list) or not working_context:
+        return
+
+    session_id = state.get("request_id") or state.get("trace_id", "")
+    if not session_id:
+        return
+
+    try:
+        await distill_working_to_episodic(
+            user_id=user_id,
+            session_id=session_id,
+            working_context=working_context,
+        )
+    except Exception as exc:
+        logger.warning(
+            "session_memory_distillation_failed",
+            trace_id=state.get("trace_id", "0" * 32),
+            user_id=user_id,
+            session_id=session_id,
+            error=str(exc),
+        )
 
 
 async def human_escalation_node(state: BriefingGraphState) -> dict[str, Any]:
@@ -252,6 +288,7 @@ async def orchestrator_present_node(state: BriefingGraphState) -> dict[str, Any]
             data_classification="confidential",
         ),
     )
+    await _distill_session_memory(state)
     return {
         "final_briefing": briefing,
         "status": status,

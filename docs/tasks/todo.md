@@ -1,52 +1,54 @@
-# Week 3 Implementation — Procedural/Episodic Memory + Prompt Versioning
+# Week 4 Implementation — Memory Security, AgentOps & Live Embeddings
 
-**Epic:** DB-E10  
-**Branch:** `epic/week3-gap-remediation`  
+**Epic:** DB-E11  
+**Branch:** `epic/week4-gap-remediation`  
 **Status:** complete  
 **Started:** 2026-06-06  
-**Scope:** Complete CoALA memory + prompt version registry
+**Scope:** Phase 2 gap remediation — embeddings, memory security, AgentOps, Critic v2.0.0
 
-### Day 1: Procedural Memory (DB-111)
-- [x] Create `backend/memory/procedural.py` (ProceduralMemoryStore)
-- [x] Alembic migration 003: `procedural_memory` table + RLS
-- [x] Add `ProceduralMemoryRow` to `backend/db/models.py`
-- [x] Settings: `enable_procedural_memory`, `procedural_memory_top_k`
-- [x] Write tests: `backend/tests/memory/test_procedural.py`
+### Day 1: Live Embedding API (DB-116)
+- [x] Add `embedding_provider` + `embedding_model` settings
+- [x] Implement `embed_text_async()` with OpenRouter client
+- [x] Update Focus agent + retrieval to use async embeddings
+- [x] Add embedding Prometheus metrics
+- [x] Extend tests: `backend/tests/memory/test_embeddings.py`
+- [x] Verify: ruff + mypy + pytest (221 passed)
+
+### Day 2: RAG Poisoning Defense (DB-117)
+- [x] Create `backend/memory/ingestion.py`
+- [x] Alembic migration 005: provenance + quarantine columns
+- [x] Wire validation into `SemanticMemoryStore.store()`
+- [x] Write tests: `backend/tests/memory/test_ingestion.py`
+- [x] Verify: ruff + mypy + pytest (235 passed)
+
+### Day 3: Memory Quarantine (DB-118)
+- [x] Create `backend/memory/quarantine.py`
+- [x] Exclude quarantined rows from semantic/episodic retrieval
+- [x] Add `memory_quarantine_total` metric
+- [x] Write tests: `backend/tests/memory/test_quarantine.py`
+- [x] Verify: ruff + mypy + pytest (240 passed)
+
+### Day 4: Privilege Retention + AgentOps (DB-119)
+- [x] Episodic privilege sanitization (`backend/memory/privilege.py`)
+- [x] Orchestrator post-session distillation hook
+- [x] `consensus_disagreement_total`, `memory_consolidation_duration` metrics
+- [x] Create `docs/MEMORY-ARCHITECTURE.md`
+- [x] Verify: ruff + mypy + pytest (250 passed)
+
+### Day 5: Critic v2.0.0 + Proof (DB-120)
+- [x] Upgrade `prompts/critic/` to 11-file v2.0.0 structure
+- [x] Wire Critic node to `resolve_prompt_version()` + `build_llm_messages()`
+- [x] Memory security integration tests (12 scenarios)
+- [x] Proof package in `proof/week4/`
+- [x] `docs/learning/week4-memory-security-and-agentops.md`
+- [x] Updated `docs/OBSERVABILITY.md` with Week 4 metrics
 - [x] Verify: ruff + mypy + pytest
-
-### Day 2: Episodic Memory (DB-112)
-- [x] Create `backend/memory/episodic.py` (EpisodicMemoryStore)
-- [x] Alembic migration 004: `episodic_memory` table + RLS
-- [x] Implement `distill_working_to_episodic()` in consolidation.py
-- [x] Write tests: `backend/tests/memory/test_episodic.py`
-- [x] Verify: ruff + mypy + pytest
-
-### Day 3: Prompt Version Registry (DB-113)
-- [x] Create `backend/prompt_version.py` (parse CONTRACT.md, resolve versions)
-- [x] Wire `resolve_prompt_version()` into focus, verification, adversarial agents
-- [x] Version change detection + cache invalidation logging on startup
-- [x] Write tests: `backend/tests/test_prompt_version.py`
-- [x] Verify: ruff + mypy + pytest
-
-### Day 4: Cross-Layer Integration (DB-114)
-- [x] Extend `retrieval.py` with procedural + episodic retrieval
-- [x] Wire into Focus agent payload via `retrieve_agent_memory()`
-- [x] Implement semantic consolidation (age-based prune)
-- [x] Write tests: `test_retrieval_layers.py`, updated `test_focus_memory.py`
-- [x] Verify: ruff + mypy + pytest
-
-### Day 5: Validation & Documentation (DB-115)
-- [x] Cross-layer integration tests updated (217 total passing)
-- [x] Proof package in `proof/week3/`
-- [x] `docs/learning/week3-memory-and-versioning.md`
-- [x] Updated `docs/ARCHITECTURE.md` with all four memory layers
-- [x] Verify: ruff + mypy + pytest (217 passed)
 
 ---
 
 ## Verification Gates
 - Backend gate: `uv run ruff check backend` → `uv run ruff format backend` → `uv run mypy backend` → `uv run pytest`
-- Apply migrations: `uv run alembic upgrade head` (003 + 004)
+- Apply migrations: `uv run alembic upgrade head` (005 + 006)
 
 ---
 

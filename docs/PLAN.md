@@ -168,6 +168,23 @@ Fresh autonomous kickoff only (not every "hi"): then read `docs/KICKOFF-PROMPT.m
 
 ---
 
+## Gap Remediation (8-Week Roadmap)
+
+| Week | Epic | Summary | Status |
+|---|---|---|---|
+| 1 | DB-E8 | Multi-agent consensus + NHI registry | ✅ |
+| 2 | DB-E9 | Prompt caching + Working/Semantic memory | ✅ |
+| 3 | DB-E10 | Procedural/Episodic memory + prompt versioning | ✅ |
+| 4 | DB-E11 | Memory security, AgentOps, live embeddings | 🔄 |
+| 5 | DB-E12 | Supply chain + JIT credentials | ⬜ |
+| 6 | DB-E13 | OWASP Agent Top 10 + red teaming | ⬜ |
+| 7 | DB-E14 | HITL + governance hardening | ⬜ |
+| 8 | DB-E15 | Production optimization | ⬜ |
+
+**Week 4 tasks:** DB-116 through DB-120 — see `docs/jira-tickets-json/DB-E11-gap-remediation-week4.json`
+
+---
+
 ## Summary
 
 | MVP | Epic | Tasks | Completed | Progress |
@@ -179,7 +196,8 @@ Fresh autonomous kickoff only (not every "hi"): then read `docs/KICKOFF-PROMPT.m
 | MVP 5 | DB-E5 | 8 | 8 | 100% |
 | MVP 6 | DB-E6 | 8 | 8 | 100% |
 | Option 1 | DB-E7 | 5 | 5 | 100% |
-| **Total** | **7 Epics** | **57** | **57** | **100%** |
+| Gap Week 4 | DB-E11 | 5 | 0 | 0% |
+| **Total** | **8 Epics** | **62** | **57** | **92%** |
 
 ---
 

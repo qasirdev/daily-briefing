@@ -13,6 +13,7 @@ from backend.llm.prompt_cache import build_llm_messages, resolve_model_name
 from backend.llm.router import LLMError, LLMRouter
 from backend.logging_config import agent_log_context
 from backend.metrics import observe_agent_execution, record_security_violation
+from backend.prompt_version import resolve_prompt_version
 from backend.schemas.envelope import AgentResultEnvelope, EscalationPayload, ExecutionMetadata
 from backend.security.injection import PromptInjectionDetector
 from backend.settings import get_settings
@@ -63,8 +64,8 @@ async def _llm_quality_issues(
 
     settings = get_settings()
     user_content = (
-        "Review this focus plan JSON for coherence. "
-        'Return JSON: {"approved": bool, "issues": [string]}\n'
+        "Review this focus plan JSON for coherence and safety. "
+        "Return JSON matching output-schema.md (approved + issues).\n"
         f"{json.dumps(focus_result.result, ensure_ascii=True)}"
     )
     messages = build_llm_messages(
@@ -121,7 +122,7 @@ async def critic_agent_node(
                             execution_ms=execution_ms,
                             tokens_used=0,
                             model_used="none",
-                            prompt_version="v1.5.0",
+                            prompt_version=resolve_prompt_version("critic"),
                             trace_id=trace_id,
                             data_classification="internal",
                         ),
@@ -158,7 +159,7 @@ async def critic_agent_node(
                         execution_ms=execution_ms,
                         tokens_used=0,
                         model_used="none",
-                        prompt_version="v1.5.0",
+                        prompt_version=resolve_prompt_version("critic"),
                         trace_id=trace_id,
                         data_classification="internal",
                     ),

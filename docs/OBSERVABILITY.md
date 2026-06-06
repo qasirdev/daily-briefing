@@ -153,6 +153,16 @@ generate_briefing (root span)
 | `token_budget_exceeded_total` | Counter | `agent_id` | Budget overruns |
 | `consent_requests_total` | Counter | `mcp_server`, `outcome` | Consent prompts |
 
+### Memory & AgentOps Metrics (Week 4)
+
+| Metric Name | Type | Labels | Description |
+|---|---|---|---|
+| `embedding_requests_total` | Counter | `provider`, `status` | Embedding API calls (OpenRouter or deterministic) |
+| `embedding_duration_ms` | Histogram | `provider` | Embedding latency in milliseconds |
+| `memory_quarantine_total` | Counter | `memory_layer`, `action` | Quarantine, restore, and delete actions |
+| `consensus_disagreement_total` | Counter | `agreement_level` | Multi-agent consensus disagreements |
+| `memory_consolidation_duration_seconds` | Histogram | — | Semantic consolidation job duration |
+
 ---
 
 ## Prometheus Configuration

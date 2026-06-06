@@ -9,8 +9,9 @@ from typing import Any
 import structlog
 
 from backend.memory.audit import memory_audit_trail
-from backend.memory.embeddings import embed_text
+from backend.memory.embeddings import embed_text_async
 from backend.memory.episodic import EpisodicLessonRecord, EpisodicMemoryStore
+from backend.memory.ingestion import validate_semantic_content
 from backend.memory.procedural import ProceduralMemoryStore, ProceduralSkillRecord
 from backend.memory.semantic import SemanticMemoryRecord, SemanticMemoryStore
 from backend.metrics import record_memory_read, record_semantic_search_duration
@@ -126,7 +127,7 @@ async def retrieve_semantic_context(
     if not query:
         return []
 
-    embedding = embed_text(query, resolved_settings)
+    embedding = await embed_text_async(query, resolved_settings)
     start = time.perf_counter()
     try:
         records = await resolved_store.search_similar(
@@ -146,6 +147,27 @@ async def retrieve_semantic_context(
 
     duration_ms = (time.perf_counter() - start) * 1000.0
     record_semantic_search_duration(duration_ms=duration_ms, agent_id=agent_id)
+
+    safe_records: list[SemanticMemoryRecord] = []
+    for record in records:
+        validation = validate_semantic_content(
+            record.content,
+            trace_id=trace_id,
+            source=f"semantic_retrieval:{agent_id}",
+        )
+        if validation.accepted:
+            safe_records.append(record)
+        else:
+            logger.warning(
+                "semantic_memory_retrieval_blocked",
+                trace_id=trace_id,
+                user_id=user_id,
+                agent_id=agent_id,
+                memory_id=str(record.id),
+                matched_pattern=validation.matched_pattern,
+            )
+
+    records = safe_records
     memory_audit_trail.log_read(
         trace_id=trace_id,
         request_id=request_id,

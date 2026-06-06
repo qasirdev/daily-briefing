@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any, TypedDict
 
 from backend.graph.state import BriefingGraphState
+from backend.metrics import record_consensus_disagreement
 from backend.schemas.envelope import AgentResultEnvelope
 
 
@@ -101,6 +102,9 @@ async def consensus_evaluator_node(state: BriefingGraphState) -> dict[str, Any]:
         agreement_level = "minor_disagreement"
     else:
         agreement_level = "major_disagreement"
+
+    if agreement_level != "agreement":
+        record_consensus_disagreement(agreement_level=agreement_level)
 
     consensus_result: ConsensusResult = {
         "status": "evaluated",
