@@ -65,6 +65,8 @@ async def test_broker_and_bom_integration_settings() -> None:
         llm_primary_model="openai/gpt-4o-mini",
         embedding_model="openai/text-embedding-3-small",
         google_refresh_token="token",
+        google_client_id="test-client-id",
+        google_client_secret="test-client-secret",
         vault_mode="memory",
     )
     validate_bom_against_settings(settings)
