@@ -19,6 +19,9 @@ class BriefingGraphState(TypedDict, total=False):
     task_result: AgentResultEnvelope | None
     calendar_result: AgentResultEnvelope | None
     focus_result: AgentResultEnvelope | None
+    verification_result: AgentResultEnvelope | None
+    adversarial_result: AgentResultEnvelope | None
+    consensus_result: dict[str, object] | None
     critic_result: AgentResultEnvelope | None
 
     current_agent: str
@@ -27,7 +30,14 @@ class BriefingGraphState(TypedDict, total=False):
     graph_started_at: float
 
     final_briefing: str | None
-    status: Literal["pending", "success", "failure", "degraded", "awaiting_consent"]
+    status: Literal[
+        "pending",
+        "success",
+        "failure",
+        "degraded",
+        "awaiting_consent",
+        "awaiting_human_review",
+    ]
     consent_required: bool
     consent_context: str | None
     consent_request: dict[str, object] | None

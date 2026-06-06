@@ -113,6 +113,23 @@ def build_consent_prompt(state: BriefingGraphState) -> ConsentPromptRequest:
     )
 
 
+async def human_escalation_node(state: BriefingGraphState) -> dict[str, Any]:
+    """Pause briefing generation when consensus detects major disagreement."""
+    trace_id = state.get("trace_id", "0" * 32)
+    consensus = state.get("consensus_result") or {}
+    logger.warning(
+        "human_escalation_required",
+        trace_id=trace_id,
+        major_concerns=consensus.get("major_concerns", 0),
+        agreement_level=consensus.get("agreement_level"),
+    )
+    return {
+        "status": "awaiting_human_review",
+        "current_agent": "human_escalation",
+        "final_briefing": None,
+    }
+
+
 async def orchestrator_route_node(state: BriefingGraphState) -> dict[str, Any]:
     """Initialize routing phase and detect early consent requirements."""
     trace_id = state.get("trace_id", "0" * 32)

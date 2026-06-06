@@ -60,14 +60,14 @@ Started: 2026-06-06
 - [x] Commit: "Day 3: Verification and Adversarial agent design specs"
 
 ### Day 4: Consensus Model Implementation (Gaps #3-5)
-- [ ] Update backend/graph/builder.py with consensus workflow
-- [ ] Create backend/agents/consensus/node.py
-- [ ] Create backend/agents/verification/node.py (stub)
-- [ ] Create backend/agents/adversarial/node.py (stub)
-- [ ] Verify: Graph compiles without errors
-- [ ] Update docs/tasks/todo.md — mark Day 4 complete
-- [ ] Update docs/tasks/lessons.md with implementation insights
-- [ ] Commit: "Day 4: Consensus model implementation in LangGraph"
+- [x] Update backend/graph/builder.py with consensus workflow
+- [x] Create backend/agents/consensus/node.py
+- [x] Create backend/agents/verification/node.py (stub)
+- [x] Create backend/agents/adversarial/node.py (stub)
+- [x] Verify: Graph compiles without errors
+- [x] Update docs/tasks/todo.md — mark Day 4 complete
+- [x] Update docs/tasks/lessons.md with implementation insights
+- [x] Commit: "Day 4: Consensus model implementation in LangGraph"
 
 ### Day 5: Testing & Documentation
 - [ ] Write integration tests: backend/tests/architecture/test_consensus.py

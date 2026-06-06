@@ -93,7 +93,15 @@ class AgentResultEnvelope(BaseModel):
     model_config = ConfigDict(strict=True, frozen=True, extra="forbid")
 
     agent_id: str = Field(..., min_length=1, max_length=50, pattern=r"^[a-z_]+$")
-    canonical_role: Literal["doer", "planner", "critic", "tool_operator", "supervisor"]
+    canonical_role: Literal[
+        "doer",
+        "planner",
+        "critic",
+        "tool_operator",
+        "supervisor",
+        "verifier",
+        "adversarial",
+    ]
     status: Literal["success", "failure", "escalated"]
     result: dict[str, object] | None = None
     metadata: ExecutionMetadata

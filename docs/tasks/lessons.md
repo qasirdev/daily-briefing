@@ -64,6 +64,11 @@
 - **Design Decision:** New canonical roles `verifier` and `adversarial` documented in AGENT.md; `AgentResultEnvelope.canonical_role` Literal extension deferred to Day 4 graph implementation.
 - **New Rule:** New agents require both `backend/agents/{name}/AGENT.md` and full 11-file `prompts/{name}/` structure (follow `prompts/focus/` v2.0.0 pattern, not legacy 6-file `prompts/critic/` layout).
 
+### Day 4: 2026-06-06
+- **Lesson:** Consensus workflow integrates behind `enable_consensus_workflow` (default `false`) — preserves existing Focus → Critic path in production until Week 2 rollout.
+- **Design Decision:** `route_consensus` uses `major_concerns >= 2` for human escalation; single major concern routes via minor disagreement to Critic (matches WEEK1 guide matrix).
+- **New Rule:** Consensus nodes only added to graph when flag enabled; `human_escalation` terminates at END with `status=awaiting_human_review` (Orchestrator does not overwrite).
+
 ## Pre-Week 1 — Existing Test Failures
 
 ### Issue: PII Detector Too Aggressive on Trace IDs
