@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.db.models import EpisodicMemoryRow
 from backend.db.session import session_scope
+from backend.memory.privilege import sanitize_lesson_content
 from backend.settings import Settings, get_settings
 
 logger = structlog.get_logger()
@@ -78,16 +79,25 @@ class EpisodicMemoryStore:
         metadata: dict[str, object] | None = None,
     ) -> uuid.UUID:
         """Store a distilled lesson for a briefing session."""
+        cleaned_summary = sanitize_lesson_content(summary)
+        if not cleaned_summary:
+            msg = "Episodic lesson summary is empty after privilege sanitization"
+            raise ValueError(msg)
+
         lesson_id = uuid.uuid4()
         row = EpisodicMemoryRow(
             id=lesson_id,
             user_id=user_id,
             session_id=session_id,
             lesson_type=lesson_type,
-            summary=summary.strip(),
+            summary=cleaned_summary,
             version=1,
             superseded_by=None,
-            metadata_=metadata or {},
+            metadata_={
+                **(metadata or {}),
+                "privilege_sanitized": True,
+                "privilege_scope": "session_only",
+            },
             created_at=datetime.now(UTC),
         )
         async with session_scope() as session:
@@ -177,15 +187,23 @@ class EpisodicMemoryStore:
 
         new_version = old_row.version + 1
         new_id = uuid.uuid4()
+        cleaned_summary = sanitize_lesson_content(summary)
+        if not cleaned_summary:
+            msg = "Episodic lesson summary is empty after privilege sanitization"
+            raise ValueError(msg)
         row = EpisodicMemoryRow(
             id=new_id,
             user_id=user_id,
             session_id=session_id,
             lesson_type=lesson_type,
-            summary=summary.strip(),
+            summary=cleaned_summary,
             version=new_version,
             superseded_by=None,
-            metadata_=metadata or {},
+            metadata_={
+                **(metadata or {}),
+                "privilege_sanitized": True,
+                "privilege_scope": "session_only",
+            },
             created_at=datetime.now(UTC),
         )
         async with session_scope() as session:

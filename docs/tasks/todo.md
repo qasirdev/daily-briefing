@@ -29,11 +29,11 @@
 - [x] Verify: ruff + mypy + pytest (240 passed)
 
 ### Day 4: Privilege Retention + AgentOps (DB-119)
-- [ ] Episodic privilege sanitization
-- [ ] Orchestrator post-session distillation hook
-- [ ] `consensus_disagreement_total`, `memory_consolidation_duration` metrics
-- [ ] Create/update `docs/MEMORY-ARCHITECTURE.md`
-- [ ] Verify: ruff + mypy + pytest
+- [x] Episodic privilege sanitization (`backend/memory/privilege.py`)
+- [x] Orchestrator post-session distillation hook
+- [x] `consensus_disagreement_total`, `memory_consolidation_duration` metrics
+- [x] Create `docs/MEMORY-ARCHITECTURE.md`
+- [x] Verify: ruff + mypy + pytest (250 passed)
 
 ### Day 5: Critic v2.0.0 + Proof (DB-120)
 - [ ] Upgrade `prompts/critic/` to 11-file v2.0.0 structure

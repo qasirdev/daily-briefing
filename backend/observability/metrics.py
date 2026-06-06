@@ -143,6 +143,19 @@ MEMORY_QUARANTINE_TOTAL = Counter(
     ["memory_layer", "action"],
 )
 
+CONSENSUS_DISAGREEMENT_TOTAL = Counter(
+    "consensus_disagreement_total",
+    "Multi-agent consensus disagreements by agreement level",
+    ["agreement_level"],
+)
+
+MEMORY_CONSOLIDATION_DURATION = Histogram(
+    "memory_consolidation_duration_seconds",
+    "Memory consolidation job latency",
+    ["operation"],
+    buckets=[0.01, 0.05, 0.1, 0.5, 1, 2, 5, 10, 30, 60],
+)
+
 
 @contextmanager
 def observe_agent_execution(
@@ -275,6 +288,16 @@ def record_embedding_request(
 def record_memory_quarantine(*, memory_layer: str, action: str) -> None:
     """Increment memory quarantine workflow counter."""
     MEMORY_QUARANTINE_TOTAL.labels(memory_layer=memory_layer, action=action).inc()
+
+
+def record_consensus_disagreement(*, agreement_level: str) -> None:
+    """Increment consensus disagreement counter."""
+    CONSENSUS_DISAGREEMENT_TOTAL.labels(agreement_level=agreement_level).inc()
+
+
+def record_memory_consolidation_duration(*, operation: str, duration_seconds: float) -> None:
+    """Record memory consolidation job latency."""
+    MEMORY_CONSOLIDATION_DURATION.labels(operation=operation).observe(max(duration_seconds, 0.0))
 
 
 def log_guardrail_violation(

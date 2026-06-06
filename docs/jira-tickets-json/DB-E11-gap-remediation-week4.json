@@ -100,7 +100,7 @@
       "task_type": "Implementation",
       "story_points": 8,
       "priority": "High",
-      "status": "To Do",
+      "status": "Done",
       "acceptance_criteria": [
         "Episodic lessons redact credential/privilege patterns before store",
         "Privilege grants stored in past tense with session expiry",

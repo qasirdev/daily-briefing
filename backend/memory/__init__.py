@@ -19,6 +19,7 @@ from backend.memory.ingestion import (
     compute_content_hash,
     validate_semantic_content,
 )
+from backend.memory.privilege import sanitize_lesson_content
 from backend.memory.procedural import (
     ProceduralMemoryStore,
     ProceduralSkillDefinition,
@@ -77,6 +78,7 @@ __all__ = [
     "quarantine_memory",
     "restore_memory",
     "retrieve_agent_memory",
+    "sanitize_lesson_content",
     "retrieve_episodic_lessons",
     "retrieve_procedural_skills",
     "retrieve_semantic_context",
