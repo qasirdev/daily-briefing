@@ -6,7 +6,7 @@ import uuid
 from datetime import UTC, date, datetime
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import Date, DateTime, Integer, String, Text
+from sqlalchemy import Boolean, Date, DateTime, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -96,6 +96,9 @@ class SemanticMemoryRow(Base):
     embedding: Mapped[list[float]] = mapped_column(Vector(1536), nullable=False)
     source_type: Mapped[str] = mapped_column(String(32), nullable=False)
     source_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    source_trust: Mapped[str] = mapped_column(String(16), nullable=False, default="internal")
+    content_hash: Mapped[str] = mapped_column(String(64), nullable=False, default="")
+    quarantined: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,

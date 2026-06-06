@@ -15,11 +15,11 @@
 - [x] Verify: ruff + mypy + pytest (221 passed)
 
 ### Day 2: RAG Poisoning Defense (DB-117)
-- [ ] Create `backend/memory/ingestion.py`
-- [ ] Alembic migration 005: provenance + quarantine columns
-- [ ] Wire validation into `SemanticMemoryStore.store()`
-- [ ] Write tests: `backend/tests/memory/test_ingestion.py`
-- [ ] Verify: ruff + mypy + pytest
+- [x] Create `backend/memory/ingestion.py`
+- [x] Alembic migration 005: provenance + quarantine columns
+- [x] Wire validation into `SemanticMemoryStore.store()`
+- [x] Write tests: `backend/tests/memory/test_ingestion.py`
+- [x] Verify: ruff + mypy + pytest (235 passed)
 
 ### Day 3: Memory Quarantine (DB-118)
 - [ ] Create `backend/memory/quarantine.py`

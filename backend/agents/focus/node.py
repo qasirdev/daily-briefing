@@ -37,6 +37,7 @@ async def _persist_focus_summary(
     *,
     user_id: str,
     request_id: str,
+    trace_id: str,
     plan: dict[str, object],
     store: SemanticMemoryStore,
     settings: Settings,
@@ -51,6 +52,8 @@ async def _persist_focus_summary(
             embedding=await embed_text_async(summary, settings),
             source_type="briefing",
             source_id=request_id or None,
+            trace_id=trace_id,
+            agent_id="focus",
         )
     except Exception as exc:
         logger.warning(
@@ -238,6 +241,7 @@ async def focus_agent_node(
         await _persist_focus_summary(
             user_id=user_id,
             request_id=request_id,
+            trace_id=trace_id,
             plan=plan,
             store=store,
             settings=settings,

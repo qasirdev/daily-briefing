@@ -7,7 +7,16 @@ from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
 from backend.main import create_app
-from backend.settings import Settings
+from backend.settings import Settings, get_settings
+
+
+@pytest.fixture(autouse=True)
+def _deterministic_embeddings(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
+    """Keep semantic memory tests offline regardless of developer .env."""
+    monkeypatch.setenv("EMBEDDING_PROVIDER", "deterministic")
+    get_settings.cache_clear()
+    yield
+    get_settings.cache_clear()
 
 
 @pytest.fixture(autouse=True)

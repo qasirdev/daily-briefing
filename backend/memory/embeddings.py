@@ -42,10 +42,10 @@ def embed_text(text: str, settings: Settings | None = None) -> list[float]:
 
 
 @lru_cache
-def _embedding_client(settings: Settings) -> AsyncOpenAI:
+def _embedding_client(api_key: str, base_url: str) -> AsyncOpenAI:
     return AsyncOpenAI(
-        api_key=settings.openrouter_api_key or "missing-key",
-        base_url=settings.openrouter_base_url,
+        api_key=api_key or "missing-key",
+        base_url=base_url,
     )
 
 
@@ -63,7 +63,7 @@ async def embed_text_async(text: str, settings: Settings | None = None) -> list[
         raise ValueError(msg)
 
     start = time.perf_counter()
-    client = _embedding_client(resolved)
+    client = _embedding_client(resolved.openrouter_api_key, resolved.openrouter_base_url)
     try:
         response = await client.embeddings.create(
             model=resolved.embedding_model,

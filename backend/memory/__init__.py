@@ -7,6 +7,13 @@ from backend.memory.consolidation import (
     distill_working_to_episodic,
 )
 from backend.memory.episodic import EpisodicLessonRecord, EpisodicMemoryStore
+from backend.memory.ingestion import (
+    IngestionValidationResult,
+    SemanticIngestionRejected,
+    SourceTrust,
+    compute_content_hash,
+    validate_semantic_content,
+)
 from backend.memory.procedural import (
     ProceduralMemoryStore,
     ProceduralSkillDefinition,
@@ -28,6 +35,7 @@ from backend.memory.working import WorkingMemoryManager, WorkingMemorySnapshot
 
 __all__ = [
     "AgentMemoryContext",
+    "IngestionValidationResult",
     "EpisodicLessonRecord",
     "EpisodicMemoryStore",
     "MemoryAuditTrail",
@@ -35,11 +43,14 @@ __all__ = [
     "ProceduralMemoryStore",
     "ProceduralSkillDefinition",
     "ProceduralSkillRecord",
+    "SemanticIngestionRejected",
     "SemanticMemoryRecord",
     "SemanticMemoryStore",
+    "SourceTrust",
     "WorkingMemoryManager",
     "WorkingMemorySnapshot",
     "build_focus_retrieval_query",
+    "compute_content_hash",
     "consolidate_semantic_memory",
     "distill_working_snippets",
     "distill_working_to_episodic",
@@ -51,4 +62,5 @@ __all__ = [
     "retrieve_episodic_lessons",
     "retrieve_procedural_skills",
     "retrieve_semantic_context",
+    "validate_semantic_content",
 ]

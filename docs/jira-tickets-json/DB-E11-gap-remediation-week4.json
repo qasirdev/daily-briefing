@@ -65,7 +65,7 @@
       "task_type": "Implementation",
       "story_points": 8,
       "priority": "Critical",
-      "status": "To Do",
+      "status": "Done",
       "acceptance_criteria": [
         "backend/memory/ingestion.py validates content before store",
         "Malicious patterns rejected with security_violations metric",

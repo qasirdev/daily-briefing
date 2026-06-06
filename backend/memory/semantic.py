@@ -13,6 +13,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.db.models import SemanticMemoryRow
 from backend.db.session import session_scope
+from backend.memory.ingestion import (
+    SemanticIngestionRejected,
+    SourceTrust,
+    validate_semantic_content,
+)
+from backend.metrics import record_security_violation
 from backend.settings import Settings, get_settings
 
 logger = structlog.get_logger()
@@ -30,6 +36,8 @@ class SemanticMemoryRecord(BaseModel):
     content: str = Field(..., min_length=1)
     source_type: str = Field(..., min_length=1, max_length=32)
     source_id: str | None = Field(default=None, max_length=64)
+    source_trust: str = Field(default="internal", min_length=1, max_length=16)
+    content_hash: str = Field(default="", max_length=64)
     similarity: float = Field(..., ge=0.0, le=1.0)
     created_at: datetime
 
@@ -58,6 +66,9 @@ class SemanticMemoryStore:
         embedding: list[float],
         source_type: SourceType,
         source_id: str | None = None,
+        source_trust: SourceTrust = "internal",
+        trace_id: str = "",
+        agent_id: str = "focus",
     ) -> uuid.UUID:
         """Persist a semantic memory embedding for a user."""
         if len(embedding) != self.embedding_dim:
@@ -66,14 +77,32 @@ class SemanticMemoryStore:
             )
             raise ValueError(msg)
 
+        validation = validate_semantic_content(
+            content,
+            trace_id=trace_id,
+            source=f"semantic_store:{source_type}",
+        )
+        if not validation.accepted:
+            record_security_violation(
+                violation_type=validation.reason or "rag_poisoning",
+                agent_id=agent_id,
+            )
+            raise SemanticIngestionRejected(
+                reason=validation.reason or "rag_poisoning",
+                matched_pattern=validation.matched_pattern,
+            )
+
         memory_id = uuid.uuid4()
         row = SemanticMemoryRow(
             id=memory_id,
             user_id=user_id,
-            content=content,
+            content=content.strip(),
             embedding=embedding,
             source_type=source_type,
             source_id=source_id,
+            source_trust=source_trust,
+            content_hash=validation.content_hash,
+            quarantined=False,
             created_at=datetime.now(UTC),
         )
         async with session_scope() as session:
@@ -84,6 +113,8 @@ class SemanticMemoryStore:
             user_id=user_id,
             memory_id=str(memory_id),
             source_type=source_type,
+            source_trust=source_trust,
+            content_hash=validation.content_hash,
         )
         return memory_id
 
@@ -113,10 +144,13 @@ class SemanticMemoryStore:
                 content,
                 source_type,
                 source_id,
+                source_trust,
+                content_hash,
                 created_at,
                 1 - (embedding <=> CAST(:embedding AS vector)) AS similarity
             FROM semantic_memory
             WHERE user_id = :user_id
+              AND quarantined = false
               AND (1 - (embedding <=> CAST(:embedding AS vector))) >= :min_similarity
             ORDER BY embedding <=> CAST(:embedding AS vector)
             LIMIT :limit
@@ -143,6 +177,8 @@ class SemanticMemoryStore:
                 content=row["content"],
                 source_type=row["source_type"],
                 source_id=row["source_id"],
+                source_trust=row["source_trust"],
+                content_hash=row["content_hash"],
                 similarity=float(row["similarity"]),
                 created_at=row["created_at"],
             )
@@ -155,7 +191,10 @@ class SemanticMemoryStore:
             await self._set_user_context(session, user_id)
             stmt = (
                 select(SemanticMemoryRow)
-                .where(SemanticMemoryRow.user_id == user_id)
+                .where(
+                    SemanticMemoryRow.user_id == user_id,
+                    SemanticMemoryRow.quarantined.is_(False),
+                )
                 .order_by(SemanticMemoryRow.created_at.desc())
                 .limit(limit)
             )
@@ -169,6 +208,8 @@ class SemanticMemoryStore:
                 content=row.content,
                 source_type=row.source_type,
                 source_id=row.source_id,
+                source_trust=row.source_trust,
+                content_hash=row.content_hash,
                 similarity=1.0,
                 created_at=row.created_at,
             )
