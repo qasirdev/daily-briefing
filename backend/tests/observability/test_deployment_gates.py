@@ -20,6 +20,7 @@ def test_production_requires_pass_or_fail() -> None:
             jwt_secret_key="f" * 64,
             admin_api_key="test-admin-key",
             app_debug=False,
+            local_llm_enabled=True,
         ),
     )
     assert report.warn_only is False
