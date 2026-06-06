@@ -27,10 +27,16 @@
 - [x] Commit: "Day 2: Verification/adversarial LLM with cached prompts"
 
 ### Day 3: Working Memory + Semantic Memory Foundation (DB-108)
-- [ ] Create `backend/memory/working.py` (LangGraph session state)
-- [ ] Alembic migration: enable pgvector on Supabase
-- [ ] Create `semantic_memory` table with HNSW index + RLS
-- [ ] Create `backend/memory/semantic.py` store
+- [x] Create `backend/memory/working.py` (LangGraph session state)
+- [x] Alembic migration: enable pgvector on Supabase (`uv run alembic upgrade head` from repo root)
+- [x] Create `semantic_memory` table with HNSW index + RLS
+- [x] Create `backend/memory/semantic.py` store
+- [x] Create `backend/memory/embeddings.py` (deterministic embeddings for tests)
+- [x] Extend `BriefingGraphState` with working memory fields
+- [x] Initialize working memory in orchestrator route node
+- [x] Write tests: `backend/tests/memory/`
+- [x] Verify: ruff + mypy + pytest
+- [x] Commit: "Day 3: Working memory and pgvector semantic memory foundation"
 
 ### Day 4: Memory Integration (DB-109)
 - [ ] Wire semantic retrieval into Focus agent

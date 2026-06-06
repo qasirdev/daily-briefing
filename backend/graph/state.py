@@ -29,6 +29,10 @@ class BriefingGraphState(TypedDict, total=False):
     total_tokens: int
     graph_started_at: float
 
+    working_memory_tokens: int
+    working_memory_limit: int
+    working_memory_context: list[str]
+
     final_briefing: str | None
     status: Literal[
         "pending",

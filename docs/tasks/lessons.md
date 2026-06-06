@@ -92,6 +92,13 @@
 - **Design Decision:** LLM nodes fall back to Week 1 heuristics on `LLMError` or invalid JSON — consensus routing stays testable without live API.
 - **New Rule:** Prompt version v1.1.0 for verification/adversarial when cache-enabled LLM path is active.
 
+### Day 3: 2026-06-06
+- **Lesson:** Alembic config is **`alembic.ini` at repo root** (`script_location = backend/alembic`); there is no `backend/alembic.ini`. Run `uv run alembic upgrade head` from project root — not `uv run alembic -c backend/alembic.ini upgrade head`.
+- **Lesson:** pgvector migration must `CREATE EXTENSION IF NOT EXISTS vector` before creating `Vector(1536)` columns; RLS policy uses `set_config('app.user_id', ...)` per session.
+- **Design Decision:** Semantic memory uses cosine distance (`<=>`) with HNSW index; embeddings use deterministic hash vectors in tests/dev until live embedding API lands in Day 4.
+- **Design Decision:** Working memory fields (`working_memory_tokens`, `working_memory_limit`, `working_memory_context`) initialized in orchestrator route node.
+- **New Rule:** `SemanticMemoryStore` always filters by `user_id` in queries even with RLS enabled — defense in depth for Supabase.
+
 ## Pre-Week 1 — Existing Test Failures
 
 ### Issue: PII Detector Too Aggressive on Trace IDs

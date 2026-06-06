@@ -12,6 +12,8 @@ AGENT_TOKEN_BUDGETS: dict[str, int] = {
     "task": 3_000,
     "calendar": 3_000,
     "focus": 6_000,
+    "verification": 4_000,
+    "adversarial": 4_000,
     "critic": 5_000,
 }
 
@@ -23,6 +25,8 @@ _AGENT_RESULT_KEYS: tuple[tuple[str, str], ...] = (
     ("task", "task_result"),
     ("calendar", "calendar_result"),
     ("focus", "focus_result"),
+    ("verification", "verification_result"),
+    ("adversarial", "adversarial_result"),
     ("critic", "critic_result"),
 )
 

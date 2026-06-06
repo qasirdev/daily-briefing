@@ -58,6 +58,11 @@ class Settings(BaseSettings):
     prompt_cache_warm_interval_seconds: int = 240
     prompt_cache_warm_agents: str = "focus,critic,verification,adversarial"
 
+    working_memory_token_limit: int = 16_000
+    working_memory_max_snippets: int = 10
+    semantic_memory_embedding_dim: int = 1536
+    semantic_memory_search_top_k: int = 5
+
     otel_exporter_otlp_endpoint: str = "http://localhost:4317"
     admin_api_key: str = ""
 

@@ -123,7 +123,18 @@ CREATE POLICY semantic_memory_user_isolation
 
 - `backend/memory/working.py`
 - `backend/memory/semantic.py`
-- `alembic/versions/*_add_semantic_memory.py`
+- `backend/memory/embeddings.py`
+- `backend/alembic/versions/002_semantic_memory_pgvector.py`
+
+### Apply migration (repo root)
+
+Alembic config lives at **`alembic.ini`** (project root), not `backend/alembic.ini`.
+`script_location = backend/alembic` points at the migration scripts directory.
+
+```bash
+# from daily-briefing/ (repo root)
+uv run alembic upgrade head
+```
 
 ---
 

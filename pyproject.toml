@@ -24,6 +24,7 @@ dependencies = [
     "sqlalchemy[asyncio]>=2.0",
     "alembic>=1.18.4",
     "mcp>=1.27.2",
+    "pgvector>=0.4.2",
 ]
 
 [project.optional-dependencies]
@@ -63,5 +64,5 @@ warn_unused_configs = true
 plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]
-module = ["langgraph.*", "slowapi.*", "opentelemetry.*"]
+module = ["langgraph.*", "slowapi.*", "opentelemetry.*", "pgvector.*"]
 ignore_missing_imports = true

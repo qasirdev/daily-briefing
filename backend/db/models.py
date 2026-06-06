@@ -5,6 +5,7 @@ from __future__ import annotations
 import uuid
 from datetime import UTC, date, datetime
 
+from pgvector.sqlalchemy import Vector
 from sqlalchemy import Date, DateTime, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
@@ -79,6 +80,22 @@ class ConsentAuditLogRow(Base):
     user_id: Mapped[str] = mapped_column(String(64), nullable=False)
     action: Mapped[str] = mapped_column(String(32), nullable=False)
     detail: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+    )
+
+
+class SemanticMemoryRow(Base):
+    __tablename__ = "semantic_memory"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    embedding: Mapped[list[float]] = mapped_column(Vector(1536), nullable=False)
+    source_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    source_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
