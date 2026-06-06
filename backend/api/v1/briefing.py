@@ -14,6 +14,7 @@ from backend.dependencies import build_llm_router, build_mcp_clients
 from backend.graph.builder import build_briefing_graph
 from backend.graph.state import BriefingGraphState
 from backend.metrics import record_briefing_generation
+from backend.observability.reasoning_trace import collect_reasoning_traces
 from backend.schemas.briefing import (
     AgentExecutionSummary,
     BriefingMetadata,
@@ -130,6 +131,8 @@ async def generate_briefing(request: Request, body: BriefingRequest) -> Briefing
 
     if result_state.get("consent_required") or graph_status == "awaiting_consent":
         response_status = "awaiting_consent"
+    elif graph_status == "awaiting_human_review":
+        response_status = "awaiting_human_review"
     elif graph_status == "degraded":
         response_status = "degraded"
     elif graph_status == "success":
@@ -157,6 +160,8 @@ async def generate_briefing(request: Request, body: BriefingRequest) -> Briefing
     if isinstance(raw_consent, dict):
         consent_request = ConsentPromptRequest.model_validate(raw_consent)
 
+    reasoning_trace = collect_reasoning_traces(result_state)
+
     return BriefingResponse(
         status=response_status,  # type: ignore[arg-type]
         briefing=result_state.get("final_briefing") or "",
@@ -170,4 +175,5 @@ async def generate_briefing(request: Request, body: BriefingRequest) -> Briefing
         ),
         consent_context=result_state.get("consent_context"),
         consent_request=consent_request,
+        reasoning_trace=reasoning_trace,
     )

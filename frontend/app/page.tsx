@@ -5,6 +5,7 @@ import { useCallback, useState } from "react";
 
 import { BriefingDashboard } from "@/components/BriefingDashboard";
 import { ConsentPromptModal } from "@/components/ConsentPromptModal";
+import { ReasoningTrace } from "@/components/ReasoningTrace";
 import {
   briefingResponseSchema,
   toObservabilityData,
@@ -145,6 +146,8 @@ export default function Home() {
         loading={loading && !response}
         onRetry={generateBriefing}
       />
+
+      <ReasoningTrace trace={response?.reasoning_trace ?? null} />
 
       {consentPrompt ? (
         <ConsentPromptModal

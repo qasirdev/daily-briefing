@@ -797,6 +797,25 @@ Implementation: `backend/observability/drift_monitor.py` + `log_guardrail_violat
 
 ---
 
+## Reasoning Trace Observability (Gaps #67-68)
+
+Expose agent reasoning steps to operators — not just final outputs.
+
+| Component | Path |
+|---|---|
+| Collector | `backend/observability/reasoning_trace.py` — `collect_reasoning_traces()` |
+| Schema | `backend/schemas/reasoning_trace.py` |
+| API field | `BriefingResponse.reasoning_trace` |
+| Frontend | `frontend/components/ReasoningTrace.tsx` |
+
+Each entry maps an agent to an HITL layer (`input`, `planning`, `review`, `execution`, `override`, etc.).
+
+**Human-in-the-loop signal:** When graph status is `awaiting_human_review`, trace includes an override-layer entry with `status=awaiting_human`.
+
+See also: `docs/HITL-ARCHITECTURE.md`, `docs/OVERRIDE-ROLLBACK.md`
+
+---
+
 ## Structured Logging
 
 ### Log Format

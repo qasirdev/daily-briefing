@@ -178,7 +178,7 @@ Fresh autonomous kickoff only (not every "hi"): then read `docs/KICKOFF-PROMPT.m
 | 4 | DB-E11 | Memory security, AgentOps, live embeddings | ✅ |
 | 5 | DB-E12 | Supply chain + JIT credentials | ✅ |
 | 6 | DB-E13 | OWASP Agent Top 10 + red teaming | ✅ |
-| 7 | DB-E14 | HITL + governance hardening | ⬜ |
+| 7 | DB-E14 | HITL + governance hardening | ✅ |
 | 8 | DB-E15 | Production optimization | ⬜ |
 
 **Week 4 tasks:** DB-116 through DB-120 — see `docs/jira-tickets-json/DB-E11-gap-remediation-week4.json`
@@ -206,6 +206,18 @@ Fresh autonomous kickoff only (not every "hi"): then read `docs/KICKOFF-PROMPT.m
 | DB-130 | Day 5: Red Teaming, Consent Hardening & Proof (Gaps #88, #98) | ✅ |
 
 **Week 6 guides:** `docs/gaps/WEEK6-KICKOFF-PROMPT.md`, `docs/gaps/WEEK6-IMPLEMENTATION-GUIDE.md`
+
+**Week 7 tasks:** DB-131 through DB-135 — see `docs/jira-tickets-json/DB-E14-gap-remediation-week7.json`
+
+| Task ID | Summary | Status |
+|---|---|---|
+| DB-131 | Day 1: HITL Layer Architecture & Registry (Gaps #66, #95) | ✅ |
+| DB-132 | Day 2: Per-Action Authorization & Policy Engine (Gap #128) | ✅ |
+| DB-133 | Day 3: Reasoning Trace Observability (Gaps #67-68) | ✅ |
+| DB-134 | Day 4: Governance & Emergency Authorization (Gaps #86, #131) | ✅ |
+| DB-135 | Day 5: Multi-Incident Tabletop, Integration Tests & Proof (Gap #130) | ✅ |
+
+**Week 7 guides:** `docs/gaps/WEEK7-KICKOFF-PROMPT.md`, `docs/gaps/WEEK7-IMPLEMENTATION-GUIDE.md`
 
 ---
 
