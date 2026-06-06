@@ -45,7 +45,14 @@
 
 ---
 
-*Last Updated: May 2026*
+*Last Updated: June 2026*
+
+## Week 1 — Gap Remediation Learnings
+
+### Day 1: 2026-06-06
+- **Lesson:** `ExecutionMetadata.trace_id` requires ≥32 characters — use `"a" * 32` pattern in tests (matches existing test suite convention).
+- **Root Cause:** WEEK1-IMPLEMENTATION-GUIDE example tests used short trace IDs (`test_trace_456`) that fail Pydantic validation.
+- **New Rule:** When writing envelope tests, always use 32-char hex/alphanumeric trace IDs; consolidate metrics into `backend/observability/` with `backend/metrics.py` as re-export shim for backward compatibility.
 
 ## Pre-Week 1 — Existing Test Failures
 
