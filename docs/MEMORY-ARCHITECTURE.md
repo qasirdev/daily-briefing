@@ -29,7 +29,16 @@ Working context → semantic search (pgvector)
 
 Implementation: `backend/memory/retrieval.py` → `retrieve_agent_memory()`
 
----
+### Agentic RAG (Week 8, Gaps #33, #37)
+
+Dynamic retrieval via `backend/memory/agentic_rag.py`:
+
+- `decide_retrieval()` — skip | partial | full based on user history and MCP richness
+- `refine_query()` — iterative broadening when semantic search under-delivers
+- Source validation: `backend/memory/source_validation.py`
+- Context compression: `backend/memory/context_compression.py`
+
+See `docs/CONTEXT-ENGINEERING.md`.
 
 ## Security Controls (Week 4)
 

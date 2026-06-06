@@ -179,7 +179,7 @@ Fresh autonomous kickoff only (not every "hi"): then read `docs/KICKOFF-PROMPT.m
 | 5 | DB-E12 | Supply chain + JIT credentials | ✅ |
 | 6 | DB-E13 | OWASP Agent Top 10 + red teaming | ✅ |
 | 7 | DB-E14 | HITL + governance hardening | ✅ |
-| 8 | DB-E15 | Production optimization | ⬜ |
+| 8 | DB-E15 | Production optimization & agentic RAG | ✅ |
 
 **Week 4 tasks:** DB-116 through DB-120 — see `docs/jira-tickets-json/DB-E11-gap-remediation-week4.json`
 
@@ -218,6 +218,18 @@ Fresh autonomous kickoff only (not every "hi"): then read `docs/KICKOFF-PROMPT.m
 | DB-135 | Day 5: Multi-Incident Tabletop, Integration Tests & Proof (Gap #130) | ✅ |
 
 **Week 7 guides:** `docs/gaps/WEEK7-KICKOFF-PROMPT.md`, `docs/gaps/WEEK7-IMPLEMENTATION-GUIDE.md`
+
+**Week 8 tasks:** DB-136 through DB-140 — see `docs/jira-tickets-json/DB-E15-gap-remediation-week8.json`
+
+| Task ID | Summary | Status |
+|---|---|---|
+| DB-136 | Day 1: Agentic RAG Decision Engine (Gaps #33, #37) | ✅ |
+| DB-137 | Day 2: Source Validation & Context Compression (Gaps #34, #38, #40) | ✅ |
+| DB-138 | Day 3: Reasoning-Level Feedback (Gap #69) | ✅ |
+| DB-139 | Day 4: Enumeration Detection & Deployment Gates (Gaps #59, T1087) | ✅ |
+| DB-140 | Day 5: Integration Tests, Proof & Documentation | ✅ |
+
+**Week 8 guides:** `docs/gaps/WEEK8-KICKOFF-PROMPT.md`, `docs/gaps/WEEK8-IMPLEMENTATION-GUIDE.md`
 
 ---
 

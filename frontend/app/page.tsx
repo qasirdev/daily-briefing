@@ -147,7 +147,10 @@ export default function Home() {
         onRetry={generateBriefing}
       />
 
-      <ReasoningTrace trace={response?.reasoning_trace ?? null} />
+      <ReasoningTrace
+        trace={response?.reasoning_trace ?? null}
+        briefingId={response?.metadata.trace_id}
+      />
 
       {consentPrompt ? (
         <ConsentPromptModal

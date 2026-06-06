@@ -82,10 +82,10 @@ HITL_LAYERS: tuple[HitlLayer, ...] = (
         layer_id="feedback",
         name="Feedback",
         owner="human",
-        status="partial",
-        control="Episodic memory distillation; reasoning-level feedback UI planned",
-        test_module="backend/tests/memory/test_episodic.py",
-        notes="Reasoning feedback capture via settings page — MVP partial",
+        status="implemented",
+        control="Reasoning-level feedback API + episodic distillation",
+        test_module="backend/tests/test_reasoning_feedback.py",
+        notes="ReasoningFeedback component on briefing page",
     ),
 )
 

@@ -1,0 +1,113 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.1, pytest-9.0.3, pluggy-1.6.0
+rootdir: /Users/qasirmehmood/Projects/qasir-proflle-2026/daily-briefing
+configfile: pyproject.toml
+testpaths: backend/tests
+plugins: asyncio-1.4.0, langsmith-0.8.7, httpx-0.36.2, anyio-4.13.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collected 439 items
+
+backend/tests/agents/test_focus_memory.py ..                             [  0%]
+backend/tests/agents/test_verification_adversarial_llm.py .......        [  2%]
+backend/tests/architecture/test_consensus.py ...                         [  2%]
+backend/tests/e2e/test_briefing_flow.py .                                [  2%]
+backend/tests/e2e/test_consent_flow.py ..                                [  3%]
+backend/tests/e2e/test_degraded_mode.py .                                [  3%]
+backend/tests/e2e/test_security_scenarios.py ..                          [  4%]
+backend/tests/integration/test_live_stdio_briefing.py ss                 [  4%]
+backend/tests/llm/test_cache_roi.py ........                             [  6%]
+backend/tests/llm/test_prompt_cache.py ..............                    [  9%]
+backend/tests/memory/test_agentic_rag.py .........                       [ 11%]
+backend/tests/memory/test_agentops.py ....                               [ 12%]
+backend/tests/memory/test_audit.py ..                                    [ 12%]
+backend/tests/memory/test_context_compression.py ....                    [ 13%]
+backend/tests/memory/test_embeddings.py ........                         [ 15%]
+backend/tests/memory/test_episodic.py ...                                [ 16%]
+backend/tests/memory/test_ingestion.py .............                     [ 19%]
+backend/tests/memory/test_integration.py ...............                 [ 22%]
+backend/tests/memory/test_memory_security_integration.py ............    [ 25%]
+backend/tests/memory/test_optimization_integration.py .....              [ 26%]
+backend/tests/memory/test_privilege.py ......                            [ 28%]
+backend/tests/memory/test_procedural.py ..                               [ 28%]
+backend/tests/memory/test_quarantine.py .....                            [ 29%]
+backend/tests/memory/test_retrieval.py ....                              [ 30%]
+backend/tests/memory/test_retrieval_layers.py ..                         [ 30%]
+backend/tests/memory/test_semantic.py ....                               [ 31%]
+backend/tests/memory/test_source_validation.py .....                     [ 33%]
+backend/tests/memory/test_working.py .....                               [ 34%]
+backend/tests/observability/test_deployment_gates.py .....               [ 35%]
+backend/tests/observability/test_drift_detection.py .......              [ 36%]
+backend/tests/observability/test_dwell_time_and_alerts.py ........       [ 38%]
+backend/tests/observability/test_reasoning_trace.py ....                 [ 39%]
+backend/tests/security/test_agent_scope.py ..                            [ 40%]
+backend/tests/security/test_ai_bom.py .......                            [ 41%]
+backend/tests/security/test_audit_sealing.py ........                    [ 43%]
+backend/tests/security/test_constitutional_classifier.py ..............  [ 46%]
+backend/tests/security/test_dependencies.py ..                           [ 47%]
+backend/tests/security/test_enumeration_detector.py .....                [ 48%]
+backend/tests/security/test_governance_integration.py .....              [ 49%]
+backend/tests/security/test_hitl_integration.py ......                   [ 50%]
+backend/tests/security/test_hitl_layers.py ....................          [ 55%]
+backend/tests/security/test_injection.py .......                         [ 56%]
+backend/tests/security/test_jailbreak_corpus.py ..                       [ 57%]
+backend/tests/security/test_mcp_security.py .....                        [ 58%]
+backend/tests/security/test_mitre_coverage.py ..........                 [ 60%]
+backend/tests/security/test_nhi.py .......                               [ 62%]
+backend/tests/security/test_owasp_agent_top10.py ...............s....... [ 67%]
+..                                                                       [ 68%]
+backend/tests/security/test_per_action_authz.py .......                  [ 69%]
+backend/tests/security/test_pii_masking.py ...........................   [ 75%]
+backend/tests/security/test_rate_limits.py ..                            [ 76%]
+backend/tests/security/test_sanitization.py ...                          [ 76%]
+backend/tests/security/test_supply_chain_ci.py ...                       [ 77%]
+backend/tests/security/test_supply_chain_integration.py .....            [ 78%]
+backend/tests/security/test_token_budget.py ..                           [ 79%]
+backend/tests/security/test_vault.py ..........                          [ 81%]
+backend/tests/test_briefing_api.py ..                                    [ 82%]
+backend/tests/test_consent.py ......                                     [ 83%]
+backend/tests/test_critic.py ...                                         [ 84%]
+backend/tests/test_dlq.py ......                                         [ 85%]
+backend/tests/test_envelope.py ....                                      [ 86%]
+backend/tests/test_export.py ..                                          [ 86%]
+backend/tests/test_graph.py ....                                         [ 87%]
+backend/tests/test_health.py ..                                          [ 88%]
+backend/tests/test_llm_fallback.py ....                                  [ 89%]
+backend/tests/test_logging.py ..                                         [ 89%]
+backend/tests/test_mcp.py ....                                           [ 90%]
+backend/tests/test_metrics.py ..                                         [ 90%]
+backend/tests/test_openrouter_model_chain.py .....                       [ 92%]
+backend/tests/test_orchestrator_consent.py ..                            [ 92%]
+backend/tests/test_orchestrator_format.py ...                            [ 93%]
+backend/tests/test_preferences.py ....                                   [ 94%]
+backend/tests/test_production_settings.py ..                             [ 94%]
+backend/tests/test_prompt_version.py ......                              [ 95%]
+backend/tests/test_prompts_loader.py ..                                  [ 96%]
+backend/tests/test_readiness.py ..                                       [ 96%]
+backend/tests/test_reasoning_feedback.py .....                           [ 97%]
+backend/tests/test_shutdown.py ..                                        [ 98%]
+backend/tests/test_stdio_mcp.py ....                                     [ 99%]
+backend/tests/test_task_agent.py ...                                     [100%]
+
+=============================== warnings summary ===============================
+backend/tests/memory/test_episodic.py::test_store_lesson_persists_row
+  /Users/qasirmehmood/Projects/qasir-proflle-2026/daily-briefing/backend/memory/episodic.py:105: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    session.add(row)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+backend/tests/memory/test_ingestion.py::test_store_persists_provenance_fields
+backend/tests/memory/test_memory_security_integration.py::test_security_integration_12_semantic_store_persists_non_quarantined_clean_row
+backend/tests/memory/test_semantic.py::test_store_persists_row
+  /Users/qasirmehmood/Projects/qasir-proflle-2026/daily-briefing/backend/memory/semantic.py:110: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    session.add(row)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+backend/tests/memory/test_procedural.py::test_register_skill_persists_row
+  /Users/qasirmehmood/Projects/qasir-proflle-2026/daily-briefing/backend/memory/procedural.py:121: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    session.add(row)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================== 436 passed, 3 skipped, 5 warnings in 4.01s ==================

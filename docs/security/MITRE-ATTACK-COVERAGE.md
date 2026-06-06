@@ -39,7 +39,7 @@ uv run python -c "from backend.security.mitre_coverage import get_coverage_summa
 | T1565 | Data Manipulation | Impact | ✅ Detected | Read-only SQL enforcement |
 | T1565.001 | Stored Data Manipulation | Impact | ✅ Detected | Memory quarantine workflow |
 | T1213 | Data from Info Repositories | Collection | ✅ Detected | Consent-gated MCP access |
-| T1087 | Account Discovery | Discovery | 🟡 Partial | Agent scope boundaries |
+| T1087 | Account Discovery | Discovery | ✅ Detected | EnumerationDetector on consent/credential probes |
 | T1059 | Command Interpreter | Execution | N/A | No agent code execution |
 | T1027 | Obfuscated Information | Defense Evasion | ✅ Detected | Unicode NFKC normalization |
 | T1036 | Masquerading | Defense Evasion | ✅ Detected | Constitutional impersonation rules |
@@ -65,7 +65,7 @@ uv run python -c "from backend.security.mitre_coverage import get_coverage_summa
 | Technique | Gap | Planned Remediation |
 |---|---|---|
 | T1550.004 | Session rotation not enforced in dev | ✅ Per-action authz re-evaluates consent each MCP call (`per_action_authz.py`) |
-| T1087 | No active enumeration detection | 🟡 Anomaly rules planned Week 8 |
+| T1087 | No active enumeration detection | ✅ EnumerationDetector on consent/credential probes |
 
 ---
 

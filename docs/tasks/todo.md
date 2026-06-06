@@ -1,48 +1,46 @@
-# Week 7 Implementation — HITL Layers & Governance Hardening
+# Week 8 Implementation — Production Optimization & Agentic RAG
 
-**Epic:** DB-E14  
-**Branch:** `epic/week7-gap-remediation`  
+**Epic:** DB-E15  
+**Branch:** `epic/week8-gap-remediation`  
 **Status:** complete  
 **Started:** 2026-06-06  
-**Scope:** Phase 5 — HITL architecture, per-action authz, reasoning traces, governance, tabletop
+**Scope:** Phase 6 — Agentic RAG, context engineering, reasoning feedback, deployment gates
 
-**Ticket file:** `docs/jira-tickets-json/DB-E14-gap-remediation-week7.json`  
-**Kickoff:** `docs/gaps/WEEK7-KICKOFF-PROMPT.md`  
-**Guide:** `docs/gaps/WEEK7-IMPLEMENTATION-GUIDE.md`
+**Ticket file:** `docs/jira-tickets-json/DB-E15-gap-remediation-week8.json`  
+**Kickoff:** `docs/gaps/WEEK8-KICKOFF-PROMPT.md`  
+**Guide:** `docs/gaps/WEEK8-IMPLEMENTATION-GUIDE.md`
 
-### Day 1: HITL Architecture (DB-131, Gaps #66, #95)
-- [x] Create `backend/security/hitl.py`
-- [x] Create `docs/HITL-ARCHITECTURE.md`
-- [x] Update `docs/AGENTIC-CONSENT.md` § Human-on-the-Loop
-- [x] Write tests: `backend/tests/security/test_hitl_layers.py`
+### Day 1: Agentic RAG Decision Engine (DB-136, Gaps #33, #37)
+- [x] Create `backend/memory/agentic_rag.py`
+- [x] Create `docs/CONTEXT-ENGINEERING.md`
+- [x] Wire decision engine into `retrieve_agent_memory()`
+- [x] Add `agentic_rag_decisions_total` metric
+- [x] Write tests: `backend/tests/memory/test_agentic_rag.py`
 
-### Day 2: Per-Action Authorization (DB-132, Gap #128)
-- [x] Create `backend/security/policy_engine.py`
-- [x] Create `backend/security/per_action_authz.py`
-- [x] Wire `vault.py` credential broker
-- [x] Add `per_action_authz_total` metric
-- [x] Write tests: `backend/tests/security/test_per_action_authz.py`
+### Day 2: Source Validation & Context Compression (DB-137, Gaps #34, #38, #40)
+- [x] Create `backend/memory/source_validation.py`
+- [x] Create `backend/memory/context_compression.py`
+- [x] Wire into retrieval pipeline
+- [x] Write tests: `backend/tests/memory/test_source_validation.py`, `test_context_compression.py`
 
-### Day 3: Reasoning Trace (DB-133, Gaps #67-68)
-- [x] Create `backend/schemas/reasoning_trace.py`
-- [x] Create `backend/observability/reasoning_trace.py`
-- [x] Update `BriefingResponse` + API
-- [x] Create `frontend/components/ReasoningTrace.tsx`
-- [x] Create `docs/OVERRIDE-ROLLBACK.md`
-- [x] Write tests: `backend/tests/observability/test_reasoning_trace.py`
+### Day 3: Reasoning-Level Feedback (DB-138, Gap #69)
+- [x] Create `backend/schemas/reasoning_feedback.py`
+- [x] Create `backend/api/v1/feedback.py`
+- [x] Create `frontend/components/ReasoningFeedback.tsx`
+- [x] Update HITL feedback layer to implemented
+- [x] Write tests: `backend/tests/test_reasoning_feedback.py`
 
-### Day 4: Governance (DB-134, Gaps #86, #131)
-- [x] Create `docs/GOVERNANCE.md`
-- [x] Create `docs/INCIDENT-RESPONSE.md`
-- [x] Update AGENT08 to implemented in `owasp_agent.py`
-- [x] Update `docs/SECURITY.md`, MITRE blind spots
+### Day 4: Enumeration Detection & Deployment Gates (DB-139, Gaps #59, T1087)
+- [x] Create `backend/security/enumeration_detector.py`
+- [x] Create `backend/observability/deployment_gates.py`
+- [x] Create `docs/DEPLOYMENT-GATES.md`
+- [x] Update MITRE T1087 to detected
+- [x] Write tests: `test_enumeration_detector.py`, `test_deployment_gates.py`
 
-### Day 5: Tabletop & Proof (DB-135, Gap #130)
-- [x] Create `docs/security/TABLETOP-EXERCISES.md`
-- [x] Create `docs/security/incident-response-playbook.md`
-- [x] Integration tests: `test_hitl_integration.py`
-- [x] Proof package in `proof/week7/`
-- [x] `docs/learning/week7-hitl-governance.md`
+### Day 5: Integration Tests & Proof (DB-140)
+- [x] Create `backend/tests/memory/test_optimization_integration.py`
+- [x] Proof package in `proof/week8/`
+- [x] `docs/learning/week8-production-optimization.md`
 - [x] Updated `docs/PLAN.md`
 
 ---
@@ -52,3 +50,5 @@
 ```bash
 uv run ruff check backend && uv run ruff format backend && uv run mypy backend && uv run pytest
 ```
+
+**Result:** 436 passed, 3 skipped

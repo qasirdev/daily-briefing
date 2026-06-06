@@ -123,8 +123,13 @@ async def focus_agent_node(
         tasks=tasks,
         events=events,
         settings=settings,
+        has_prior_briefings=bool(preferences),
+        compress_payload=True,
     )
-    memory_payload = memory_context.to_payload()
+    memory_payload = memory_context.to_payload(
+        compress=True,
+        max_chars=settings.context_compression_max_chars,
+    )
 
     user_context = json.dumps(
         {

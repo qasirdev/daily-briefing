@@ -29,6 +29,7 @@ docs/jira-tickets-json/
 └── DB-E12-gap-remediation-week5.json      # Gap Week 5 — canonical format (required for new epics)
 └── DB-E13-gap-remediation-week6.json      # Gap Week 6
 └── DB-E14-gap-remediation-week7.json      # Gap Week 7 — canonical format
+└── DB-E15-gap-remediation-week8.json      # Gap Week 8 — canonical format
 ```
 
 **Total: 62+ tasks across 12 epics**

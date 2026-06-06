@@ -52,9 +52,11 @@ Per-action authorization ensures revoked consent takes effect on the **next** MC
 
 ---
 
-## Reasoning-Level Feedback (Partial)
+## Reasoning-Level Feedback
 
-Episodic memory distillation captures session lessons at briefing end. Full reasoning-level feedback UI (correct agent reasoning, not just output) is planned for Week 8 optimization.
+Users rate individual agent reasoning steps via `ReasoningFeedback` on the briefing page. Ratings (`correct`, `partial`, `incorrect`) POST to `/api/v1/feedback/reasoning` and persist as episodic lessons with `feedback_type=reasoning_feedback`.
+
+Output-level preference edits remain on `/api/v1/preferences/feedback`.
 
 Current: operators review `reasoning_trace` in API response and frontend `ReasoningTrace` component.
 

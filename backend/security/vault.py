@@ -130,6 +130,13 @@ class CredentialBroker:
             msg = "user_id is required for credential issuance"
             raise CredentialDeniedError(msg)
 
+        from backend.security.enumeration_detector import enumeration_detector
+
+        enumeration_detector.record_probe(
+            probe_type="credential_issue",
+            subject=user_id,
+        )
+
         ttl = ttl_seconds if ttl_seconds is not None else self._settings.credential_ttl_seconds
         if ttl <= 0:
             msg = "ttl_seconds must be positive"

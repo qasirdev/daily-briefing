@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { ReasoningFeedback } from "@/components/ReasoningFeedback";
+
 export type ReasoningTraceEntry = {
   agent_id: string;
   hitl_layer: string;
@@ -19,13 +21,14 @@ export type ReasoningTraceData = {
 
 type ReasoningTraceProps = {
   trace: ReasoningTraceData | null | undefined;
+  briefingId?: string;
 };
 
 function layerLabel(layer: string): string {
   return layer.replace(/_/g, " ");
 }
 
-export function ReasoningTrace({ trace }: ReasoningTraceProps) {
+export function ReasoningTrace({ trace, briefingId }: ReasoningTraceProps) {
   const [expanded, setExpanded] = useState(false);
 
   if (!trace || trace.entries.length === 0) {
@@ -66,6 +69,13 @@ export function ReasoningTrace({ trace }: ReasoningTraceProps) {
                 <p className="mt-1 text-xs text-zinc-500">
                   {entry.execution_ms}ms · {entry.tokens_used} tokens
                 </p>
+              ) : null}
+              {briefingId ? (
+                <ReasoningFeedback
+                  briefingId={briefingId}
+                  traceId={trace.trace_id}
+                  entry={entry}
+                />
               ) : null}
             </li>
           ))}
