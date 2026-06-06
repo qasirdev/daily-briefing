@@ -8,6 +8,7 @@ from backend.llm.prompt_cache import (
     OPENAI_AUTO_CACHE_MIN_TOKENS,
     build_llm_messages,
     is_claude_model,
+    openai_cache_eligible,
 )
 from backend.llm.router import LLMRouter
 from backend.observability.metrics import (
@@ -18,6 +19,16 @@ from backend.observability.metrics import (
 )
 from backend.prompts_loader import build_cached_prompt_assembly
 from backend.settings import Settings
+
+
+def test_adversarial_cached_prompt_exceeds_openai_threshold() -> None:
+    assembly = build_cached_prompt_assembly("adversarial")
+    assert assembly.estimated_tokens >= OPENAI_AUTO_CACHE_MIN_TOKENS
+    assert openai_cache_eligible("adversarial")
+
+
+def test_verification_openai_cache_eligible_helper() -> None:
+    assert openai_cache_eligible("verification")
 
 
 def test_focus_cached_prompt_exceeds_openai_threshold() -> None:

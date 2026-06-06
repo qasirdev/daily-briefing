@@ -19,10 +19,12 @@
 - [x] Commit: "Day 1: Claude prompt caching with cache warming"
 
 ### Day 2: OpenAI Caching + Verification/Adversarial LLM (DB-107)
-- [ ] Wire verification/adversarial nodes to LLM with cached prompts
-- [ ] Validate OpenAI auto-cache (≥1024 token stable prefix)
-- [ ] Bump prompt versions in CONTRACT.md / CHANGELOG.md
-- [ ] Cache hit rate validation via Prometheus
+- [x] Wire verification/adversarial nodes to LLM with cached prompts
+- [x] Validate OpenAI auto-cache (≥1024 token stable prefix)
+- [x] Bump prompt versions in CONTRACT.md / CHANGELOG.md (v1.1.0)
+- [x] Cache hit rate validation via Prometheus (metrics tests extended)
+- [x] Verify: ruff + mypy + pytest (162 passed)
+- [x] Commit: "Day 2: Verification/adversarial LLM with cached prompts"
 
 ### Day 3: Working Memory + Semantic Memory Foundation (DB-108)
 - [ ] Create `backend/memory/working.py` (LangGraph session state)

@@ -50,6 +50,11 @@ def resolve_model_name(llm: LLMRouter) -> str:
     return get_settings().llm_primary_model
 
 
+def openai_cache_eligible(agent_id: str) -> bool:
+    """Return True when static prompt size meets OpenAI auto-cache threshold."""
+    return build_cached_prompt_assembly(agent_id).estimated_tokens >= OPENAI_AUTO_CACHE_MIN_TOKENS
+
+
 def build_llm_messages(
     agent_id: str,
     user_content: str,

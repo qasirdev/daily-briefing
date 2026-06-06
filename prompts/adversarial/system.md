@@ -1,6 +1,6 @@
 # Adversarial Agent System Prompt
 
-**Version:** 1.0.0  
+**Version:** 1.1.0  
 **Last Updated:** 2026-06-06  
 **Model Target:** Claude Opus 4.8 / GPT-5.5  
 **Effort Level:** high

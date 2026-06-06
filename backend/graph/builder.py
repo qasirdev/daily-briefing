@@ -91,6 +91,12 @@ def build_briefing_graph(
     async def critic_wrapper(state: BriefingGraphState) -> dict[str, Any]:
         return await critic_agent_node(state, resolved_llm)
 
+    async def verification_wrapper(state: BriefingGraphState) -> dict[str, Any]:
+        return await verification_agent_node(state, resolved_llm)
+
+    async def adversarial_wrapper(state: BriefingGraphState) -> dict[str, Any]:
+        return await adversarial_agent_node(state, resolved_llm)
+
     async def dlq_wrapper(state: BriefingGraphState) -> dict[str, Any]:
         return await dlq_handler_node(state, postgres=mcp.postgres)
 
@@ -151,8 +157,8 @@ def build_briefing_graph(
     graph.add_node("dlq_handler", dlq_wrapper)
 
     if consensus_enabled:
-        graph.add_node("verification_agent", verification_agent_node)
-        graph.add_node("adversarial_agent", adversarial_agent_node)
+        graph.add_node("verification_agent", verification_wrapper)
+        graph.add_node("adversarial_agent", adversarial_wrapper)
         graph.add_node("consensus_evaluator", consensus_evaluator_node)
         graph.add_node("human_escalation", human_escalation_node)
 

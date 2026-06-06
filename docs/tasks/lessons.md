@@ -86,6 +86,12 @@
 - **Design Decision:** Static prompt blocks ordered system → context → instructions → examples → tools → reasoning → guardrails; user content always last (never cached).
 - **New Rule:** Cache warming only runs when `OPENROUTER_API_KEY` or `LOCAL_LLM_ENABLED` is set; background loop refreshes every 240s (before 5 min Claude TTL).
 
+### Day 2: 2026-06-06
+- **Lesson:** Verification and adversarial nodes need `llm: LLMRouter | None` parameter plus graph builder wrappers (same pattern as focus/critic).
+- **Lesson:** Critic uses legacy 6-file prompts (~140 tokens) — below OpenAI 1024 auto-cache threshold; only focus, verification, and adversarial are cache-eligible today.
+- **Design Decision:** LLM nodes fall back to Week 1 heuristics on `LLMError` or invalid JSON — consensus routing stays testable without live API.
+- **New Rule:** Prompt version v1.1.0 for verification/adversarial when cache-enabled LLM path is active.
+
 ## Pre-Week 1 — Existing Test Failures
 
 ### Issue: PII Detector Too Aggressive on Trace IDs
