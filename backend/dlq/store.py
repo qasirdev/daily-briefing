@@ -37,9 +37,7 @@ class DLQStore:
             reason=stored.reason,
             trace_id=stored.trace_id,
             retry_count=stored.retry_count,
-            envelope=(
-                stored.envelope.model_dump(mode="json") if stored.envelope else None
-            ),
+            envelope=(stored.envelope.model_dump(mode="json") if stored.envelope else None),
             created_at=stored.created_at,
         )
         async with session_scope() as session:

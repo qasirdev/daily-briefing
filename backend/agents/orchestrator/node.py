@@ -10,6 +10,7 @@ import structlog
 
 from backend.datetime_format import format_time_range
 from backend.graph.state import BriefingGraphState
+from backend.memory.working import WorkingMemoryManager
 from backend.metrics import record_consent_request
 from backend.schemas.consent import (
     DEFAULT_TTL_HOURS,
@@ -134,10 +135,12 @@ async def orchestrator_route_node(state: BriefingGraphState) -> dict[str, Any]:
     """Initialize routing phase and detect early consent requirements."""
     trace_id = state.get("trace_id", "0" * 32)
     logger.info("orchestrator_route_started", trace_id=trace_id)
+    working = WorkingMemoryManager()
     return {
         "current_agent": "orchestrator_route",
         "status": "pending",
         "revision_count": state.get("revision_count", 0),
+        **working.initialize_state(state),
     }
 
 

@@ -78,6 +78,39 @@
 - **Lesson:** Critic tests through consensus path need a configured `LLMResponse` mock (`{"approved": true}`) or `llm=None` heuristic path.
 - **Week 1 Summary:** 17 new tests (7 drift + 7 NHI + 3 consensus), 143 total passing; proof package in `proof/week1/`; ready for PR to `epic/autonomus-implementation-gap`.
 
+## Week 2 — Gap Remediation Learnings
+
+### Day 1: 2026-06-06
+- **Lesson:** When agents call `build_llm_messages()`, use `resolve_model_name(llm)` — test mocks don't expose `primary_model` as a string.
+- **Design Decision:** pgvector on Supabase for semantic memory (Option A scope); Procedural/Episodic deferred to Week 3.
+- **Design Decision:** Static prompt blocks ordered system → context → instructions → examples → tools → reasoning → guardrails; user content always last (never cached).
+- **New Rule:** Cache warming only runs when `OPENROUTER_API_KEY` or `LOCAL_LLM_ENABLED` is set; background loop refreshes every 240s (before 5 min Claude TTL).
+
+### Day 2: 2026-06-06
+- **Lesson:** Verification and adversarial nodes need `llm: LLMRouter | None` parameter plus graph builder wrappers (same pattern as focus/critic).
+- **Lesson:** Critic uses legacy 6-file prompts (~140 tokens) — below OpenAI 1024 auto-cache threshold; only focus, verification, and adversarial are cache-eligible today.
+- **Design Decision:** LLM nodes fall back to Week 1 heuristics on `LLMError` or invalid JSON — consensus routing stays testable without live API.
+- **New Rule:** Prompt version v1.1.0 for verification/adversarial when cache-enabled LLM path is active.
+
+### Day 3: 2026-06-06
+- **Lesson:** Alembic config is **`alembic.ini` at repo root** (`script_location = backend/alembic`); there is no `backend/alembic.ini`. Run `uv run alembic upgrade head` from project root — not `uv run alembic -c backend/alembic.ini upgrade head`.
+- **Lesson:** pgvector migration must `CREATE EXTENSION IF NOT EXISTS vector` before creating `Vector(1536)` columns; RLS policy uses `set_config('app.user_id', ...)` per session.
+- **Design Decision:** Semantic memory uses cosine distance (`<=>`) with HNSW index; embeddings use deterministic hash vectors in tests/dev until live embedding API lands in Day 4.
+- **Design Decision:** Working memory fields (`working_memory_tokens`, `working_memory_limit`, `working_memory_context`) initialized in orchestrator route node.
+- **New Rule:** `SemanticMemoryStore` always filters by `user_id` in queries even with RLS enabled — defense in depth for Supabase.
+
+### Day 4: 2026-06-06
+- **Lesson:** Semantic retrieval belongs in `backend/memory/retrieval.py` — keeps audit + metrics out of the store layer.
+- **Design Decision:** Focus agent reads working memory context first, then queries semantic memory with a merged retrieval string.
+- **Design Decision:** Memory read failures (DB unavailable) log a warning and fall back — focus planning must not fail on retrieval errors.
+- **New Rule:** Every memory read emits `memory_read_audit` structured log + `memory_reads_total` Prometheus counter.
+
+### Day 5: 2026-06-06
+- **Lesson:** Cache ROI is measured against Week 1 baseline (0% hit rate) using `backend/llm/cache_roi.py`; warm-path target is ≥70%.
+- **Design Decision:** Day 5 integration tests live in `test_integration.py` (15 scenarios) separate from unit tests — easier proof packaging.
+- **New Rule:** Proof package in `proof/week2/` must include pytest output, git history, and cache metrics snapshot.
+- **Lesson:** Ruff `I001` flags unsorted imports and inline imports inside functions — hoist to module top; run `uv run ruff check backend --fix`. `known-first-party = ["backend"]` in `pyproject.toml`.
+
 ## Pre-Week 1 — Existing Test Failures
 
 ### Issue: PII Detector Too Aggressive on Trace IDs

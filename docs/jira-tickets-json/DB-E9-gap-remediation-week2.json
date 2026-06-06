@@ -1,0 +1,138 @@
+{
+  "epic": {
+    "id": "DB-E9",
+    "key": "DB-E9",
+    "summary": "Week 2: Prompt Caching + Working/Semantic Memory (Option A)",
+    "description": "Implement prompt caching (v2.0.0) for immediate token cost reduction, complete OpenAI auto-cache structure for verification and adversarial agents, and establish CoALA Working + Semantic memory layers using pgvector on Supabase. Procedural and Episodic memory deferred to Week 3.",
+    "status": "In Progress",
+    "priority": "Critical",
+    "assignee": "Cursor Agents (Coding → Refactor → Testing → Documentation)",
+    "reporter": "Gap Analysis Review",
+    "labels": [
+      "gap-remediation",
+      "prompt-caching",
+      "memory-architecture",
+      "pgvector",
+      "supabase",
+      "coala"
+    ],
+    "created": "2026-06-06",
+    "target_completion": "2026-06-13",
+    "epic_link": "epic/autonomus-implementation-gap",
+    "reference_docs": [
+      "docs/gaps/GAP-ANALYSIS-REVIEW.md",
+      "docs/gaps/WEEK2-IMPLEMENTATION-GUIDE.md",
+      "docs/gaps/WEEK2-KICKOFF-PROMPT.md",
+      "docs/learning/week1-consensus-pattern.md",
+      "007-01-ai-daily-briefing-assistant-v2.0.0.md"
+    ],
+    "dependencies": [
+      "DB-E8 (Week 1) complete and merged",
+      "Cache metrics from Week 1 operational (llm_cache_hit_rate, llm_cache_hit_total, llm_cache_miss_total)"
+    ],
+    "decisions": {
+      "scope": "Option A — full caching Days 1-2, Working + Semantic memory Days 3-4, validation Day 5",
+      "vector_store": "pgvector on Supabase (existing PostgreSQL stack, RLS-native, zero additional service cost)",
+      "deferred": "Procedural and Episodic memory layers → Week 3"
+    }
+  },
+  "tasks": [
+    {
+      "id": "DB-106",
+      "key": "DB-106",
+      "summary": "Day 1: Claude Prompt Caching Implementation",
+      "description": "Implement cache_control blocks via structured prompt assembly, restructure agent prompts with static content before dynamic user input, add cache warming on application startup, and wire cache hit/miss metrics to Prometheus.",
+      "task_type": "Implementation",
+      "story_points": 8,
+      "priority": "Critical",
+      "status": "In Progress",
+      "acceptance_criteria": [
+        "backend/prompts_loader.py builds cacheable static blocks (v2.0.0 + legacy agents)",
+        "backend/llm/prompt_cache.py implements PromptCacheWarmer and build_llm_messages()",
+        "Claude models receive cache_control ephemeral blocks on static prompt sections",
+        "OpenAI models receive stable system prefix ≥1024 tokens (static before dynamic)",
+        "LLMRouter records llm_cache_hit_total / llm_cache_miss_total from usage details",
+        "Cache warming runs on startup when enable_prompt_caching=true",
+        "Focus and Critic agents use build_llm_messages()",
+        "Tests in backend/tests/llm/test_prompt_cache.py pass"
+      ],
+      "validation": [
+        "uv run ruff check backend",
+        "uv run mypy backend",
+        "uv run pytest backend/tests/llm/test_prompt_cache.py -v",
+        "curl http://localhost:8010/metrics | grep llm_cache"
+      ],
+      "estimated_hours": 8
+    },
+    {
+      "id": "DB-107",
+      "key": "DB-107",
+      "summary": "Day 2: Complete 11-File Prompt Structure + OpenAI Caching",
+      "description": "Finalize verification and adversarial prompt optimization for OpenAI auto-caching, wire LLM nodes for verification/adversarial agents, validate cache hit rates against Week 1 baseline.",
+      "task_type": "Implementation",
+      "story_points": 8,
+      "priority": "Critical",
+      "status": "To Do",
+      "acceptance_criteria": [
+        "Verification and adversarial nodes call LLM with cached prompt assembly",
+        "All 22 prompt files validated against v2.0.0 quality checklist",
+        "Cache hit rate measurable via Prometheus for verification/adversarial agents",
+        "Prompt versions bumped in CONTRACT.md and CHANGELOG.md"
+      ],
+      "estimated_hours": 8
+    },
+    {
+      "id": "DB-108",
+      "key": "DB-108",
+      "summary": "Day 3: Working Memory + Semantic Memory Foundation (pgvector)",
+      "description": "Implement ephemeral working memory in LangGraph state with token budget tracking. Enable pgvector extension on Supabase, create semantic_memory Alembic migration with HNSW index and RLS policies.",
+      "task_type": "Implementation",
+      "story_points": 8,
+      "priority": "High",
+      "status": "To Do",
+      "acceptance_criteria": [
+        "backend/memory/working.py manages session-scoped LangGraph state extensions",
+        "Alembic migration enables vector extension and semantic_memory table",
+        "SemanticMemoryStore embeds and retrieves briefing context via pgvector",
+        "RLS policies enforce user_id session isolation",
+        "Vector search <100ms in integration tests"
+      ],
+      "estimated_hours": 8
+    },
+    {
+      "id": "DB-109",
+      "key": "DB-109",
+      "summary": "Day 4: Working + Semantic Memory Integration",
+      "description": "Wire semantic memory retrieval into Focus and Verification agents, integrate working memory token budget with graph state, add memory consolidation stub for nightly job.",
+      "task_type": "Implementation",
+      "story_points": 8,
+      "priority": "High",
+      "status": "To Do",
+      "acceptance_criteria": [
+        "Focus agent retrieves top-k similar past briefings before LLM call",
+        "Working memory token budget tracked and exposed via metrics",
+        "Memory reads logged in audit trail",
+        "Cross-layer query from working → semantic succeeds in tests"
+      ],
+      "estimated_hours": 8
+    },
+    {
+      "id": "DB-110",
+      "key": "DB-110",
+      "summary": "Day 5: Cache Performance Validation, Memory Tests & Documentation",
+      "description": "Measure cache ROI vs Week 1 baseline, comprehensive memory integration tests, proof package, update docs/learning/week2-caching-and-memory.md.",
+      "task_type": "Testing + Documentation",
+      "story_points": 8,
+      "priority": "High",
+      "status": "To Do",
+      "acceptance_criteria": [
+        "Cache hit rate ≥70% in warm-path integration tests",
+        "10+ memory integration test scenarios pass",
+        "proof/week2/ captures test output and cache metrics snapshot",
+        "docs/ARCHITECTURE.md updated with memory layers",
+        "docs/learning/week2-caching-and-memory.md complete"
+      ],
+      "estimated_hours": 8
+    }
+  ]
+}

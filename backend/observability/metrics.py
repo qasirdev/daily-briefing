@@ -106,6 +106,24 @@ CACHE_SIZE_BYTES = Gauge(
     ["provider"],
 )
 
+WORKING_MEMORY_UTILIZATION = Gauge(
+    "working_memory_utilization",
+    "Fraction of session working memory token budget consumed",
+)
+
+MEMORY_READS_TOTAL = Counter(
+    "memory_reads_total",
+    "Memory read operations by layer and agent",
+    ["memory_layer", "agent_id"],
+)
+
+SEMANTIC_SEARCH_DURATION = Histogram(
+    "semantic_search_duration_ms",
+    "Semantic memory vector search latency in milliseconds",
+    ["agent_id"],
+    buckets=[1, 5, 10, 25, 50, 100, 250, 500],
+)
+
 
 @contextmanager
 def observe_agent_execution(
@@ -184,6 +202,42 @@ def record_llm_fallback(*, from_model: str, to_model: str, reason: str) -> None:
 def set_token_budget_utilization(*, agent_id: str, utilization: float) -> None:
     """Set per-agent token budget utilization gauge."""
     TOKEN_BUDGET_UTILIZATION.labels(agent_id=agent_id).set(min(max(utilization, 0.0), 10.0))
+
+
+def record_llm_cache_usage(*, provider: str, model: str, cached_tokens: int) -> None:
+    """Record prompt cache hit or miss and update hit-rate gauge."""
+    if cached_tokens > 0:
+        CACHE_HIT_TOTAL.labels(provider=provider, model=model).inc()
+    else:
+        CACHE_MISS_TOTAL.labels(provider=provider, model=model).inc()
+
+    hits = CACHE_HIT_TOTAL.labels(provider=provider, model=model)._value.get()
+    misses = CACHE_MISS_TOTAL.labels(provider=provider, model=model)._value.get()
+    total = hits + misses
+    if total > 0:
+        CACHE_HIT_RATE.labels(provider=provider, model=model).set(hits / total * 100.0)
+
+
+def set_cache_size_bytes(*, provider: str, size_bytes: int) -> None:
+    """Set current cacheable prompt size gauge."""
+    CACHE_SIZE_BYTES.labels(provider=provider).set(max(size_bytes, 0))
+
+
+def set_working_memory_utilization(*, utilization: float) -> None:
+    """Set session working memory token budget utilization gauge."""
+    WORKING_MEMORY_UTILIZATION.set(min(max(utilization, 0.0), 10.0))
+
+
+def record_memory_read(*, memory_layer: str, agent_id: str, count: int = 1) -> None:
+    """Increment memory read counter."""
+    if count <= 0:
+        return
+    MEMORY_READS_TOTAL.labels(memory_layer=memory_layer, agent_id=agent_id).inc(count)
+
+
+def record_semantic_search_duration(*, duration_ms: float, agent_id: str) -> None:
+    """Record semantic vector search latency."""
+    SEMANTIC_SEARCH_DURATION.labels(agent_id=agent_id).observe(max(duration_ms, 0.0))
 
 
 def log_guardrail_violation(

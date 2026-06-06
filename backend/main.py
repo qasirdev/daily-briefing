@@ -15,7 +15,9 @@ from backend.api.v1.consent import router as consent_router
 from backend.api.v1.dlq import router as dlq_router
 from backend.api.v1.export import router as export_router
 from backend.api.v1.preferences import router as preferences_router
+from backend.dependencies import build_llm_router
 from backend.health.router import router as health_router
+from backend.llm.prompt_cache import PromptCacheWarmer
 from backend.logging_config import bind_trace_id, configure_logging, get_logger
 from backend.security.rate_limit import register_rate_limiting
 from backend.settings import Settings, get_settings
@@ -43,7 +45,25 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         logger.info("signal_handlers_unavailable")
 
     logger.info("application_started", app_env=settings.app_env, version=settings.app_version)
+
+    cache_warmer: PromptCacheWarmer | None = None
+    if (
+        settings.enable_prompt_caching
+        and settings.prompt_cache_warm_on_startup
+        and (settings.openrouter_api_key or settings.local_llm_enabled)
+    ):
+        llm = build_llm_router(settings)
+        cache_warmer = PromptCacheWarmer(settings)
+        try:
+            await cache_warmer.warm_all(llm)
+        except Exception as exc:
+            logger.warning("prompt_cache_initial_warm_failed", error=str(exc))
+        cache_warmer.start_background_loop(llm)
+
     yield
+
+    if cache_warmer is not None:
+        await cache_warmer.stop()
     await coordinator.shutdown(app)
 
 

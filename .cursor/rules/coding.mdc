@@ -35,6 +35,10 @@ async def task_agent_node(state: GraphState) -> AgentResultEnvelope:
     # Must return structured envelope, never raw strings
 ```
 
+### Imports
+- Module-level only — no inline imports inside functions (Ruff `I001`)
+- Order: stdlib → third party → `backend.*` (alphabetical); run `uv run ruff check backend --fix` to auto-sort
+
 ### Error Handling
 - Never catch generic `Exception` — catch specific exception types
 - All MCP failures must be logged with `trace_id` and routed to DLQ
@@ -182,11 +186,12 @@ After completing any backend task, run **in order** before marking done or commi
 
 ```bash
 uv run ruff check backend
+uv run ruff format backend
 uv run mypy backend
 uv run pytest
 ```
 
-All three must pass. See `backend/AGENT.md` for details.
+All four must pass. Use `ruff check backend --fix` when import sort (`I001`) fails. See `backend/AGENT.md` for details.
 
 ### 7. Merge Criteria
 - [ ] All tasks in epic marked done

@@ -1,0 +1,26 @@
+# Week 2 Cache Metrics Snapshot (Day 5 validation)
+
+## Warm-path simulation (test_cache_roi.py)
+- Hits: 7 | Misses: 3 → Hit rate: 70.0% (meets ≥70% target)
+- ROI vs Week 1 baseline (0%): +70.0 percentage points
+- Router warm-path token savings: 80% (800/1000 cached tokens)
+
+## Prometheus metrics exposed at /metrics
+- llm_cache_hit_rate
+- llm_cache_hit_total
+- llm_cache_miss_total
+- llm_cache_size_bytes
+- working_memory_utilization
+- memory_reads_total
+- semantic_search_duration_ms
+
+## Cache-eligible agents
+- focus, verification, adversarial (≥1024 token static prefix)
+- critic: NOT eligible (legacy ~140 token prompts)
+
+## Test evidence
+- Full suite: 205 passed, 2 skipped (see day5-integration-tests.txt)
+- Memory integration: 15 scenarios in test_integration.py
+- Cache ROI: 8 scenarios in test_cache_roi.py
+
+Generated: 2026-06-06 (Day 5 DB-110)

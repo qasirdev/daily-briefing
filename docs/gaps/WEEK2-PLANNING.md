@@ -1,8 +1,10 @@
 # Week 2 Planning — Gap Remediation Roadmap
 
-**Status:** 🕐 Pending (Create After Week 1 Completion)  
-**Prerequisites:** Week 1 (DB-E8) must be complete and merged  
-**Epic Ticket:** `docs/jira-tickets-json/DB-E9-gap-remediation-week2.json` (TO BE CREATED)
+**Status:** 🟢 In Progress (Week 1 complete — Option A + pgvector selected)  
+**Prerequisites:** Week 1 (DB-E8) must be complete and merged ✅  
+**Epic Ticket:** `docs/jira-tickets-json/DB-E9-gap-remediation-week2.json` ✅  
+**Scope Decision:** Option A — caching Days 1-2, Working + Semantic Days 3-4, validation Day 5  
+**Vector Store:** pgvector on Supabase (free tier compatible, RLS-native, matches v2.0.0 Postgres + Redis stack)
 
 ---
 
@@ -321,7 +323,7 @@ Based on `docs/gaps/GAP-ANALYSIS-REVIEW.md` and v2.0.0 proposal, Week 2 will add
 - ✅ Drift detection metrics baseline
 - ✅ Cache metrics instrumented (cache_hit_rate, cache_miss_total, cache_hit_total, cache_size_bytes)
 - [ ] Baseline cache hit rate measured (Week 1 end)
-- [ ] Vector store selected (Pinecone vs Weaviate vs local)
+- ✅ Vector store selected: **pgvector on Supabase**
 - [ ] Memory schema design reviewed
 - [ ] Verification and adversarial agent prompts ready for caching optimization
 
