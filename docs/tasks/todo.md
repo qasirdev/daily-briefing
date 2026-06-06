@@ -49,13 +49,15 @@ Started: 2026-06-06
 - [x] Commit: "Day 2: NHI registry with 5 registered agents"
 
 ### Day 3: Verification Agent Design (Gaps #1-2)
-- [ ] Read existing AGENT.md files (task, calendar, focus, critic, orchestrator)
-- [ ] Create backend/agents/verification/AGENT.md (all required sections)
-- [ ] Create backend/agents/adversarial/AGENT.md (all required sections)
-- [ ] Verify: AGENT.md files complete and consistent
-- [ ] Update docs/tasks/todo.md — mark Day 3 complete
-- [ ] Update docs/tasks/lessons.md with design decisions
-- [ ] Commit: "Day 3: Verification and Adversarial agent design specs"
+- [x] Read existing AGENT.md files (task, calendar, focus, critic, orchestrator)
+- [x] Create backend/agents/verification/AGENT.md (all required sections)
+- [x] Create backend/agents/adversarial/AGENT.md (all required sections)
+- [x] Create prompts/verification/ (11 files, v2.0.0 structure)
+- [x] Create prompts/adversarial/ (11 files, v2.0.0 structure)
+- [x] Verify: AGENT.md files complete and consistent
+- [x] Update docs/tasks/todo.md — mark Day 3 complete
+- [x] Update docs/tasks/lessons.md with design decisions
+- [x] Commit: "Day 3: Verification and Adversarial agent design specs"
 
 ### Day 4: Consensus Model Implementation (Gaps #3-5)
 - [ ] Update backend/graph/builder.py with consensus workflow

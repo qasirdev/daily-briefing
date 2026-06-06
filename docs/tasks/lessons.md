@@ -59,6 +59,11 @@
 - **Root Cause:** Implementation guide loop used numeric indices in NHI IDs, violating the regex pattern.
 - **New Rule:** Use `ensure_registered()` for idempotent singleton bootstrap; load persisted JSON via `NHIRecord.model_validate_json(json.dumps(record))` when `strict=True` (ISO datetime strings won't coerce with `**record`).
 
+### Day 3: 2026-06-06
+- **Lesson:** Verification and Adversarial are distinct roles — Verification grounds claims in MCP data; Adversarial challenges assumptions Verification cannot catch.
+- **Design Decision:** New canonical roles `verifier` and `adversarial` documented in AGENT.md; `AgentResultEnvelope.canonical_role` Literal extension deferred to Day 4 graph implementation.
+- **New Rule:** New agents require both `backend/agents/{name}/AGENT.md` and full 11-file `prompts/{name}/` structure (follow `prompts/focus/` v2.0.0 pattern, not legacy 6-file `prompts/critic/` layout).
+
 ## Pre-Week 1 — Existing Test Failures
 
 ### Issue: PII Detector Too Aggressive on Trace IDs
