@@ -8,10 +8,10 @@ import pytest
 from backend.dependencies import MCPClients
 from backend.graph.builder import build_briefing_graph, route_consensus
 from backend.graph.state import BriefingGraphState
-from backend.settings import Settings
 from backend.llm.models import LLMResponse
 from backend.mcp.calendar import CalendarMCPClient
 from backend.mcp.postgres import PostgresMCPClient
+from backend.settings import Settings
 
 
 @pytest.mark.asyncio

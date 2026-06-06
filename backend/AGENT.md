@@ -109,6 +109,27 @@ backend/
 | Type Safety | All public functions must have complete type annotations |
 | Structured Logging | Use `structlog` for all logging; include `trace_id` in every log |
 | Error Handling | Never catch generic `Exception`; always catch specific types |
+| Backend verification gate | After every backend task, run the three commands below before marking done |
+
+---
+
+## Backend Verification Gate
+
+After completing **every** backend task (implementation, refactor, or test changes), run these commands **in order** from the repository root:
+
+```bash
+uv run ruff check backend
+uv run mypy backend
+uv run pytest
+```
+
+| Step | Command | Pass criteria |
+|---|---|---|
+| 1 | `uv run ruff check backend` | Zero lint warnings |
+| 2 | `uv run mypy backend` | Zero type errors |
+| 3 | `uv run pytest` | All tests pass |
+
+Do not mark a backend task complete or commit until all three pass. Capture test output in `logs/` when required by the epic verification gate.
 
 ---
 

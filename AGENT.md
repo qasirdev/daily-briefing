@@ -27,6 +27,7 @@ co-located AGENT.md files alongside the code they govern.
 | Lessons review | Read `docs/tasks/lessons.md` at session start before touching code |
 | Correction loop | After any user correction: update `docs/tasks/lessons.md` immediately |
 | Done gate | Never mark complete without proving it works (tests, logs, diff) |
+| Backend verification gate | After every backend task: `uv run ruff check backend` → `uv run mypy backend` → `uv run pytest` (see `backend/AGENT.md`) |
 | Elegance check | For non-trivial changes: pause and ask "is there a more elegant way?" |
 | Bug reports | Fix autonomously — point at logs/errors and resolve without hand-holding |
 | Security First | Check `docs/SECURITY.md` before modifying agent inputs/outputs |

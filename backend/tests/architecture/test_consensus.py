@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import time
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import UTC, date, datetime
-from typing import Any, AsyncIterator
+from typing import Any
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -13,10 +14,10 @@ import pytest
 from backend.dependencies import MCPClients
 from backend.graph.builder import build_briefing_graph
 from backend.graph.state import BriefingGraphState
+from backend.llm.models import LLMResponse
 from backend.mcp.calendar import CalendarMCPClient
 from backend.mcp.postgres import PostgresMCPClient
 from backend.schemas.envelope import AgentResultEnvelope, ExecutionMetadata
-from backend.llm.models import LLMResponse
 from backend.settings import Settings
 
 TRACE_AGREEMENT = "a" * 32
@@ -137,7 +138,11 @@ async def _consensus_graph_patches(
         return {"calendar_result": _calendar_envelope(trace_id), "current_agent": "calendar"}
 
     async def mock_focus(state: BriefingGraphState, llm_router: object) -> dict[str, Any]:
-        return {"focus_result": _focus_envelope(trace_id), "current_agent": "focus", "total_tokens": 10}
+        return {
+            "focus_result": _focus_envelope(trace_id),
+            "current_agent": "focus",
+            "total_tokens": 10,
+        }
 
     with (
         patch("backend.graph.builder.task_agent_node", side_effect=mock_task),

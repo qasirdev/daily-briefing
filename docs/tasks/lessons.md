@@ -69,6 +69,10 @@
 - **Design Decision:** `route_consensus` uses `major_concerns >= 2` for human escalation; single major concern routes via minor disagreement to Critic (matches WEEK1 guide matrix).
 - **New Rule:** Consensus nodes only added to graph when flag enabled; `human_escalation` terminates at END with `status=awaiting_human_review` (Orchestrator does not overwrite).
 
+### Backend verification gate (standing rule)
+- **Rule:** After every backend task, run in order: `uv run ruff check backend` → `uv run mypy backend` → `uv run pytest`.
+- **Documented in:** `backend/AGENT.md`, `AGENT.md`, `docs/EXECUTION-RULES.md`, `.cursor/rules/coding.mdc`.
+
 ### Day 5: 2026-06-06
 - **Lesson:** Consensus integration tests must patch nodes at `backend.graph.builder` import sites (not source modules) — LangGraph captures function references at graph compile time.
 - **Lesson:** Critic tests through consensus path need a configured `LLMResponse` mock (`{"approved": true}`) or `llm=None` heuristic path.
