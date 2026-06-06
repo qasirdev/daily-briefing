@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import time
-from typing import Literal
+from typing import Any, Literal
 
 import httpx
 import structlog
@@ -11,7 +11,8 @@ from openai import APIConnectionError, APIError, APIStatusError, AsyncOpenAI
 from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
 
 from backend.llm.models import LLMResponse
-from backend.metrics import record_llm_fallback, record_llm_tokens
+from backend.llm.prompt_cache import infer_cache_provider
+from backend.metrics import record_llm_cache_usage, record_llm_fallback, record_llm_tokens
 from backend.security.pii import mask_pii
 from backend.settings import Settings
 from backend.telemetry import start_async_span
@@ -55,6 +56,10 @@ class LLMRouter:
             )
 
     @property
+    def primary_model(self) -> str:
+        return self._primary_openrouter_model
+
+    @property
     def fallback_model(self) -> str:
         return self._settings.local_llm_model_id or self._settings.llm_fallback_model
 
@@ -67,7 +72,7 @@ class LLMRouter:
     async def generate(
         self,
         *,
-        messages: list[dict[str, str]],
+        messages: list[dict[str, Any]],
         trace_id: str,
         input_budget: int = DEFAULT_INPUT_BUDGET,
         output_budget: int = DEFAULT_OUTPUT_BUDGET,
@@ -149,23 +154,45 @@ class LLMRouter:
             )
 
     @staticmethod
+    def _mask_message_content(content: str) -> str:
+        return mask_pii(content)
+
+    @classmethod
     def _prepare_outbound_messages(
-        messages: list[dict[str, str]],
+        cls,
+        messages: list[dict[str, Any]],
         *,
         data_classification: DataClassification,
-    ) -> list[dict[str, str]]:
+    ) -> list[dict[str, Any]]:
         if data_classification not in {"confidential", "confidential_pii"}:
             return messages
-        return [
-            {"role": message["role"], "content": mask_pii(message.get("content", ""))}
-            for message in messages
-        ]
+        outbound: list[dict[str, Any]] = []
+        for message in messages:
+            content = message.get("content", "")
+            if isinstance(content, str):
+                outbound.append(
+                    {"role": message["role"], "content": cls._mask_message_content(content)},
+                )
+                continue
+            if isinstance(content, list):
+                masked_blocks: list[Any] = []
+                for block in content:
+                    if isinstance(block, dict) and block.get("type") == "text":
+                        text = block.get("text", "")
+                        masked_text = cls._mask_message_content(str(text))
+                        masked_blocks.append({**block, "text": masked_text})
+                    else:
+                        masked_blocks.append(block)
+                outbound.append({"role": message["role"], "content": masked_blocks})
+                continue
+            outbound.append(message)
+        return outbound
 
     async def _fallback_from_primary_error(
         self,
         *,
         primary_error: BaseException,
-        messages: list[dict[str, str]],
+        messages: list[dict[str, Any]],
         max_tokens: int,
         trace_id: str,
         agent_id: str,
@@ -193,7 +220,7 @@ class LLMRouter:
     async def _generate_local(
         self,
         *,
-        messages: list[dict[str, str]],
+        messages: list[dict[str, Any]],
         max_tokens: int,
         trace_id: str,
         agent_id: str,
@@ -223,7 +250,7 @@ class LLMRouter:
     async def _call_primary_with_retry(
         self,
         *,
-        messages: list[dict[str, str]],
+        messages: list[dict[str, Any]],
         max_tokens: int,
         trace_id: str,
         agent_id: str,
@@ -243,7 +270,7 @@ class LLMRouter:
         *,
         client: AsyncOpenAI,
         model: str,
-        messages: list[dict[str, str]],
+        messages: list[dict[str, Any]],
         max_tokens: int,
         trace_id: str,
         agent_id: str,
@@ -279,6 +306,13 @@ class LLMRouter:
             model_used = completion.model or model
             tokens_used = usage.total_tokens if usage else len(choice) // 4
             record_llm_tokens(agent_id=agent_id, model=model_used, tokens=tokens_used)
+            cached_tokens = self._extract_cached_tokens(usage)
+            if self._settings.enable_prompt_caching:
+                record_llm_cache_usage(
+                    provider=infer_cache_provider(model_used),
+                    model=model_used,
+                    cached_tokens=cached_tokens,
+                )
 
             logger.info(
                 "llm_generation_complete",
@@ -287,6 +321,7 @@ class LLMRouter:
                 model_requested=model,
                 openrouter_models=openrouter_models,
                 tokens_used=tokens_used,
+                cached_tokens=cached_tokens,
                 latency_ms=latency_ms,
             )
 
@@ -296,3 +331,18 @@ class LLMRouter:
                 tokens_used=tokens_used,
                 latency_ms=latency_ms,
             )
+
+    @staticmethod
+    def _extract_cached_tokens(usage: object | None) -> int:
+        """Extract cached prompt tokens from provider usage metadata."""
+        if usage is None:
+            return 0
+        cache_read = getattr(usage, "cache_read_input_tokens", None)
+        if isinstance(cache_read, int) and cache_read > 0:
+            return cache_read
+        details = getattr(usage, "prompt_tokens_details", None)
+        if details is not None:
+            cached = getattr(details, "cached_tokens", None)
+            if isinstance(cached, int) and cached > 0:
+                return cached
+        return 0

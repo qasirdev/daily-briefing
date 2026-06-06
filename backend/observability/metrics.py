@@ -186,6 +186,25 @@ def set_token_budget_utilization(*, agent_id: str, utilization: float) -> None:
     TOKEN_BUDGET_UTILIZATION.labels(agent_id=agent_id).set(min(max(utilization, 0.0), 10.0))
 
 
+def record_llm_cache_usage(*, provider: str, model: str, cached_tokens: int) -> None:
+    """Record prompt cache hit or miss and update hit-rate gauge."""
+    if cached_tokens > 0:
+        CACHE_HIT_TOTAL.labels(provider=provider, model=model).inc()
+    else:
+        CACHE_MISS_TOTAL.labels(provider=provider, model=model).inc()
+
+    hits = CACHE_HIT_TOTAL.labels(provider=provider, model=model)._value.get()
+    misses = CACHE_MISS_TOTAL.labels(provider=provider, model=model)._value.get()
+    total = hits + misses
+    if total > 0:
+        CACHE_HIT_RATE.labels(provider=provider, model=model).set(hits / total * 100.0)
+
+
+def set_cache_size_bytes(*, provider: str, size_bytes: int) -> None:
+    """Set current cacheable prompt size gauge."""
+    CACHE_SIZE_BYTES.labels(provider=provider).set(max(size_bytes, 0))
+
+
 def log_guardrail_violation(
     trace_id: str,
     agent_id: str,

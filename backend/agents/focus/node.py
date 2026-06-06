@@ -9,10 +9,11 @@ from typing import Any
 import structlog
 
 from backend.graph.state import BriefingGraphState
+from backend.llm.prompt_cache import build_llm_messages, resolve_model_name
 from backend.llm.router import DataClassification, LLMError, LLMRouter
 from backend.preferences.store import preference_store
-from backend.prompts_loader import build_agent_system_prompt
 from backend.schemas.envelope import AgentResultEnvelope, EscalationPayload, ExecutionMetadata
+from backend.settings import get_settings
 
 logger = structlog.get_logger()
 
@@ -51,19 +52,19 @@ async def focus_agent_node(
         },
         ensure_ascii=True,
     )
-    system_prompt = build_agent_system_prompt("focus")
-    messages = [
-        {"role": "system", "content": system_prompt},
-        {
-            "role": "user",
-            "content": (
-                "<user_data>\n"
-                f"{user_context}\n"
-                "</user_data>\n"
-                "Create a JSON plan with time_blocks including task references."
-            ),
-        },
-    ]
+    user_content = (
+        "<user_data>\n"
+        f"{user_context}\n"
+        "</user_data>\n"
+        "Create a JSON plan with time_blocks including task references."
+    )
+    settings = get_settings()
+    messages = build_llm_messages(
+        "focus",
+        user_content,
+        model=resolve_model_name(llm),
+        enable_caching=settings.enable_prompt_caching,
+    )
 
     total_tokens = state.get("total_tokens", 0)
     if total_tokens > FOCUS_INPUT_BUDGET * 2:
@@ -128,11 +129,7 @@ async def focus_agent_node(
         text = llm_response.content.strip()
         if text.startswith("```"):
             text = (
-                text.removeprefix("```json")
-                .removeprefix("```")
-                .strip()
-                .removesuffix("```")
-                .strip()
+                text.removeprefix("```json").removeprefix("```").strip().removesuffix("```").strip()
             )
         try:
             plan = json.loads(text)

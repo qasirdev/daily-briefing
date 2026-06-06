@@ -9,12 +9,13 @@ from typing import Any
 import structlog
 
 from backend.graph.state import BriefingGraphState
+from backend.llm.prompt_cache import build_llm_messages, resolve_model_name
 from backend.llm.router import LLMError, LLMRouter
 from backend.logging_config import agent_log_context
 from backend.metrics import observe_agent_execution, record_security_violation
-from backend.prompts_loader import build_agent_system_prompt
 from backend.schemas.envelope import AgentResultEnvelope, EscalationPayload, ExecutionMetadata
 from backend.security.injection import PromptInjectionDetector
+from backend.settings import get_settings
 from backend.telemetry import start_async_span
 
 logger = structlog.get_logger()
@@ -60,18 +61,18 @@ async def _llm_quality_issues(
     if focus_result is None or focus_result.result is None:
         return ["Focus agent produced no output"]
 
-    system_prompt = build_agent_system_prompt("critic")
-    messages = [
-        {"role": "system", "content": system_prompt},
-        {
-            "role": "user",
-            "content": (
-                "Review this focus plan JSON for coherence. "
-                'Return JSON: {"approved": bool, "issues": [string]}\n'
-                f"{json.dumps(focus_result.result, ensure_ascii=True)}"
-            ),
-        },
-    ]
+    settings = get_settings()
+    user_content = (
+        "Review this focus plan JSON for coherence. "
+        'Return JSON: {"approved": bool, "issues": [string]}\n'
+        f"{json.dumps(focus_result.result, ensure_ascii=True)}"
+    )
+    messages = build_llm_messages(
+        "critic",
+        user_content,
+        model=resolve_model_name(llm),
+        enable_caching=settings.enable_prompt_caching,
+    )
     try:
         response = await llm.generate(messages=messages, trace_id=trace_id, output_budget=512)
         parsed = json.loads(response.content)

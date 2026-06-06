@@ -37,10 +37,6 @@ async def test_graph_compiles_and_runs() -> None:
             ),
         ),
         patch(
-            "backend.agents.focus.node.build_agent_system_prompt",
-            return_value="<system>focus</system>",
-        ),
-        patch(
             "backend.graph.builder.build_llm_router",
         ) as build_llm,
     ):

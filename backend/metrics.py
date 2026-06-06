@@ -21,9 +21,11 @@ from backend.observability.metrics import (
     record_briefing_generation,
     record_consent_request,
     record_dlq_event,
+    record_llm_cache_usage,
     record_llm_fallback,
     record_llm_tokens,
     record_security_violation,
+    set_cache_size_bytes,
     set_token_budget_utilization,
 )
 
@@ -50,6 +52,8 @@ __all__ = [
     "record_dlq_event",
     "record_llm_fallback",
     "record_llm_tokens",
+    "record_llm_cache_usage",
     "record_security_violation",
+    "set_cache_size_bytes",
     "set_token_budget_utilization",
 ]

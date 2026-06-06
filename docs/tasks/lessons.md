@@ -78,6 +78,14 @@
 - **Lesson:** Critic tests through consensus path need a configured `LLMResponse` mock (`{"approved": true}`) or `llm=None` heuristic path.
 - **Week 1 Summary:** 17 new tests (7 drift + 7 NHI + 3 consensus), 143 total passing; proof package in `proof/week1/`; ready for PR to `epic/autonomus-implementation-gap`.
 
+## Week 2 — Gap Remediation Learnings
+
+### Day 1: 2026-06-06
+- **Lesson:** When agents call `build_llm_messages()`, use `resolve_model_name(llm)` — test mocks don't expose `primary_model` as a string.
+- **Design Decision:** pgvector on Supabase for semantic memory (Option A scope); Procedural/Episodic deferred to Week 3.
+- **Design Decision:** Static prompt blocks ordered system → context → instructions → examples → tools → reasoning → guardrails; user content always last (never cached).
+- **New Rule:** Cache warming only runs when `OPENROUTER_API_KEY` or `LOCAL_LLM_ENABLED` is set; background loop refreshes every 240s (before 5 min Claude TTL).
+
 ## Pre-Week 1 — Existing Test Failures
 
 ### Issue: PII Detector Too Aggressive on Trace IDs

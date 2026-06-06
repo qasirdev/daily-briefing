@@ -53,6 +53,11 @@ class Settings(BaseSettings):
     graph_timeout_seconds: int = 60
     enable_consensus_workflow: bool = False
 
+    enable_prompt_caching: bool = True
+    prompt_cache_warm_on_startup: bool = True
+    prompt_cache_warm_interval_seconds: int = 240
+    prompt_cache_warm_agents: str = "focus,critic,verification,adversarial"
+
     otel_exporter_otlp_endpoint: str = "http://localhost:4317"
     admin_api_key: str = ""
 
@@ -100,6 +105,12 @@ class Settings(BaseSettings):
     @property
     def cors_origin_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+
+    @property
+    def prompt_cache_warm_agent_list(self) -> list[str]:
+        return [
+            agent.strip() for agent in self.prompt_cache_warm_agents.split(",") if agent.strip()
+        ]
 
     @property
     def resolved_mcp_postgres_url(self) -> str:
