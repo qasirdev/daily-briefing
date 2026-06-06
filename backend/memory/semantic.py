@@ -62,8 +62,7 @@ class SemanticMemoryStore:
         """Persist a semantic memory embedding for a user."""
         if len(embedding) != self.embedding_dim:
             msg = (
-                f"Embedding dimension mismatch: expected {self.embedding_dim}, "
-                f"got {len(embedding)}"
+                f"Embedding dimension mismatch: expected {self.embedding_dim}, got {len(embedding)}"
             )
             raise ValueError(msg)
 
@@ -99,8 +98,7 @@ class SemanticMemoryStore:
         """Search semantic memory by cosine similarity for a single user."""
         if len(embedding) != self.embedding_dim:
             msg = (
-                f"Embedding dimension mismatch: expected {self.embedding_dim}, "
-                f"got {len(embedding)}"
+                f"Embedding dimension mismatch: expected {self.embedding_dim}, got {len(embedding)}"
             )
             raise ValueError(msg)
 

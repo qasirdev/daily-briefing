@@ -64,6 +64,11 @@ class Settings(BaseSettings):
     semantic_memory_search_top_k: int = 5
     enable_semantic_memory_retrieval: bool = True
 
+    enable_procedural_memory: bool = True
+    procedural_memory_top_k: int = 5
+    enable_episodic_memory: bool = True
+    episodic_memory_top_k: int = 5
+
     otel_exporter_otlp_endpoint: str = "http://localhost:4317"
     admin_api_key: str = ""
 

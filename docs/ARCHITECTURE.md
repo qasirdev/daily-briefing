@@ -246,7 +246,7 @@ See `docs/learning/week2-caching-and-memory.md` for cache-eligible agents and We
 
 ---
 
-## CoALA Memory Layers (Week 2 — Option A)
+## CoALA Memory Layers (Week 2–3 — Complete)
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -261,16 +261,31 @@ See `docs/learning/week2-caching-and-memory.md` for cache-eligible agents and We
 │  Layer 2: Semantic Memory (pgvector on Supabase)            │
 │  Table: semantic_memory (HNSW + RLS)                        │
 │  Store: backend/memory/semantic.py                          │
-│  Retrieval: backend/memory/retrieval.py                       │
-│  Audit: backend/memory/audit.py → memory_reads_total        │
+└──────────────────────────┬──────────────────────────────────┘
+                           │ cross-layer retrieval
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Layer 3: Procedural Memory (learned workflows)             │
+│  Table: procedural_memory (JSON skills + allowed_agents)    │
+│  Store: backend/memory/procedural.py                        │
+└──────────────────────────┬──────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Layer 4: Episodic Memory (distilled session lessons)       │
+│  Table: episodic_memory (versioning + supersede)              │
+│  Store: backend/memory/episodic.py                          │
+│  Distillation: backend/memory/consolidation.py              │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-Focus agent reads working context, queries semantic memory for similar past briefings, injects hits into the LLM payload, and stores successful plan summaries for future retrieval.
+`retrieve_agent_memory()` in `backend/memory/retrieval.py` combines all layers. Focus agent injects `semantic_memory`, `procedural_skills`, and `episodic_lessons` into the LLM payload.
 
-**Migration:** `uv run alembic upgrade head` from project root (`alembic.ini`, not `backend/alembic.ini`).
+**Prompt versioning:** `backend/prompt_version.py` reads `prompts/{agent}/CONTRACT.md`; version changes log `prompt_cache_version_changed` on startup.
 
-Procedural and Episodic layers → Week 3.
+**Migration:** `uv run alembic upgrade head` from project root (`alembic.ini`).
+
+See `docs/learning/week3-memory-and-versioning.md` for Week 3 details.
 
 ---
 

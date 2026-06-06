@@ -19,6 +19,7 @@ from backend.dependencies import build_llm_router
 from backend.health.router import router as health_router
 from backend.llm.prompt_cache import PromptCacheWarmer
 from backend.logging_config import bind_trace_id, configure_logging, get_logger
+from backend.prompt_version import check_and_invalidate_cache, register_version_snapshot
 from backend.security.rate_limit import register_rate_limiting
 from backend.settings import Settings, get_settings
 from backend.shutdown import ShutdownCoordinator
@@ -45,6 +46,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         logger.info("signal_handlers_unavailable")
 
     logger.info("application_started", app_env=settings.app_env, version=settings.app_version)
+
+    register_version_snapshot()
+    check_and_invalidate_cache()
 
     cache_warmer: PromptCacheWarmer | None = None
     if (

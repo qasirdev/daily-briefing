@@ -111,6 +111,17 @@
 - **New Rule:** Proof package in `proof/week2/` must include pytest output, git history, and cache metrics snapshot.
 - **Lesson:** Ruff `I001` flags unsorted imports and inline imports inside functions — hoist to module top; run `uv run ruff check backend --fix`. `known-first-party = ["backend"]` in `pyproject.toml`.
 
+## Week 3 — Gap Remediation Learnings
+
+### Day 1–5: 2026-06-06
+- **Lesson:** Extend `MemoryLayer` and `MemoryOperation` Literals in `audit.py` when adding new CoALA layers — mypy rejects `"procedural"` / `"list"` otherwise.
+- **Design Decision:** Procedural skills use `allowed_agents` JSONB for progressive disclosure; agents only see skills they own or are explicitly permitted to use.
+- **Design Decision:** Episodic memory stores distilled lessons (`session_summary` type), not raw conversation logs; `superseded_by` enables rollback without deletion.
+- **Design Decision:** Prompt versions resolve from `prompts/{agent}/CONTRACT.md` via `backend/prompt_version.py` — no hardcoded `PROMPT_VERSION` constants in agent nodes.
+- **New Rule:** On startup, call `register_version_snapshot()` then `check_and_invalidate_cache()` before cache warming — version bumps log `prompt_cache_version_changed`.
+- **New Rule:** Focus agent uses `retrieve_agent_memory()` for all layers; patch at `backend.agents.focus.node.retrieve_agent_memory` in tests (not semantic store directly).
+- **Week 3 Summary:** 12 new tests, 217 total passing; migrations 003 + 004; proof package in `proof/week3/`.
+
 ## Pre-Week 1 — Existing Test Failures
 
 ### Issue: PII Detector Too Aggressive on Trace IDs

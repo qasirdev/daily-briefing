@@ -11,8 +11,8 @@ from pydantic import BaseModel, ConfigDict, Field
 
 logger = structlog.get_logger()
 
-MemoryLayer = Literal["semantic", "working"]
-MemoryOperation = Literal["search", "get", "snapshot"]
+MemoryLayer = Literal["semantic", "working", "procedural", "episodic"]
+MemoryOperation = Literal["search", "get", "snapshot", "list"]
 
 
 class MemoryReadAuditEntry(BaseModel):
