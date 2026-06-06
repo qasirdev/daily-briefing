@@ -37,16 +37,16 @@ Started: 2026-06-06
 - [ ] Verify: guardrail_violations_total visible in Prometheus UI (requires observability stack)
 - [x] Update docs/tasks/todo.md — mark Day 1 complete
 - [x] Update docs/tasks/lessons.md with insights
-- [ ] Commit: "Day 1: Drift detection implementation with tests"
+- [x] Commit: "Day 1: Drift detection implementation with tests"
 
 ### Day 2: NHI Registry Foundation (Gaps #92-93)
-- [ ] Create docs/NHI-OBSERVABILITY.md
-- [ ] Create backend/security/nhi_registry.py
-- [ ] Write tests: backend/tests/security/test_nhi.py
-- [ ] Verify: Registry JSON persists correctly
-- [ ] Update docs/tasks/todo.md — mark Day 2 complete
-- [ ] Update docs/tasks/lessons.md with insights
-- [ ] Commit: "Day 2: NHI registry with 5 registered agents"
+- [x] Create docs/NHI-OBSERVABILITY.md
+- [x] Create backend/security/nhi_registry.py
+- [x] Write tests: backend/tests/security/test_nhi.py
+- [x] Verify: Registry JSON persists correctly
+- [x] Update docs/tasks/todo.md — mark Day 2 complete
+- [x] Update docs/tasks/lessons.md with insights
+- [x] Commit: "Day 2: NHI registry with 5 registered agents"
 
 ### Day 3: Verification Agent Design (Gaps #1-2)
 - [ ] Read existing AGENT.md files (task, calendar, focus, critic, orchestrator)

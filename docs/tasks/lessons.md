@@ -54,6 +54,11 @@
 - **Root Cause:** WEEK1-IMPLEMENTATION-GUIDE example tests used short trace IDs (`test_trace_456`) that fail Pydantic validation.
 - **New Rule:** When writing envelope tests, always use 32-char hex/alphanumeric trace IDs; consolidate metrics into `backend/observability/` with `backend/metrics.py` as re-export shim for backward compatibility.
 
+### Day 2: 2026-06-06
+- **Lesson:** NHI IDs must match `^nhi_[a-z_]+_v\d+$` — no digits in the name segment (`nhi_agent_0_v1` fails; use `nhi_alpha_v1`).
+- **Root Cause:** Implementation guide loop used numeric indices in NHI IDs, violating the regex pattern.
+- **New Rule:** Use `ensure_registered()` for idempotent singleton bootstrap; load persisted JSON via `NHIRecord.model_validate_json(json.dumps(record))` when `strict=True` (ISO datetime strings won't coerce with `**record`).
+
 ## Pre-Week 1 — Existing Test Failures
 
 ### Issue: PII Detector Too Aggressive on Trace IDs
