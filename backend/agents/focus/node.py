@@ -12,7 +12,7 @@ from backend.graph.state import BriefingGraphState
 from backend.llm.prompt_cache import build_llm_messages, resolve_model_name
 from backend.llm.router import DataClassification, LLMError, LLMRouter
 from backend.memory.audit import memory_audit_trail
-from backend.memory.embeddings import embed_text
+from backend.memory.embeddings import embed_text_async
 from backend.memory.retrieval import (
     build_focus_retrieval_query,
     retrieve_agent_memory,
@@ -48,7 +48,7 @@ async def _persist_focus_summary(
         await store.store(
             user_id=user_id,
             content=summary.strip(),
-            embedding=embed_text(summary, settings),
+            embedding=await embed_text_async(summary, settings),
             source_type="briefing",
             source_id=request_id or None,
         )

@@ -9,7 +9,7 @@ from typing import Any
 import structlog
 
 from backend.memory.audit import memory_audit_trail
-from backend.memory.embeddings import embed_text
+from backend.memory.embeddings import embed_text_async
 from backend.memory.episodic import EpisodicLessonRecord, EpisodicMemoryStore
 from backend.memory.procedural import ProceduralMemoryStore, ProceduralSkillRecord
 from backend.memory.semantic import SemanticMemoryRecord, SemanticMemoryStore
@@ -126,7 +126,7 @@ async def retrieve_semantic_context(
     if not query:
         return []
 
-    embedding = embed_text(query, resolved_settings)
+    embedding = await embed_text_async(query, resolved_settings)
     start = time.perf_counter()
     try:
         records = await resolved_store.search_similar(

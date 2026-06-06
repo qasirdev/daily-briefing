@@ -1,0 +1,132 @@
+{
+  "epic": {
+    "id": "DB-E11",
+    "key": "DB-E11",
+    "summary": "Week 4: Memory Security, AgentOps & Live Embeddings",
+    "description": "Phase 2 gap remediation: replace deterministic semantic embeddings with live API when configured, add RAG poisoning defense and memory quarantine, enforce memory privilege lifecycle, expand AgentOps metrics, upgrade Critic prompts to v2.0.0 cache-eligible structure.",
+    "status": "In Progress",
+    "priority": "Critical",
+    "assignee": "Cursor Agents (Coding → Refactor → Testing → Documentation)",
+    "reporter": "Gap Analysis Review",
+    "labels": [
+      "gap-remediation",
+      "memory-security",
+      "agentops",
+      "embeddings",
+      "rag-poisoning",
+      "owasp-agent"
+    ],
+    "created": "2026-06-06",
+    "target_completion": "2026-06-13",
+    "epic_link": "epic/autonomus-implementation-gap",
+    "reference_docs": [
+      "docs/gaps/GAP-ANALYSIS-REVIEW.md",
+      "docs/gaps/WEEK4-IMPLEMENTATION-GUIDE.md",
+      "docs/gaps/WEEK4-KICKOFF-PROMPT.md",
+      "docs/learning/week3-memory-and-versioning.md",
+      "007-01-ai-daily-briefing-assistant-v2.0.0.md"
+    ],
+    "dependencies": [
+      "DB-E10 (Week 3) complete — all four CoALA memory layers operational",
+      "217+ tests passing baseline",
+      "Prompt version registry from Week 3"
+    ],
+    "decisions": {
+      "scope": "Live embeddings Day 1, RAG defense Day 2, quarantine Day 3, privilege lifecycle + AgentOps Day 4, Critic v2.0.0 + proof Day 5",
+      "embedding_provider": "OpenRouter with openai/text-embedding-3-small; deterministic fallback for CI/offline",
+      "gaps": "#58-61 AgentOps, #119 privilege retention, #120 RAG poisoning, #132 memory quarantine"
+    }
+  },
+  "tasks": [
+    {
+      "id": "DB-116",
+      "key": "DB-116",
+      "summary": "Day 1: Live Embedding API",
+      "description": "Replace deterministic-only semantic vectors with OpenRouter embedding API when configured. Add embedding_provider settings, async embed_text_async(), Prometheus metrics, and update Focus/retrieval call sites.",
+      "task_type": "Implementation",
+      "story_points": 8,
+      "priority": "High",
+      "status": "Done",
+      "acceptance_criteria": [
+        "embedding_provider setting: deterministic | openrouter",
+        "embed_text_async() calls OpenRouter when provider=openrouter",
+        "Deterministic fallback preserved for tests and offline dev",
+        "Focus agent and retrieve_agent_memory use embed_text_async",
+        "embedding_requests_total and embedding_duration_ms metrics exposed",
+        "Tests in backend/tests/memory/test_embeddings.py pass"
+      ],
+      "estimated_hours": 8
+    },
+    {
+      "id": "DB-117",
+      "key": "DB-117",
+      "summary": "Day 2: RAG Poisoning Defense (Gap #120)",
+      "description": "Pre-ingestion validation for semantic memory: injection pattern scan, content provenance metadata, retrieval sanitization before LLM injection.",
+      "task_type": "Implementation",
+      "story_points": 8,
+      "priority": "Critical",
+      "status": "To Do",
+      "acceptance_criteria": [
+        "backend/memory/ingestion.py validates content before store",
+        "Malicious patterns rejected with security_violations metric",
+        "Provenance fields on semantic_memory (source_trust, content_hash)",
+        "Alembic migration 005 adds provenance columns",
+        "Tests in backend/tests/memory/test_ingestion.py pass"
+      ],
+      "estimated_hours": 8
+    },
+    {
+      "id": "DB-118",
+      "key": "DB-118",
+      "summary": "Day 3: Memory Quarantine Workflow (Gap #132)",
+      "description": "Quarantine suspected poisoned memory segments: freeze retrieval, flag metadata, alert on quarantine action, review restore/delete workflow.",
+      "task_type": "Implementation",
+      "story_points": 8,
+      "priority": "High",
+      "status": "To Do",
+      "acceptance_criteria": [
+        "backend/memory/quarantine.py implements quarantine/restore/delete",
+        "Quarantined rows excluded from semantic and episodic retrieval",
+        "memory_quarantine_total metric and audit log entry on quarantine",
+        "Tests in backend/tests/memory/test_quarantine.py pass"
+      ],
+      "estimated_hours": 8
+    },
+    {
+      "id": "DB-119",
+      "key": "DB-119",
+      "summary": "Day 4: Privilege Retention + AgentOps Metrics (Gaps #119, #58-61)",
+      "description": "Sanitize privileges from episodic memory, enforce session-bound privilege TTL, add consensus_disagreement and memory_consolidation metrics, orchestrator post-session distillation hook.",
+      "task_type": "Implementation",
+      "story_points": 8,
+      "priority": "High",
+      "status": "To Do",
+      "acceptance_criteria": [
+        "Episodic lessons redact credential/privilege patterns before store",
+        "Privilege grants stored in past tense with session expiry",
+        "consensus_disagreement_total and memory_consolidation_duration metrics",
+        "Orchestrator calls distill_working_to_episodic at session end",
+        "docs/MEMORY-ARCHITECTURE.md documents privilege lifecycle"
+      ],
+      "estimated_hours": 8
+    },
+    {
+      "id": "DB-120",
+      "key": "DB-120",
+      "summary": "Day 5: Critic v2.0.0 + Integration Tests & Proof",
+      "description": "Upgrade Critic agent to 11-file v2.0.0 prompt structure (≥1024 tokens for OpenAI cache), cross-layer security integration tests, proof/week4/, learning doc.",
+      "task_type": "Testing + Documentation",
+      "story_points": 8,
+      "priority": "High",
+      "status": "To Do",
+      "acceptance_criteria": [
+        "prompts/critic/ has full v2.0.0 structure with CONTRACT.md bump",
+        "Critic node uses resolve_prompt_version() and build_llm_messages()",
+        "10+ memory security integration scenarios pass",
+        "proof/week4/ captures test output",
+        "docs/learning/week4-memory-security-and-agentops.md complete"
+      ],
+      "estimated_hours": 8
+    }
+  ]
+}

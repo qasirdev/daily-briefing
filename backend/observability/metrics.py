@@ -124,6 +124,19 @@ SEMANTIC_SEARCH_DURATION = Histogram(
     buckets=[1, 5, 10, 25, 50, 100, 250, 500],
 )
 
+EMBEDDING_REQUESTS_TOTAL = Counter(
+    "embedding_requests_total",
+    "Embedding API requests by provider, model, and status",
+    ["provider", "model", "status"],
+)
+
+EMBEDDING_DURATION = Histogram(
+    "embedding_duration_ms",
+    "Embedding API latency in milliseconds",
+    ["provider", "model"],
+    buckets=[10, 25, 50, 100, 250, 500, 1000, 2500],
+)
+
 
 @contextmanager
 def observe_agent_execution(
@@ -238,6 +251,19 @@ def record_memory_read(*, memory_layer: str, agent_id: str, count: int = 1) -> N
 def record_semantic_search_duration(*, duration_ms: float, agent_id: str) -> None:
     """Record semantic vector search latency."""
     SEMANTIC_SEARCH_DURATION.labels(agent_id=agent_id).observe(max(duration_ms, 0.0))
+
+
+def record_embedding_request(
+    *,
+    provider: str,
+    model: str,
+    status: str,
+    duration_ms: float,
+) -> None:
+    """Record embedding API usage and latency."""
+    EMBEDDING_REQUESTS_TOTAL.labels(provider=provider, model=model, status=status).inc()
+    if status == "success":
+        EMBEDDING_DURATION.labels(provider=provider, model=model).observe(max(duration_ms, 0.0))
 
 
 def log_guardrail_violation(

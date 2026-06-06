@@ -4,8 +4,16 @@ from __future__ import annotations
 
 import hashlib
 import math
+import time
+from functools import lru_cache
 
+import structlog
+from openai import AsyncOpenAI
+
+from backend.metrics import record_embedding_request
 from backend.settings import Settings, get_settings
+
+logger = structlog.get_logger()
 
 
 def deterministic_embedding(text: str, *, dimensions: int | None = None) -> list[float]:
@@ -28,6 +36,67 @@ def deterministic_embedding(text: str, *, dimensions: int | None = None) -> list
 
 
 def embed_text(text: str, settings: Settings | None = None) -> list[float]:
-    """Return an embedding vector for semantic memory indexing."""
+    """Return a deterministic embedding vector (sync — for tests and offline dev)."""
     resolved = settings or get_settings()
     return deterministic_embedding(text, dimensions=resolved.semantic_memory_embedding_dim)
+
+
+@lru_cache
+def _embedding_client(settings: Settings) -> AsyncOpenAI:
+    return AsyncOpenAI(
+        api_key=settings.openrouter_api_key or "missing-key",
+        base_url=settings.openrouter_base_url,
+    )
+
+
+async def embed_text_async(text: str, settings: Settings | None = None) -> list[float]:
+    """Return an embedding vector, using OpenRouter when configured."""
+    resolved = settings or get_settings()
+    if resolved.embedding_provider == "deterministic":
+        return deterministic_embedding(
+            text,
+            dimensions=resolved.semantic_memory_embedding_dim,
+        )
+
+    if not text.strip():
+        msg = "Cannot embed empty text"
+        raise ValueError(msg)
+
+    start = time.perf_counter()
+    client = _embedding_client(resolved)
+    try:
+        response = await client.embeddings.create(
+            model=resolved.embedding_model,
+            input=text,
+        )
+    except Exception as exc:
+        record_embedding_request(
+            provider=resolved.embedding_provider,
+            model=resolved.embedding_model,
+            status="failure",
+            duration_ms=(time.perf_counter() - start) * 1000.0,
+        )
+        logger.warning(
+            "embedding_request_failed",
+            provider=resolved.embedding_provider,
+            model=resolved.embedding_model,
+            error=str(exc),
+        )
+        raise
+
+    vector = list(response.data[0].embedding)
+    if len(vector) != resolved.semantic_memory_embedding_dim:
+        msg = (
+            "Embedding dimension mismatch: expected "
+            f"{resolved.semantic_memory_embedding_dim}, got {len(vector)}"
+        )
+        raise ValueError(msg)
+
+    duration_ms = (time.perf_counter() - start) * 1000.0
+    record_embedding_request(
+        provider=resolved.embedding_provider,
+        model=resolved.embedding_model,
+        status="success",
+        duration_ms=duration_ms,
+    )
+    return vector
