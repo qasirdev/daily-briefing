@@ -49,9 +49,9 @@ Each red team session includes:
 
 ---
 
-## Multi-Incident Tabletop (Preview — Week 7)
+## Multi-Incident Tabletop (Gap #130)
 
-Week 7 adds Gap #130 five simultaneous incident scenarios. This document establishes the baseline single-track protocol.
+Quarterly five-incident simultaneous scenarios documented in `docs/security/TABLETOP-EXERCISES.md` with parallel triage runbook at `docs/security/incident-response-playbook.md`.
 
 ---
 

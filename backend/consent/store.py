@@ -170,6 +170,13 @@ class ConsentStore:
             return False
         return True
 
+    def get_active(self, user_id: str, service: str) -> ConsentRecord | None:
+        """Return the active consent record for a user/service pair."""
+        record = self._find_by_user_service(user_id, service)
+        if record is None or not record.is_active:
+            return None
+        return record
+
     def record_usage(self, user_id: str, service: str) -> None:
         record = self._find_by_user_service(user_id, service)
         if record is None:

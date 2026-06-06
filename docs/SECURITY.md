@@ -88,7 +88,7 @@ Agent-specific vulnerabilities beyond OWASP GenAI LLM Top 10. Registry: `backend
 | **AGENT05** | Cascading Failures | ✅ **Implemented** | DLQ routing, circuit breakers, token budgets | [`test_token_budget.py`](../backend/tests/security/test_token_budget.py) |
 | **AGENT06** | Unexpected Code Execution | ⬜ **N/A** | No agent-generated code execution in MVP | N/A |
 | **AGENT07** | Identity & Privilege Abuse | ✅ **Implemented** | JIT CredentialBroker, NHI registry, consent | [`test_vault.py`](../backend/tests/security/test_vault.py) |
-| **AGENT08** | Overwhelming HITL | 🟡 **Partial** | JIT consent modal; human escalation on consensus | [`test_consent.py`](../backend/tests/test_consent.py) |
+| **AGENT08** | Overwhelming HITL | ✅ **Implemented** | 8-layer HITL architecture, reasoning traces, per-action authz, override paths | [`test_hitl_layers.py`](../backend/tests/security/test_hitl_layers.py) |
 | **AGENT09** | Human-Agent Trust Exploitation | ✅ **Implemented** | Consent modal shows `action_payload` JSON + natural-language message | [`test_governance_integration.py`](../backend/tests/security/test_governance_integration.py) |
 | **AGENT10** | Rogue Agents | ✅ **Implemented** | Guardrail trends, long-term drift, red team cadence | [`test_drift_detection.py`](../backend/tests/observability/test_drift_detection.py) |
 
@@ -110,6 +110,21 @@ Rules: `backend/security/rules.yaml`
 Evaluation corpus: `backend/tests/security/jailbreak_corpus.yaml` (≥95% block rate in CI)
 
 Metric: `constitutional_violations_total{rule_id, severity}`
+
+---
+
+## Per-Action Authorization (Gaps #52, #128)
+
+Real-time ABAC evaluation before every credential issuance and MCP action — no stale session privileges.
+
+| Component | Path |
+|---|---|
+| Policy engine | `backend/security/policy_engine.py` |
+| Per-action authorizer | `backend/security/per_action_authz.py` |
+| Broker integration | `backend/security/vault.py` — authz before credential issue |
+| Metric | `per_action_authz_total{service, action, outcome}` |
+
+Tests: [`test_per_action_authz.py`](../backend/tests/security/test_per_action_authz.py)
 
 ---
 

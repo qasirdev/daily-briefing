@@ -173,6 +173,12 @@ CREDENTIAL_ISSUANCE_TOTAL = Counter(
     ["service", "intent"],
 )
 
+PER_ACTION_AUTHZ_TOTAL = Counter(
+    "per_action_authz_total",
+    "Per-action authorization decisions",
+    ["service", "action", "outcome"],
+)
+
 CONSTITUTIONAL_VIOLATIONS_TOTAL = Counter(
     "constitutional_violations_total",
     "Constitutional classifier rule violations",
@@ -377,6 +383,11 @@ def record_audit_chain_verification_failure() -> None:
 def record_credential_issuance(*, service: str, intent: str) -> None:
     """Increment JIT credential issuance counter."""
     CREDENTIAL_ISSUANCE_TOTAL.labels(service=service, intent=intent).inc()
+
+
+def record_per_action_authz(*, service: str, action: str, outcome: str) -> None:
+    """Increment per-action authorization counter."""
+    PER_ACTION_AUTHZ_TOTAL.labels(service=service, action=action, outcome=outcome).inc()
 
 
 def record_constitutional_violation(*, rule_id: str, severity: str) -> None:

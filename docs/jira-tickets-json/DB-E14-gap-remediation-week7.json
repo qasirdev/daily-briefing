@@ -1,0 +1,52 @@
+{
+  "DB-E14": [
+    {
+      "Issue id": "DB-E14",
+      "Summary": "Week 7: HITL Layers & Governance Hardening",
+      "Issue Type": "Epic",
+      "Description": "Phase 5 gap remediation: implement full 8-layer HITL architecture, per-action authorization with real-time policy evaluation, reasoning trace observability, organizational governance, multi-incident tabletop exercises, and emergency change authorization procedures.\n\nSCOPE:\n- Gap #66-69: Full HITL layers + reasoning observability + override/rollback docs\n- Gap #86: Organizational governance (GOVERNANCE.md)\n- Gap #95: Human-on-the-loop default operating mode\n- Gap #128: Per-action authorization with ABAC policy engine\n- Gap #130: Multi-incident chaos testing (5 simultaneous scenarios)\n- Gap #131: Emergency change authorization tiers\n- AGENT08: Upgrade from partial to implemented\n\nEFFORT: XL (40 hours over 5 days)\nPROJECT AREA: Security, Governance, Frontend, Documentation\nDEPENDENCIES: DB-E13 (Week 6) complete — OWASP Agent Top 10, constitutional classifiers, MITRE, 364+ tests\n\nEPIC LINK: epic/autonomus-implementation-gap\nFEATURE BRANCH: epic/week7-gap-remediation\n\nREFERENCE DOCS:\n- docs/gaps/GAP-ANALYSIS-REVIEW.md (Phase 4-5)\n- docs/gaps/WEEK7-IMPLEMENTATION-GUIDE.md\n- docs/gaps/WEEK7-KICKOFF-PROMPT.md\n- docs/learning/week6-owasp-agent-governance.md\n- 007-01-ai-daily-briefing-assistant-v2.0.0.md\n\nSUCCESS CRITERIA:\n- 8 HITL layers documented and registered in backend/security/hitl.py\n- Per-action authz runs before every credential issuance (test_per_action_authz.py)\n- ReasoningTrace component renders agent steps in frontend\n- GOVERNANCE.md + INCIDENT-RESPONSE.md + TABLETOP-EXERCISES.md complete\n- AGENT08 status implemented in owasp_agent.py\n- proof/week7/ complete; 390+ tests passing",
+      "Labels": "gap-remediation,hitl,governance,week7",
+      "Parent": ""
+    },
+    {
+      "Issue id": "DB-131",
+      "Summary": "Day 1: HITL Layer Architecture & Registry (Gaps #66, #95)",
+      "Issue Type": "Task",
+      "Description": "Document and register the 8-layer IBM HITL architecture; declare human-on-the-loop as default operating mode.\n\nIMPLEMENTATION DETAILS:\n- Create backend/security/hitl.py with HITL_LAYERS registry (input through feedback)\n- Create docs/HITL-ARCHITECTURE.md — layer table, operating modes, test references\n- Update docs/AGENTIC-CONSENT.md § Human-on-the-Loop Default\n- Create backend/tests/security/test_hitl_layers.py — assert 8 layers, test_module paths\n\nEFFORT: M (8 hours)\nPROJECT AREA: Backend, Documentation\nDEPENDENCIES: DB-E13\n\nTESTING CRITERIA:\n- test_hitl_layers.py passes (≥8 scenarios — one per layer)\n- all_layers_operational() returns True (no planned layers)\n- HITL doc references IBM 8-layer model\n\nEDGE CASES:\n- Feedback layer partial: document reasoning-level feedback UI as Week 8 follow-up\n- Missing test_module for implemented layer: test fails with actionable message",
+      "Labels": "hitl,architecture,governance,week7,gap-66,gap-95",
+      "Parent": "DB-E14"
+    },
+    {
+      "Issue id": "DB-132",
+      "Summary": "Day 2: Per-Action Authorization & Policy Engine (Gap #128)",
+      "Issue Type": "Task",
+      "Description": "Implement real-time ABAC policy evaluation before every credential issuance and MCP action.\n\nIMPLEMENTATION DETAILS:\n- Create backend/security/policy_engine.py — PolicyEngine, PolicyContext, fresh consent lookup\n- Create backend/security/per_action_authz.py — PerActionAuthorizer, ActionRequest\n- Add ConsentStore.get_active() for real-time consent record fetch\n- Wire vault.py CredentialBroker.get_credential() through per_action_authorizer\n- Add per_action_authz_total Prometheus metric\n- Document in docs/SECURITY.md § Per-Action Authorization\n- Create backend/tests/security/test_per_action_authz.py\n\nEFFORT: L (8 hours)\nPROJECT AREA: Backend, Security\nDEPENDENCIES: DB-131\n\nTESTING CRITERIA:\n- Authorization denied when consent revoked mid-session\n- Agent mismatch denied (calendar consent used by task agent)\n- test_per_action_authz.py passes (≥7 scenarios)\n- Broker raises CredentialDeniedError on policy deny\n\nEDGE CASES:\n- Empty user_id: deny with reason user_id required\n- Policy engine exception: fail-closed with PolicyUnavailableError\n- Write action without write scope: deny",
+      "Labels": "per-action-authz,policy-engine,security,week7,gap-128",
+      "Parent": "DB-E14"
+    },
+    {
+      "Issue id": "DB-133",
+      "Summary": "Day 3: Reasoning Trace Observability (Gaps #67-68)",
+      "Issue Type": "Task",
+      "Description": "Expose agent reasoning steps to operators via API and frontend component.\n\nIMPLEMENTATION DETAILS:\n- Create backend/schemas/reasoning_trace.py — ReasoningTraceEntry, ReasoningTraceResponse\n- Create backend/observability/reasoning_trace.py — collect_reasoning_traces(state)\n- Add reasoning_trace to BriefingResponse; handle awaiting_human_review status\n- Create frontend/components/ReasoningTrace.tsx\n- Update frontend/lib/briefing-schema.ts with reasoning_trace Zod schema\n- Create docs/OVERRIDE-ROLLBACK.md — pause, override, rollback procedures\n- Update docs/OBSERVABILITY.md § Reasoning Trace Observability\n- Create backend/tests/observability/test_reasoning_trace.py\n\nEFFORT: L (8 hours)\nPROJECT AREA: Backend, Frontend, Documentation\nDEPENDENCIES: DB-132\n\nTESTING CRITERIA:\n- collect_reasoning_traces maps agents to HITL layers\n- Human escalation produces awaiting_human status entry\n- test_reasoning_trace.py passes (≥4 scenarios)\n- Frontend renders expandable trace list\n\nEDGE CASES:\n- Empty graph state: reasoning_trace with empty entries\n- awaiting_human_review: hitl_mode human_in_the_loop\n- Long summary text: truncated at 500 chars in schema",
+      "Labels": "reasoning-trace,observability,frontend,week7,gap-67,gap-68",
+      "Parent": "DB-E14"
+    },
+    {
+      "Issue id": "DB-134",
+      "Summary": "Day 4: Governance & Emergency Authorization (Gaps #86, #131)",
+      "Issue Type": "Task",
+      "Description": "Document organizational governance and emergency change authorization tiers.\n\nIMPLEMENTATION DETAILS:\n- Create docs/GOVERNANCE.md — committee roles, asset ownership, deployment gates, emergency tiers 1-3\n- Create docs/INCIDENT-RESPONSE.md — severity classification, workflow, emergency contact template\n- Update docs/security/MITRE-ATTACK-COVERAGE.md blind spot T1550.004 → per-action authz remediated\n- Update owasp_agent.py AGENT08 status to implemented\n\nEFFORT: M (8 hours)\nPROJECT AREA: Documentation, Security\nDEPENDENCIES: DB-133\n\nTESTING CRITERIA:\n- GOVERNANCE.md documents Tier 1/2/3 emergency authorization\n- INCIDENT-RESPONSE.md references GOVERNANCE emergency tiers\n- AGENT08 status implemented in owasp_agent.py\n- test_owasp_agent_top10.py still passes\n\nEDGE CASES:\n- PII in emergency contacts: document template only, not real phone numbers in repo\n- Tier 1 without retrospective: document as governance violation",
+      "Labels": "governance,incident-response,week7,gap-86,gap-131",
+      "Parent": "DB-E14"
+    },
+    {
+      "Issue id": "DB-135",
+      "Summary": "Day 5: Multi-Incident Tabletop, Integration Tests & Proof (Gap #130)",
+      "Issue Type": "Task",
+      "Description": "Five simultaneous incident tabletop scenario, parallel triage runbook, integration tests, and Week 7 proof package.\n\nIMPLEMENTATION DETAILS:\n- Create docs/security/TABLETOP-EXERCISES.md — 5 concurrent incident scenario + priority matrix\n- Create docs/security/incident-response-playbook.md — parallel triage protocol\n- Update docs/RED-TEAMING.md — link tabletop exercises\n- Create backend/tests/security/test_hitl_integration.py (≥5 scenarios)\n- Create proof/week7/ with pytest output, git log\n- Write docs/learning/week7-hitl-governance.md\n- Update docs/PLAN.md Week 7 status\n\nEFFORT: M (8 hours)\nPROJECT AREA: Documentation, Testing\nDEPENDENCIES: DB-131, DB-132, DB-133, DB-134\n\nTESTING CRITERIA:\n- test_hitl_integration.py passes (≥5 scenarios)\n- Full suite: 390+ tests passing\n- proof/week7/README.md lists verification commands\n- TABLETOP doc lists Incident 1 through Incident 5\n\nEDGE CASES:\n- Tabletop not run live with team: document as quarterly scheduled exercise\n- Integration test doc paths: use Path relative to repo root",
+      "Labels": "tabletop,chaos-testing,testing,docs,week7,gap-130",
+      "Parent": "DB-E14"
+    }
+  ]
+}

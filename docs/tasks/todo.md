@@ -1,60 +1,54 @@
-# Week 6 Implementation — OWASP Agent Top 10 & Advanced Defenses
+# Week 7 Implementation — HITL Layers & Governance Hardening
 
-**Epic:** DB-E13  
-**Branch:** `epic/week6-gap-remediation`  
+**Epic:** DB-E14  
+**Branch:** `epic/week7-gap-remediation`  
 **Status:** complete  
 **Started:** 2026-06-06  
-**Scope:** Phase 4 gap remediation — OWASP Agent Top 10, constitutional classifiers, MITRE ATT&CK, drift/dwell SLOs
+**Scope:** Phase 5 — HITL architecture, per-action authz, reasoning traces, governance, tabletop
 
-**Ticket file:** `docs/jira-tickets-json/DB-E13-gap-remediation-week6.json`  
-**Kickoff:** `docs/gaps/WEEK6-KICKOFF-PROMPT.md`  
-**Guide:** `docs/gaps/WEEK6-IMPLEMENTATION-GUIDE.md`
+**Ticket file:** `docs/jira-tickets-json/DB-E14-gap-remediation-week7.json`  
+**Kickoff:** `docs/gaps/WEEK7-KICKOFF-PROMPT.md`  
+**Guide:** `docs/gaps/WEEK7-IMPLEMENTATION-GUIDE.md`
 
-### Day 1: OWASP Agent Top 10 (DB-126, Gaps #62-65)
-- [x] Create `backend/security/owasp_agent.py`
-- [x] Add OWASP Agent matrix to `docs/SECURITY.md`
-- [x] Write tests: `backend/tests/security/test_owasp_agent_top10.py`
-- [x] Verify: ruff + mypy + pytest
+### Day 1: HITL Architecture (DB-131, Gaps #66, #95)
+- [x] Create `backend/security/hitl.py`
+- [x] Create `docs/HITL-ARCHITECTURE.md`
+- [x] Update `docs/AGENTIC-CONSENT.md` § Human-on-the-Loop
+- [x] Write tests: `backend/tests/security/test_hitl_layers.py`
 
-### Day 2: Constitutional Classifiers (DB-127, Gap #126)
-- [x] Create `backend/security/rules.yaml`
-- [x] Create `constitutional_classifier.py` + `input_scanner.py`
-- [x] Wire Critic agent to `InputSecurityScanner`
-- [x] Jailbreak corpus + tests (≥95% block rate)
-- [x] Verify: ruff + mypy + pytest
+### Day 2: Per-Action Authorization (DB-132, Gap #128)
+- [x] Create `backend/security/policy_engine.py`
+- [x] Create `backend/security/per_action_authz.py`
+- [x] Wire `vault.py` credential broker
+- [x] Add `per_action_authz_total` metric
+- [x] Write tests: `backend/tests/security/test_per_action_authz.py`
 
-### Day 3: MITRE ATT&CK (DB-128, Gap #129)
-- [x] Create `docs/security/MITRE-ATTACK-COVERAGE.md`
-- [x] Create `backend/security/mitre_coverage.py`
-- [x] Write tests: `backend/tests/security/test_mitre_coverage.py`
-- [x] Coverage ratio 92.86% (≥80% target)
-- [x] Verify: ruff + mypy + pytest
+### Day 3: Reasoning Trace (DB-133, Gaps #67-68)
+- [x] Create `backend/schemas/reasoning_trace.py`
+- [x] Create `backend/observability/reasoning_trace.py`
+- [x] Update `BriefingResponse` + API
+- [x] Create `frontend/components/ReasoningTrace.tsx`
+- [x] Create `docs/OVERRIDE-ROLLBACK.md`
+- [x] Write tests: `backend/tests/observability/test_reasoning_trace.py`
 
-### Day 4: Drift, Dwell Time, Alerts (DB-129, Gaps #122, #134, #135)
-- [x] Create `backend/observability/drift_monitor.py`
-- [x] Add metrics: dwell time, alert coverage, long-term drift
-- [x] Write tests: `backend/tests/observability/test_dwell_time_and_alerts.py`
-- [x] Verify: ruff + mypy + pytest
+### Day 4: Governance (DB-134, Gaps #86, #131)
+- [x] Create `docs/GOVERNANCE.md`
+- [x] Create `docs/INCIDENT-RESPONSE.md`
+- [x] Update AGENT08 to implemented in `owasp_agent.py`
+- [x] Update `docs/SECURITY.md`, MITRE blind spots
 
-### Day 5: Red Teaming & Consent (DB-130, Gaps #88, #98)
-- [x] Create `docs/RED-TEAMING.md`
-- [x] Add `action_payload` to consent flow (backend + frontend)
-- [x] Integration tests: `test_governance_integration.py`
-- [x] Proof package in `proof/week6/`
-- [x] `docs/learning/week6-owasp-agent-governance.md`
+### Day 5: Tabletop & Proof (DB-135, Gap #130)
+- [x] Create `docs/security/TABLETOP-EXERCISES.md`
+- [x] Create `docs/security/incident-response-playbook.md`
+- [x] Integration tests: `test_hitl_integration.py`
+- [x] Proof package in `proof/week7/`
+- [x] `docs/learning/week7-hitl-governance.md`
 - [x] Updated `docs/PLAN.md`
-- [x] Verify: 361 passed, 3 skipped
 
 ---
 
 ## Verification Gates
-- Backend gate (required before marking any day/task done):
-  ```bash
-  uv run ruff check backend && uv run ruff format backend && uv run mypy backend && uv run pytest
-  ```
-- Jailbreak corpus: `uv run pytest backend/tests/security/test_jailbreak_corpus.py -v`
-- MITRE summary: `uv run python -c "from backend.security.mitre_coverage import get_coverage_summary; print(get_coverage_summary())"`
 
----
-
-*Last Updated: 2026-06-06*
+```bash
+uv run ruff check backend && uv run ruff format backend && uv run mypy backend && uv run pytest
+```

@@ -175,7 +175,13 @@ async def test_env_mode_returns_refresh_token_as_mediated_credential(
 
 async def test_supabase_read_credential(consent: ConsentStore) -> None:
     consent.grant(
-        ConsentGrantRequest(user_id="user-1", service="postgres_mcp", ttl_hours=4),
+        ConsentGrantRequest(
+            user_id="user-1",
+            service="postgres_mcp",
+            scope=["tasks.read"],
+            agent_id="task",
+            ttl_hours=4,
+        ),
     )
     broker = CredentialBroker(
         Settings(

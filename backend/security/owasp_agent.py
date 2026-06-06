@@ -74,10 +74,12 @@ AGENT_CONTROLS: tuple[AgentControl, ...] = (
     AgentControl(
         agent_id="AGENT08",
         name="Overwhelming Human in the Loop",
-        status="partial",
-        control="JIT consent modal with TTL options; human escalation on consensus disagreement",
-        test_module="backend/tests/test_consent.py",
-        notes="Full HITL layers planned Week 7",
+        status="implemented",
+        control=(
+            "8-layer HITL architecture: consent, consensus escalation, "
+            "reasoning traces, per-action authz, override paths"
+        ),
+        test_module="backend/tests/security/test_hitl_layers.py",
     ),
     AgentControl(
         agent_id="AGENT09",

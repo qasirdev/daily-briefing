@@ -12,6 +12,8 @@ import structlog
 from backend.consent.store import ConsentStore, consent_store
 from backend.observability.metrics import record_credential_issuance
 from backend.security.audit import AuditLogWriter, audit_log_writer
+from backend.security.per_action_authz import ActionRequest, PerActionAuthorizer
+from backend.security.policy_engine import PolicyDeniedError, PolicyEngine
 from backend.settings import Settings, get_settings
 
 logger = structlog.get_logger()
@@ -134,9 +136,24 @@ class CredentialBroker:
             raise ValueError(msg)
 
         consent_service = CONSENT_SERVICE_MAP[service]
-        if not self._consent.has_valid_consent(user_id, consent_service):
+        consent_record = self._consent.get_active(user_id, consent_service)
+        if consent_record is None:
             msg = f"Consent required for {service} before credential issuance"
             raise CredentialDeniedError(msg)
+
+        authorizer = PerActionAuthorizer(PolicyEngine(consent=self._consent))
+        try:
+            authorizer.authorize_or_raise(
+                ActionRequest(
+                    user_id=user_id,
+                    agent_id=consent_record.agent_id,
+                    service=consent_service,  # type: ignore[arg-type]
+                    action="credential_issue",
+                    intent=intent,
+                ),
+            )
+        except PolicyDeniedError as exc:
+            raise CredentialDeniedError(str(exc)) from exc
 
         cache_key = self._cache_key(user_id, service, intent)
         cached = self._cache.get(cache_key)

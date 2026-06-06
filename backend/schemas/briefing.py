@@ -6,6 +6,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 from backend.schemas.consent import ConsentPromptRequest
+from backend.schemas.reasoning_trace import ReasoningTraceResponse
 
 
 class BriefingRequest(BaseModel):
@@ -47,8 +48,9 @@ class BriefingResponse(BaseModel):
 
     model_config = ConfigDict(strict=True)
 
-    status: Literal["success", "degraded", "failure", "awaiting_consent"]
+    status: Literal["success", "degraded", "failure", "awaiting_consent", "awaiting_human_review"]
     briefing: str = ""
     metadata: BriefingMetadata
     consent_context: str | None = None
     consent_request: ConsentPromptRequest | None = None
+    reasoning_trace: ReasoningTraceResponse | None = None

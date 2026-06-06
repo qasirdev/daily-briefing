@@ -64,8 +64,8 @@ uv run python -c "from backend.security.mitre_coverage import get_coverage_summa
 
 | Technique | Gap | Planned Remediation |
 |---|---|---|
-| T1550.004 | Session rotation not enforced in dev | Week 7 HITL hardening |
-| T1087 | No active enumeration detection | Add anomaly rules Week 7 |
+| T1550.004 | Session rotation not enforced in dev | ✅ Per-action authz re-evaluates consent each MCP call (`per_action_authz.py`) |
+| T1087 | No active enumeration detection | 🟡 Anomaly rules planned Week 8 |
 
 ---
 
