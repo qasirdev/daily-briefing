@@ -1,0 +1,29 @@
+..................ss.................................................... [ 19%]
+........................................................................ [ 39%]
+........................................................................ [ 59%]
+..........s............................................................. [ 79%]
+........................................................................ [ 98%]
+....                                                                     [100%]
+=============================== warnings summary ===============================
+backend/tests/memory/test_episodic.py::test_store_lesson_persists_row
+  /Users/qasirmehmood/Projects/qasir-proflle-2026/daily-briefing/backend/memory/episodic.py:105: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    session.add(row)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+backend/tests/memory/test_ingestion.py::test_store_persists_provenance_fields
+backend/tests/memory/test_memory_security_integration.py::test_security_integration_12_semantic_store_persists_non_quarantined_clean_row
+backend/tests/memory/test_semantic.py::test_store_persists_row
+  /Users/qasirmehmood/Projects/qasir-proflle-2026/daily-briefing/backend/memory/semantic.py:110: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    session.add(row)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+backend/tests/memory/test_procedural.py::test_register_skill_persists_row
+  /Users/qasirmehmood/Projects/qasir-proflle-2026/daily-briefing/backend/memory/procedural.py:121: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    session.add(row)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+361 passed, 3 skipped, 5 warnings in 3.49s

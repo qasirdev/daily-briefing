@@ -27,6 +27,7 @@ docs/jira-tickets-json/
 ├── DB-E10-gap-remediation-week3.json      # Gap Week 3
 ├── DB-E11-gap-remediation-week4.json      # Gap Week 4
 └── DB-E12-gap-remediation-week5.json      # Gap Week 5 — canonical format (required for new epics)
+└── DB-E13-gap-remediation-week6.json      # Gap Week 6
 ```
 
 **Total: 62+ tasks across 12 epics**
@@ -75,6 +76,20 @@ docs/jira-tickets-json/
 Epic entries (`Issue Type: Epic`) use `SCOPE`, `REFERENCE DOCS`, and `SUCCESS CRITERIA` instead of implementation sections.
 
 **Legacy format:** Gap weeks DB-E8–DB-E11 use `{ "epic": {...}, "tasks": [...] }`. Do not use for new weeks; migrate to DB-E2 shape when those epics are next edited.
+
+---
+
+## Backend Verification Gate (Required Before Task Complete)
+
+Before marking any backend task done (including the last task of a gap week), run from the repository root:
+
+```bash
+uv run ruff check backend && uv run ruff format backend && uv run mypy backend && uv run pytest
+```
+
+- Use `uv run ruff check backend --fix` if import sort (`I001`) fails.
+- Capture output in `proof/weekN/` or `logs/` when the epic success criteria require it.
+- See `backend/AGENT.md` and `AGENT.md` workflow rules.
 
 ---
 

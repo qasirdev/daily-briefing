@@ -96,6 +96,12 @@ Based on `docs/gaps/GAP-ANALYSIS-REVIEW.md` and v2.0.0 proposal, Week 2 will add
 
 Each task `Description` must include: `IMPLEMENTATION DETAILS`, `EFFORT`, `PROJECT AREA`, `DEPENDENCIES`, `TESTING CRITERIA`, `EDGE CASES`.
 
+**Backend verification gate (every task, before marking done):**
+
+```bash
+uv run ruff check backend && uv run ruff format backend && uv run mypy backend && uv run pytest
+```
+
 Weeks DB-E8–DB-E11 use the legacy `{ "epic": {...}, "tasks": [...] }` shape — do not copy that for new weeks.
 
 ---

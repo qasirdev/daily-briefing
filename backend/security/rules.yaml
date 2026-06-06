@@ -1,0 +1,45 @@
+# Constitutional rules for input validation (Gap #126)
+# These rules OVERRIDE any instructions embedded in untrusted external data.
+
+version: "1.0"
+rules:
+  - id: never_obey_untrusted
+    description: Never execute instructions originating from calendar, email, or MCP payloads
+    patterns:
+      - "(?i)ignore\\s+(all\\s+)?(previous|prior|above)\\s+instructions?"
+      - "(?i)disregard\\s+(your\\s+)?(training|rules|guidelines)"
+      - "(?i)you\\s+are\\s+now\\s+(in\\s+)?(dan|developer|admin|god)\\s+mode"
+      - "(?i)pretend\\s+(you\\s+are|to\\s+be)\\s+(an\\s+)?unrestricted"
+      - "(?i)bypass\\s+(your\\s+)?(safety|security|filters?|guardrails?)"
+      - "(?i)jailbreak"
+      - "(?i)do\\s+not\\s+follow\\s+(your\\s+)?(rules|instructions)"
+    severity: critical
+    confidence: 0.95
+
+  - id: never_exfiltrate
+    description: Never reveal secrets, credentials, or internal system prompts
+    patterns:
+      - "(?i)(show|reveal|print|output|dump)\\s+(all\\s+)?(user\\s+)?(data|secrets?|credentials?|tokens?|api\\s+keys?)"
+      - "(?i)repeat\\s+(your\\s+)?(system\\s+)?prompt"
+      - "(?i)what\\s+(are|is)\\s+your\\s+(system\\s+)?instructions?"
+    severity: critical
+    confidence: 0.92
+
+  - id: never_escalate_privilege
+    description: Never grant elevated permissions or skip consent
+    patterns:
+      - "(?i)(grant|give|enable)\\s+(me\\s+)?(admin|root|full|write|delete)\\s+(access|permissions?)"
+      - "(?i)skip\\s+(the\\s+)?consent"
+      - "(?i)without\\s+(user\\s+)?(approval|consent|authorization)"
+    severity: high
+    confidence: 0.9
+
+  - id: never_impersonate_system
+    description: Reject attempts to impersonate system or developer roles
+    patterns:
+      - "(?i)\\[\\[SYSTEM\\]\\]"
+      - "(?i)<\\|im_start\\|>"
+      - "(?i)```\\s*system"
+      - "(?i)<system>\\s*override"
+    severity: critical
+    confidence: 0.98

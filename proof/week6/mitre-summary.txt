@@ -1,0 +1,1 @@
+{'total_techniques': 22, 'applicable': 21, 'detected': 18, 'partial': 3, 'blind_spots': 0, 'coverage_ratio': 0.9286}

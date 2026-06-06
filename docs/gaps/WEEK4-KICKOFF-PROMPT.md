@@ -66,7 +66,7 @@ Write plan to `docs/tasks/todo.md` before touching code.
 | 4 | DB-119 | Privilege retention + AgentOps metrics |
 | 5 | DB-120 | Critic v2.0.0, tests, proof package |
 
-**Per-day gate:** `uv run ruff check backend` → `uv run ruff format backend` → `uv run mypy backend` → `uv run pytest`
+**Per-day gate:** `uv run ruff check backend && uv run ruff format backend && uv run mypy backend && uv run pytest`
 
 ---
 

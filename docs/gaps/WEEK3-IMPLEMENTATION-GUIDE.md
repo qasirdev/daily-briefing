@@ -27,6 +27,14 @@ git checkout -b epic/week3-gap-remediation
 git push -u origin epic/week3-gap-remediation
 ```
 
+### Backend Verification Gate
+
+Before marking any day or task complete:
+
+```bash
+uv run ruff check backend && uv run ruff format backend && uv run mypy backend && uv run pytest
+```
+
 ---
 
 ## Day 1: Procedural Memory (DB-111)

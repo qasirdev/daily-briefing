@@ -75,6 +75,44 @@ Every security event is logged with a `trace_id` linking it to the originating H
 
 ---
 
+## ✅ OWASP Agent Top 10 — Compliance Matrix (Gaps #62-65)
+
+Agent-specific vulnerabilities beyond OWASP GenAI LLM Top 10. Registry: `backend/security/owasp_agent.py`.
+
+| ID | Vulnerability | Status | Control | Test Coverage |
+|---|---|---|---|---|
+| **AGENT01** | Agent Goal Hijack | ✅ **Implemented** | `InputSecurityScanner` (regex + constitutional) + Critic escalation | [`test_injection.py`](../backend/tests/security/test_injection.py) · [`test_constitutional_classifier.py`](../backend/tests/security/test_constitutional_classifier.py) |
+| **AGENT02** | Tool Misuse | ✅ **Implemented** | MCP scopes, SSRF allowlists, read-only SQL | [`test_mcp_security.py`](../backend/tests/security/test_mcp_security.py) |
+| **AGENT03** | Agentic Logic Abuse | ✅ **Implemented** | Consensus workflow, Critic quality gate | [`test_consensus.py`](../backend/tests/architecture/test_consensus.py) |
+| **AGENT04** | Memory Poisoning | ✅ **Implemented** | Memory quarantine, ingestion injection scan | [`test_quarantine.py`](../backend/tests/memory/test_quarantine.py) |
+| **AGENT05** | Cascading Failures | ✅ **Implemented** | DLQ routing, circuit breakers, token budgets | [`test_token_budget.py`](../backend/tests/security/test_token_budget.py) |
+| **AGENT06** | Unexpected Code Execution | ⬜ **N/A** | No agent-generated code execution in MVP | N/A |
+| **AGENT07** | Identity & Privilege Abuse | ✅ **Implemented** | JIT CredentialBroker, NHI registry, consent | [`test_vault.py`](../backend/tests/security/test_vault.py) |
+| **AGENT08** | Overwhelming HITL | 🟡 **Partial** | JIT consent modal; human escalation on consensus | [`test_consent.py`](../backend/tests/test_consent.py) |
+| **AGENT09** | Human-Agent Trust Exploitation | ✅ **Implemented** | Consent modal shows `action_payload` JSON + natural-language message | [`test_governance_integration.py`](../backend/tests/security/test_governance_integration.py) |
+| **AGENT10** | Rogue Agents | ✅ **Implemented** | Guardrail trends, long-term drift, red team cadence | [`test_drift_detection.py`](../backend/tests/observability/test_drift_detection.py) |
+
+Full matrix tests: [`test_owasp_agent_top10.py`](../backend/tests/security/test_owasp_agent_top10.py)
+
+---
+
+## Constitutional Classifiers (Gap #126)
+
+Multi-layer jailbreak defense beyond regex pattern matching.
+
+| Layer | Module | Target |
+|---|---|---|
+| 1 — Regex | `PromptInjectionDetector` | Known injection signatures |
+| 2 — Constitutional | `ConstitutionalClassifier` | Policy violations (DAN mode, exfiltration, privilege escalation) |
+| Unified | `InputSecurityScanner` | Critic agent entry point |
+
+Rules: `backend/security/rules.yaml`  
+Evaluation corpus: `backend/tests/security/jailbreak_corpus.yaml` (≥95% block rate in CI)
+
+Metric: `constitutional_violations_total{rule_id, severity}`
+
+---
+
 ## 🏗️ Security Architecture
 
 ```mermaid

@@ -12,6 +12,4 @@
 
 ## Test plan
 
-- [ ] `uv run ruff check backend`
-- [ ] `uv run mypy backend`
-- [ ] `uv run pytest`
+- [ ] `uv run ruff check backend && uv run ruff format backend && uv run mypy backend && uv run pytest`

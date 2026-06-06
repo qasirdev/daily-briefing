@@ -649,7 +649,7 @@ Drift detection alerts automatically trigger red team evaluation workflows:
 | **Warning** | 1.5× baseline over 7 days | Scheduled evaluation within 48 hours |
 | **Spike** | 10+ violations in 1 hour | Emergency review within 1 hour |
 
-Red team evaluations follow the protocol in `docs/RED-TEAMING.md` (to be created) and include:
+Red team evaluations follow the protocol in `docs/RED-TEAMING.md` and include:
 
 1. Adversarial prompt testing against current agent version
 2. Comparison with previous known-good version
@@ -768,9 +768,32 @@ await episodic_memory.store_lesson(drift_lesson)
 
 **Related Documentation:**
 - `docs/SECURITY.md` — OWASP Agent Top 10 mapping
-- `docs/RED-TEAMING.md` — Red team evaluation protocol (to be created)
+- `docs/RED-TEAMING.md` — Red team evaluation protocol
 - `docs/MEMORY-ARCHITECTURE.md` — Episodic memory integration (to be created)
 - `backend/agents/AGENT.md` — NHI definition-of-done gate
+
+---
+
+## Dwell Time SLO (Gap #134)
+
+**Definition:** Time from security incident occurrence to detection/alerting.
+
+| Target | Scope |
+|---|---|
+| P95 < 3600s (1 hour) | Critical incidents (injection, privilege escalation) |
+| P99 < 21600s (6 hours) | High-severity repeated violations |
+
+**Metrics:**
+
+| Metric | Type | Labels |
+|---|---|---|
+| `security_dwell_time_seconds` | Histogram | `alert_type`, `severity` |
+| `security_alerts_total` | Counter | `alert_type`, `severity` |
+| `security_alerts_investigated_total` | Counter | `alert_type`, `severity` |
+| `security_alert_investigation_coverage` | Gauge | — (target >0.95) |
+| `long_term_drift_ratio` | Gauge | `agent_id` |
+
+Implementation: `backend/observability/drift_monitor.py` + `log_guardrail_violation()` integration.
 
 ---
 
