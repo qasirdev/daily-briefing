@@ -47,16 +47,20 @@
 - [x] Commit: "Day 4: Focus memory integration with semantic retrieval and audit trail"
 
 ### Day 5: Validation & Documentation (DB-110)
-- [ ] Cache ROI measurement vs Week 1 baseline
-- [ ] Memory integration tests (10+ scenarios)
-- [ ] Proof package in `proof/week2/`
-- [ ] `docs/learning/week2-caching-and-memory.md`
+- [x] Cache ROI measurement vs Week 1 baseline
+- [x] Memory integration tests (15 scenarios in test_integration.py)
+- [x] Proof package in `proof/week2/`
+- [x] `docs/learning/week2-caching-and-memory.md`
+- [x] Updated `docs/ARCHITECTURE.md` with memory layers + prompt caching
+- [x] Verify: ruff + mypy + pytest
+- [x] Commit: "Day 5: Week 2 validation, cache ROI proof, and memory documentation"
 
 ---
 
 ## Verification Gates
 - Each day's tests must pass before proceeding
-- Backend gate: `uv run ruff check backend` → `uv run mypy backend` → `uv run pytest`
+- Backend gate: `uv run ruff check backend` → `uv run ruff format backend` → `uv run mypy backend` → `uv run pytest`
+- Import sort (`I001`): `uv run ruff check backend --fix`
 - Cache metrics visible at `/metrics` (llm_cache_hit_rate, llm_cache_hit_total, llm_cache_miss_total)
 
 ---

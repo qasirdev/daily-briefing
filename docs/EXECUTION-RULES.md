@@ -27,9 +27,11 @@ This document serves as the absolute source of truth for execution standards and
 3. **Verification Gate**: Do not proceed to the next step on `docs/tasks/todo.md` until the current step is proven to work via tests, linters, or logs. **Backend tasks** must pass this sequence before marking done:
    ```bash
    uv run ruff check backend
+   uv run ruff format backend
    uv run mypy backend
    uv run pytest
    ```
+   If Ruff reports `I001` (import block unsorted), run `uv run ruff check backend --fix` — keep imports at module top level, never inline inside functions.
 4. **Lessons Review**: At the start of every session, read `docs/tasks/lessons.md` to avoid repeating past mistakes.
 5. **Correction Loop**: If a mistake is made or corrected by a user, immediately update `docs/tasks/lessons.md` with the root cause and a new rule.
 6. **Done Gate**: Never mark a task as complete without providing proof (e.g., test output, build success logs, diffs).
@@ -122,7 +124,7 @@ Even when the user explicitly triggers "YOLO mode" (authorizing high-velocity, l
 - **Logging**: Use `structlog` with JSON output, always include `trace_id`
 - **Retry Logic**: Use `tenacity` with exponential backoff for external APIs
 - **Typing**: `uv run mypy backend` must pass with zero errors
-- **Linting**: `uv run ruff check backend` must pass with zero warnings
+- **Linting**: `uv run ruff check backend` must pass with zero warnings; use `uv run ruff check backend --fix` for import sort (`I001`). `known-first-party = ["backend"]` in `pyproject.toml`.
 - **Tests**: `uv run pytest` must pass before any backend task is marked complete
 
 ### Frontend (TypeScript/React 19)

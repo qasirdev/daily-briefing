@@ -1,6 +1,6 @@
 # System Architecture — AI Daily Briefing Assistant
 
-**Version:** 1.6.0 (Option 1 Enterprise Hybrid) | **Last Updated:** May 2026
+**Version:** 1.7.0 (Option 1 Enterprise Hybrid) | **Last Updated:** June 2026
 
 ---
 
@@ -167,6 +167,7 @@ The system operates on a rigorous supervisor-worker pattern with defined roles:
 | **Input** | Aggregated tasks + events context |
 | **Output** | `AgentResultEnvelope` with plan JSON |
 | **Tools/MCP** | LLM only (no external tools) |
+| **Memory** | Working memory (session) + Semantic retrieval (pgvector) |
 | **Security** | Instruction hierarchy enforced |
 
 ### 5. Critic Agent (Critic)
@@ -229,6 +230,50 @@ Major concerns are counted from Verification `critical` discrepancies (when esca
 
 ---
 
+## Prompt Caching (Week 2)
+
+Static agent prompts are assembled in cache-eligible block order and warmed on startup. Dynamic user payloads (MCP data, semantic memory hits) are always appended last and never cached.
+
+| Component | Path |
+|---|---|
+| Prompt assembly | `backend/prompts_loader.py` |
+| Message builder | `backend/llm/prompt_cache.py` |
+| Cache warmer | `PromptCacheWarmer` (240s refresh) |
+| Metrics | `llm_cache_hit_rate`, `llm_cache_hit_total`, `llm_cache_miss_total` |
+| ROI helpers | `backend/llm/cache_roi.py` |
+
+See `docs/learning/week2-caching-and-memory.md` for cache-eligible agents and Week 1 baseline comparison.
+
+---
+
+## CoALA Memory Layers (Week 2 — Option A)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Layer 1: Working Memory (ephemeral, LangGraph state)       │
+│  working_memory_tokens | working_memory_limit | context[]   │
+│  Manager: backend/memory/working.py                         │
+│  Metric: working_memory_utilization                         │
+└──────────────────────────┬──────────────────────────────────┘
+                           │ retrieval query
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Layer 2: Semantic Memory (pgvector on Supabase)            │
+│  Table: semantic_memory (HNSW + RLS)                        │
+│  Store: backend/memory/semantic.py                          │
+│  Retrieval: backend/memory/retrieval.py                       │
+│  Audit: backend/memory/audit.py → memory_reads_total        │
+└─────────────────────────────────────────────────────────────┘
+```
+
+Focus agent reads working context, queries semantic memory for similar past briefings, injects hits into the LLM payload, and stores successful plan summaries for future retrieval.
+
+**Migration:** `uv run alembic upgrade head` from project root (`alembic.ini`, not `backend/alembic.ini`).
+
+Procedural and Episodic layers → Week 3.
+
+---
+
 ## Data Flow Sequence
 
 ```
@@ -278,6 +323,9 @@ class BriefingGraphState(TypedDict):
     current_agent: str
     revision_count: int
     total_tokens: int
+    working_memory_tokens: int
+    working_memory_limit: int
+    working_memory_context: list[str]
     
     # Final output
     final_briefing: str | None
@@ -362,4 +410,4 @@ See `docs/SECURITY.md` for comprehensive security documentation.
 
 ---
 
-*Architecture Documentation — Version 1.6.0 — May 2026*
+*Architecture Documentation — Version 1.7.0 — June 2026*

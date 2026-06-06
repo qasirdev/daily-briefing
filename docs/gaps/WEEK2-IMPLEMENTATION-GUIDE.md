@@ -182,6 +182,17 @@ curl http://localhost:8010/metrics | grep -E 'working_memory|memory_reads'
 - `docs/learning/week2-caching-and-memory.md`
 - Updated `docs/ARCHITECTURE.md`
 
+### Verification
+
+```bash
+uv run ruff check backend
+uv run mypy backend
+uv run pytest backend/tests/memory/test_integration.py backend/tests/llm/test_cache_roi.py -v
+mkdir -p proof/week2
+uv run pytest -q 2>&1 | tee proof/week2/day5-integration-tests.txt
+git log --oneline --graph -10 > proof/week2/git-history.txt
+```
+
 ---
 
 *Week 2 Implementation Guide — Created 2026-06-06*

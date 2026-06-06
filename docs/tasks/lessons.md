@@ -105,6 +105,12 @@
 - **Design Decision:** Memory read failures (DB unavailable) log a warning and fall back — focus planning must not fail on retrieval errors.
 - **New Rule:** Every memory read emits `memory_read_audit` structured log + `memory_reads_total` Prometheus counter.
 
+### Day 5: 2026-06-06
+- **Lesson:** Cache ROI is measured against Week 1 baseline (0% hit rate) using `backend/llm/cache_roi.py`; warm-path target is ≥70%.
+- **Design Decision:** Day 5 integration tests live in `test_integration.py` (15 scenarios) separate from unit tests — easier proof packaging.
+- **New Rule:** Proof package in `proof/week2/` must include pytest output, git history, and cache metrics snapshot.
+- **Lesson:** Ruff `I001` flags unsorted imports and inline imports inside functions — hoist to module top; run `uv run ruff check backend --fix`. `known-first-party = ["backend"]` in `pyproject.toml`.
+
 ## Pre-Week 1 — Existing Test Failures
 
 ### Issue: PII Detector Too Aggressive on Trace IDs
