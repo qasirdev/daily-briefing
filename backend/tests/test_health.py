@@ -18,4 +18,3 @@ async def test_metrics_endpoint_returns_prometheus_format(client: AsyncClient) -
     response = await client.get("/metrics/", follow_redirects=True)
     assert response.status_code == 200
     assert "briefing_generation_duration_seconds" in response.text
-

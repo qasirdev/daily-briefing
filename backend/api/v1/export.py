@@ -22,18 +22,13 @@ router = APIRouter(prefix="/api/v1/export", tags=["export"])
 def _build_export_payload(user_id: str) -> dict[str, object]:
     consents = consent_store.all_records_for_user(user_id)
     preferences = preference_store.list_for_user(user_id)
-    dlq_events = [
-        event
-        for event in dlq_store.list_events()
-        if event.user_id == user_id
-    ]
+    dlq_events = [event for event in dlq_store.list_events() if event.user_id == user_id]
     return {
         "user_id": user_id,
         "exported_at": datetime.now(UTC).isoformat(),
         "consent_records": [record.model_dump(mode="json") for record in consents],
         "consent_audit_log": [
-            entry.model_dump(mode="json")
-            for entry in consent_store.list_audit(user_id)
+            entry.model_dump(mode="json") for entry in consent_store.list_audit(user_id)
         ],
         "preferences": [pref.model_dump(mode="json") for pref in preferences],
         "dlq_events": [
