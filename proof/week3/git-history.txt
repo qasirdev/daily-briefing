@@ -1,0 +1,5 @@
+e2a5a3e Merge pull request #11 from qasirdev/epic/week2-gap-remediation
+4e55305 Day 5: Week 2 validation, cache ROI proof, and memory documentation
+c993bc6 Day 4: Focus memory integration with semantic retrieval and audit trail
+a89e493 Day 3: Working memory and pgvector semantic memory foundation
+1a61bdd chore: apply ruff format to export, dlq store, and health test

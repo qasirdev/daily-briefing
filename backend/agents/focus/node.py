@@ -15,12 +15,12 @@ from backend.memory.audit import memory_audit_trail
 from backend.memory.embeddings import embed_text
 from backend.memory.retrieval import (
     build_focus_retrieval_query,
-    format_semantic_context,
-    retrieve_semantic_context,
+    retrieve_agent_memory,
 )
 from backend.memory.semantic import SemanticMemoryStore
 from backend.memory.working import WorkingMemoryManager
 from backend.preferences.store import preference_store
+from backend.prompt_version import resolve_prompt_version
 from backend.schemas.envelope import AgentResultEnvelope, EscalationPayload, ExecutionMetadata
 from backend.settings import Settings, get_settings
 
@@ -90,9 +90,7 @@ async def focus_agent_node(
     preferences = preference_store.top_context_snippets(user_id)
     working_context = state.get("working_memory_context", [])
     normalized_working = (
-        [str(item) for item in working_context]
-        if isinstance(working_context, list)
-        else []
+        [str(item) for item in working_context] if isinstance(working_context, list) else []
     )
 
     if normalized_working:
@@ -112,24 +110,25 @@ async def focus_agent_node(
         events=events,
         working_context=normalized_working,
     )
-    semantic_records = await retrieve_semantic_context(
+    memory_context = await retrieve_agent_memory(
         user_id=user_id,
-        query_text=retrieval_query,
+        agent_id="focus",
         trace_id=trace_id,
         request_id=request_id,
-        agent_id="focus",
-        store=store,
-        settings=settings,
+        query_text=retrieval_query,
         working_context=normalized_working,
+        tasks=tasks,
+        events=events,
+        settings=settings,
     )
-    semantic_context = format_semantic_context(semantic_records)
+    memory_payload = memory_context.to_payload()
 
     user_context = json.dumps(
         {
             "tasks": tasks,
             "events": events,
             "preferences": preferences,
-            "semantic_memory": semantic_context,
+            **memory_payload,
         },
         ensure_ascii=True,
     )
@@ -162,7 +161,7 @@ async def focus_agent_node(
                 execution_ms=execution_ms,
                 tokens_used=0,
                 model_used="none",
-                prompt_version="v1.5.0",
+                prompt_version=resolve_prompt_version("focus"),
                 trace_id=trace_id,
                 data_classification="internal",
             ),
@@ -196,7 +195,7 @@ async def focus_agent_node(
                 execution_ms=execution_ms,
                 tokens_used=0,
                 model_used="none",
-                prompt_version="v1.5.0",
+                prompt_version=resolve_prompt_version("focus"),
                 trace_id=trace_id,
                 data_classification="internal",
             ),
@@ -229,7 +228,7 @@ async def focus_agent_node(
             execution_ms=execution_ms,
             tokens_used=llm_response.tokens_used,
             model_used=llm_response.model_used,
-            prompt_version="v1.5.0",
+            prompt_version=resolve_prompt_version("focus"),
             trace_id=trace_id,
             data_classification="confidential",
         ),

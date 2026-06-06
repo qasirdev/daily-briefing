@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import uuid
 from datetime import UTC, date, datetime
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -243,9 +243,23 @@ async def test_integration_09_focus_survives_semantic_store_failure() -> None:
 
 
 @pytest.mark.asyncio
-async def test_integration_10_consolidation_stub_is_noop() -> None:
-    consolidated = await consolidate_semantic_memory(user_id="user-1")
-    assert consolidated == 0
+async def test_integration_10_consolidation_prunes_stale_semantic_rows() -> None:
+    mock_session = AsyncMock()
+    mock_result = MagicMock()
+    mock_result.rowcount = 3
+    mock_session.execute = AsyncMock(return_value=mock_result)
+
+    class _SessionContext:
+        async def __aenter__(self) -> AsyncMock:
+            return mock_session
+
+        async def __aexit__(self, *args: object) -> None:
+            return None
+
+    with patch("backend.memory.consolidation.session_scope", return_value=_SessionContext()):
+        consolidated = await consolidate_semantic_memory(user_id="user-1", max_age_days=30)
+
+    assert consolidated == 3
 
 
 def test_integration_11_embedding_pipeline_is_deterministic() -> None:

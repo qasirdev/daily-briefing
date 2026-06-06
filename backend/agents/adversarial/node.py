@@ -13,12 +13,12 @@ from backend.llm.json_response import parse_llm_json
 from backend.llm.models import LLMResponse
 from backend.llm.prompt_cache import build_llm_messages, resolve_model_name
 from backend.llm.router import LLMError, LLMRouter
+from backend.prompt_version import resolve_prompt_version
 from backend.schemas.envelope import AgentResultEnvelope, ExecutionMetadata
 from backend.settings import get_settings
 
 logger = structlog.get_logger()
 
-PROMPT_VERSION = "v1.1.0"
 ADVERSARIAL_INPUT_BUDGET = 14_000
 ADVERSARIAL_OUTPUT_BUDGET = 2_500
 
@@ -40,7 +40,7 @@ def _build_envelope(
             execution_ms=execution_ms,
             tokens_used=llm_response.tokens_used if llm_response else 0,
             model_used=llm_response.model_used if llm_response else "none",
-            prompt_version=PROMPT_VERSION,
+            prompt_version=resolve_prompt_version("adversarial"),
             trace_id=trace_id,
             data_classification="internal",
         ),
