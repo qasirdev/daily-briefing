@@ -184,6 +184,51 @@ Store production key in `.env.production` on the server — see `.env.production
 
 ---
 
+## Troubleshooting
+
+### "Account Is Unavailable" at `your-subdomain.pagerduty.com/not_found`
+
+This means PagerDuty cannot serve that account subdomain. Common causes:
+
+| Cause | What to do |
+|-------|------------|
+| **Signup never completed** | Check email for a PagerDuty verification link; finish activation before using the subdomain URL |
+| **Personal email blocked** | Free trials often reject gmail.com, yahoo.com, icloud.com — use a work email or [contact PagerDuty support](https://www.pagerduty.com/contact-us/) |
+| **Wrong / stale subdomain** | Do not bookmark `aspensif-1.pagerduty.com` directly — log in at [identity.pagerduty.com](https://identity.pagerduty.com) or [pagerduty.com](https://www.pagerduty.com) with your email |
+| **Trial expired or account deactivated** | Sign up again with a new subdomain, or contact support to reactivate |
+| **Partial signup failure** | Try a fresh signup with a different account URL name (5–40 chars, unique) |
+
+**Try this login order:**
+
+1. Go to [https://identity.pagerduty.com](https://identity.pagerduty.com)
+2. Enter the **same email** you used at signup
+3. Complete any email verification step
+4. If prompted, pick the correct account/region from the list
+
+If none of that works, open a ticket with PagerDuty Support and include your signup email and subdomain (`aspensif-1`).
+
+### Continue Week 1 without PagerDuty (dev fallback)
+
+PagerDuty is **optional for local kickoff**. If the account is unavailable, leave `PAGERDUTY_ROUTING_KEY` empty in `observability/.env` — Alertmanager uses `alertmanager.no-pagerduty.yml` and alerts stay visible at [http://localhost:9093](http://localhost:9093).
+
+Verify the alert loop locally:
+
+```bash
+curl -X POST http://localhost:9093/api/v2/alerts \
+  -H 'Content-Type: application/json' \
+  -d '[{
+    "labels": {"alertname":"KickoffTest","severity":"critical"},
+    "annotations": {"summary":"Local Alertmanager test (no PagerDuty)"},
+    "startsAt": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"
+  }]'
+```
+
+Open **http://localhost:9093/#/alerts** — you should see `KickoffTest` within seconds.
+
+Add PagerDuty later when the account is working; only the integration key is needed in `.env`.
+
+---
+
 ## Next step
 
 → [05-verify-before-kickoff.md](./05-verify-before-kickoff.md) — final checklist before Day 1

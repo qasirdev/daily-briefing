@@ -9,7 +9,7 @@ Complete this checklist **before** running [KICKOFF-PROMPT Day 1](../../gaps/KIC
 ```bash
 nvm use 22
 python3 --version    # 3.12+
-uv sync
+uv sync --extra dev
 uv run pytest -v     # baseline: all tests pass
 ```
 
@@ -33,16 +33,19 @@ LIVE_STDIO_E2E=1 uv run pytest backend/tests/integration/test_live_stdio_briefin
 ## 3. Application metrics endpoint
 
 ```bash
-# Terminal 1 — start backend
-uv run uvicorn backend.main:app --host 0.0.0.0 --port 8010 --reload
+# Terminal 1 — start backend (keep this running)
+cd /path/to/daily-briefing
+uv run uvicorn backend.main:app --host 0.0.0.0 --port 8010
 
 # Terminal 2 — verify
 curl -sf http://localhost:8010/health
-curl -sf http://localhost:8010/metrics | grep -E 'briefing_generation|security_violations'
+curl -sf http://localhost:8010/metrics/ | grep -E 'briefing_generation|security_violations'
 ```
 
 - [ ] `/health` returns 200
-- [ ] `/metrics` returns Prometheus text format with app metrics
+- [ ] `/metrics/` returns Prometheus text format with app metrics
+
+> If `/health` returns `503 Server shutting down`, kill the stale process (`lsof -i :8010` → `kill -9 <pid>`) and restart uvicorn.
 
 ---
 

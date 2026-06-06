@@ -128,6 +128,8 @@ Copy from [observability.env.example](./observability.env.example). Used by Dock
 | Empty metrics in Prometheus | Generate traffic: `curl http://localhost:8010/health` then `curl http://localhost:8010/metrics` |
 | Docker cannot reach app on Mac | Use `host.docker.internal:8010` in `prometheus.yml` (already set in our config) |
 | PagerDuty test alert not received | Confirm `PAGERDUTY_ROUTING_KEY` in `observability/.env` and restart Alertmanager |
+| Alertmanager restart loop (no PagerDuty key) | Expected when key is empty — stack uses `alertmanager.no-pagerduty.yml`; set key in `.env` for real routing |
+| Grafana `exec /run.sh: exec format error` | Corrupted `latest` image — run `docker rmi grafana/grafana:latest` then `docker compose pull grafana` (compose pins `grafana/grafana:11.5.2`) |
 | Grafana “No data” | Check Prometheus datasource URL is `http://prometheus:9090` (inside Docker network) |
 
 ---

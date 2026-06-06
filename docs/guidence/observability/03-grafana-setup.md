@@ -26,6 +26,9 @@ cd docs/guidence/observability
 cp observability.env.example .env
 # Edit .env — set GRAFANA_ADMIN_PASSWORD to something secure
 docker compose -f docker-compose.observability.yml up -d
+# If Grafana fails with "exec /run.sh: exec format error", re-pull the pinned image:
+# docker rmi grafana/grafana:latest 2>/dev/null; docker compose -f docker-compose.observability.yml pull grafana
+# docker compose -f docker-compose.observability.yml up -d grafana
 ```
 
 ### 2. Log in

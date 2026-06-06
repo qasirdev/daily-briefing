@@ -105,9 +105,30 @@ Visit **http://localhost:9090**
 
 If **DOWN**:
 
-- Confirm backend is running on port 8010
+- **Start the backend first** (required — Prometheus only scrapes a running app):
+
+```bash
+cd /path/to/daily-briefing
+uv run uvicorn backend.main:app --host 0.0.0.0 --port 8010
+```
+
+- Verify from your host:
+
+```bash
+curl -sf http://localhost:8010/health          # expect 200 JSON
+curl -sf http://localhost:8010/metrics/ | head  # expect # HELP lines
+```
+
+- **`503 Server shutting down`** — a stale uvicorn process is still bound to port 8010 but not accepting traffic (common after `--reload` or closing a terminal). Fix:
+
+```bash
+lsof -i :8010          # note PIDs
+kill -9 <pid>          # force-stop stale process
+uv run uvicorn backend.main:app --host 0.0.0.0 --port 8010
+```
+
 - On Linux, replace `host.docker.internal` with your host IP in `prometheus.yml`
-- Restart Prometheus after config changes
+- Restart Prometheus after config changes: `docker compose -f docker-compose.observability.yml up -d prometheus`
 
 ### 3. Run a test query
 

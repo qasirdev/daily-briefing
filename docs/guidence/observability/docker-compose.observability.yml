@@ -42,15 +42,20 @@ services:
       - "9093:9093"
     volumes:
       - ./config/alertmanager.yml:/etc/alertmanager/alertmanager.yml.template:ro
+      - ./config/alertmanager.no-pagerduty.yml:/etc/alertmanager/alertmanager.no-pagerduty.yml:ro
     env_file:
       - .env
     entrypoint:
       - /bin/sh
       - -c
       - |
-        sed -e "s|\$${PAGERDUTY_ROUTING_KEY}|$${PAGERDUTY_ROUTING_KEY}|g" \
-            -e "s|\$${ALERT_ENV}|$${ALERT_ENV:-development}|g" \
-          /etc/alertmanager/alertmanager.yml.template > /etc/alertmanager/alertmanager.yml
+        if [ -n "$${PAGERDUTY_ROUTING_KEY}" ]; then
+          sed -e "s|\$${PAGERDUTY_ROUTING_KEY}|$${PAGERDUTY_ROUTING_KEY}|g" \
+              -e "s|\$${ALERT_ENV}|$${ALERT_ENV:-development}|g" \
+            /etc/alertmanager/alertmanager.yml.template > /etc/alertmanager/alertmanager.yml
+        else
+          cp /etc/alertmanager/alertmanager.no-pagerduty.yml /etc/alertmanager/alertmanager.yml
+        fi
         exec /bin/alertmanager \
           --config.file=/etc/alertmanager/alertmanager.yml \
           --storage.path=/alertmanager
@@ -59,7 +64,8 @@ services:
     restart: unless-stopped
 
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:11.5.2
+    platform: linux/arm64
     container_name: briefing-grafana
     ports:
       - "3000:3000"
