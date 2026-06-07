@@ -27,7 +27,11 @@ from backend.graph.dlq_handler import dlq_handler_node
 from backend.graph.state import BriefingGraphState
 from backend.llm.router import LLMRouter
 from backend.schemas.envelope import AgentResultEnvelope
-from backend.security.token_budget import evaluate_token_budget
+from backend.security.token_budget import (
+    evaluate_token_budget,
+    has_presentable_results,
+    is_session_token_exceeded,
+)
 from backend.settings import Settings, get_settings
 
 logger = structlog.get_logger()
@@ -35,17 +39,29 @@ logger = structlog.get_logger()
 ConsensusRoute = Literal["agreement", "minor_disagreement", "major_disagreement"]
 
 
-def should_circuit_break(state: BriefingGraphState, settings: Settings) -> bool:
-    """Return True when token budget or graph timeout exceeded."""
+def _is_graph_timeout(state: BriefingGraphState, settings: Settings) -> bool:
+    started = state.get("graph_started_at")
+    return started is not None and (time.perf_counter() - started) > settings.graph_timeout_seconds
+
+
+def should_route_to_dlq(state: BriefingGraphState, settings: Settings) -> bool:
+    """Return True when the graph should abort to DLQ with no briefing."""
     if evaluate_token_budget(state) == "token_budget_exceeded":
         return True
-    total_tokens = state.get("total_tokens", 0)
-    if total_tokens > settings.token_budget_max * 2:
+    if _is_graph_timeout(state, settings):
         return True
-    started = state.get("graph_started_at")
-    if started is not None and (time.perf_counter() - started) > settings.graph_timeout_seconds:
-        return True
+    if is_session_token_exceeded(state, configured_max=settings.token_budget_max):
+        return not has_presentable_results(state)
     return False
+
+
+def should_circuit_break(state: BriefingGraphState, settings: Settings) -> bool:
+    """Return True when further agent execution should stop."""
+    if evaluate_token_budget(state) == "token_budget_exceeded":
+        return True
+    if _is_graph_timeout(state, settings):
+        return True
+    return is_session_token_exceeded(state, configured_max=settings.token_budget_max)
 
 
 def route_consensus(state: BriefingGraphState) -> ConsensusRoute:
@@ -103,7 +119,7 @@ def build_briefing_graph(
     def route_after_parallel(
         state: BriefingGraphState,
     ) -> Literal["dlq_handler", "focus_agent", "orchestrator_present"]:
-        if should_circuit_break(state, resolved_settings):
+        if should_route_to_dlq(state, resolved_settings):
             return "dlq_handler"
         if state.get("consent_required"):
             return "orchestrator_present"
@@ -120,9 +136,11 @@ def build_briefing_graph(
 
     def route_after_focus(
         state: BriefingGraphState,
-    ) -> Literal["dlq_handler", "critic_agent", "verification_agent"]:
-        if should_circuit_break(state, resolved_settings):
+    ) -> Literal["dlq_handler", "critic_agent", "verification_agent", "orchestrator_present"]:
+        if should_route_to_dlq(state, resolved_settings):
             return "dlq_handler"
+        if should_circuit_break(state, resolved_settings) and has_presentable_results(state):
+            return "orchestrator_present"
         if consensus_enabled:
             return "verification_agent"
         return "critic_agent"
@@ -130,7 +148,7 @@ def build_briefing_graph(
     def route_after_consensus(
         state: BriefingGraphState,
     ) -> Literal["dlq_handler", "critic_agent", "human_escalation"]:
-        if should_circuit_break(state, resolved_settings):
+        if should_route_to_dlq(state, resolved_settings):
             return "dlq_handler"
         decision = route_consensus(state)
         if decision == "major_disagreement":
@@ -181,6 +199,7 @@ def build_briefing_graph(
             {
                 "verification_agent": "verification_agent",
                 "critic_agent": "critic_agent",
+                "orchestrator_present": "orchestrator_present",
                 "dlq_handler": "dlq_handler",
             },
         )
@@ -200,7 +219,11 @@ def build_briefing_graph(
         graph.add_conditional_edges(
             "focus_agent",
             route_after_focus,
-            {"critic_agent": "critic_agent", "dlq_handler": "dlq_handler"},
+            {
+                "critic_agent": "critic_agent",
+                "orchestrator_present": "orchestrator_present",
+                "dlq_handler": "dlq_handler",
+            },
         )
 
     graph.add_conditional_edges(

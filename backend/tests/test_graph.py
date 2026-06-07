@@ -1,16 +1,23 @@
 """LangGraph scaffold tests."""
 
+import time
 from datetime import UTC, date, datetime
 from unittest.mock import AsyncMock, patch
 
 import pytest
 
 from backend.dependencies import MCPClients
-from backend.graph.builder import build_briefing_graph, route_consensus
+from backend.graph.builder import (
+    build_briefing_graph,
+    route_consensus,
+    should_circuit_break,
+    should_route_to_dlq,
+)
 from backend.graph.state import BriefingGraphState
 from backend.llm.models import LLMResponse
 from backend.mcp.calendar import CalendarMCPClient
 from backend.mcp.postgres import PostgresMCPClient
+from backend.schemas.envelope import AgentResultEnvelope, ExecutionMetadata
 from backend.settings import Settings
 
 
@@ -61,7 +68,7 @@ async def test_graph_compiles_and_runs() -> None:
             "current_agent": "",
             "revision_count": 0,
             "total_tokens": 0,
-            "graph_started_at": 0.0,
+            "graph_started_at": time.perf_counter(),
             "status": "pending",
             "final_briefing": None,
             "consent_required": False,
@@ -75,15 +82,48 @@ async def test_graph_compiles_and_runs() -> None:
             "critic_result": None,
         }
 
-        with patch.object(
-            CalendarMCPClient,
-            "get_events",
-            AsyncMock(return_value=[]),
+        with (
+            patch.object(
+                CalendarMCPClient,
+                "get_events",
+                AsyncMock(return_value=[]),
+            ),
+            patch(
+                "backend.agents.calendar.node.consent_store.has_valid_consent",
+                return_value=True,
+            ),
         ):
             result = await graph.ainvoke(initial_state)
 
     await mcp.close()
     assert result["status"] in {"success", "degraded", "failure", "pending"}
+
+
+def _success_envelope(agent_id: str) -> AgentResultEnvelope:
+    return AgentResultEnvelope(
+        agent_id=agent_id,
+        canonical_role="doer",
+        status="success",
+        result={"ok": True},
+        metadata=ExecutionMetadata(
+            execution_ms=1,
+            tokens_used=18_146,
+            model_used="openai/gpt-4o-mini",
+            prompt_version="v1.5.0",
+            trace_id="f" * 32,
+            data_classification="internal",
+        ),
+    )
+
+
+def test_revision_loop_session_tokens_do_not_abort_to_dlq() -> None:
+    settings = Settings(token_budget_max=16_000)
+    state: BriefingGraphState = {
+        "total_tokens": 36_257,
+        "focus_result": _success_envelope("focus"),
+    }
+    assert should_circuit_break(state, settings) is False
+    assert should_route_to_dlq(state, settings) is False
 
 
 def test_route_consensus_major_disagreement() -> None:

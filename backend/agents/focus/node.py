@@ -22,15 +22,24 @@ from backend.memory.working import WorkingMemoryManager
 from backend.preferences.store import preference_store
 from backend.prompt_version import resolve_prompt_version
 from backend.schemas.envelope import AgentResultEnvelope, EscalationPayload, ExecutionMetadata
+from backend.security.token_budget import AGENT_TOKEN_BUDGETS, HARD_LIMIT_MULTIPLIER
 from backend.settings import Settings, get_settings
 
 logger = structlog.get_logger()
 
-FOCUS_INPUT_BUDGET = 8_000
+FOCUS_INPUT_BUDGET = AGENT_TOKEN_BUDGETS["focus"]
 FOCUS_OUTPUT_BUDGET = 2_000
 
 _default_semantic_store = SemanticMemoryStore()
 _working_memory = WorkingMemoryManager()
+
+
+def _normalize_focus_plan(parsed: dict[str, object]) -> dict[str, object]:
+    """Unwrap LLM output when it follows the documented `{ \"plan\": {...} }` schema."""
+    inner = parsed.get("plan")
+    if isinstance(inner, dict):
+        return inner
+    return parsed
 
 
 async def _persist_focus_summary(
@@ -153,8 +162,9 @@ async def focus_agent_node(
         enable_caching=settings.enable_prompt_caching,
     )
 
-    total_tokens = state.get("total_tokens", 0)
-    if total_tokens > FOCUS_INPUT_BUDGET * 2:
+    estimated_input = sum(len(m.get("content", "")) for m in messages) // 4
+    focus_hard_limit = FOCUS_INPUT_BUDGET * HARD_LIMIT_MULTIPLIER
+    if estimated_input > focus_hard_limit:
         execution_ms = int((time.perf_counter() - start) * 1000)
         envelope = AgentResultEnvelope(
             agent_id="focus",
@@ -163,7 +173,10 @@ async def focus_agent_node(
             escalation=EscalationPayload(
                 reason="token_budget_exceeded",
                 target_agent="orchestrator",
-                context="Focus agent exceeded 2x token budget",
+                context=(
+                    f"Focus agent input estimate {estimated_input} exceeds "
+                    f"hard limit {focus_hard_limit}"
+                ),
             ),
             metadata=ExecutionMetadata(
                 execution_ms=execution_ms,
@@ -223,6 +236,9 @@ async def focus_agent_node(
         except json.JSONDecodeError:
             plan = {"time_blocks": [], "summary": "Focus plan could not be parsed. Please retry."}
 
+    if isinstance(plan, dict):
+        plan = _normalize_focus_plan(plan)
+
     if not tasks and not events:
         plan = {"time_blocks": [], "summary": "Minimal plan — no tasks or events available."}
 
@@ -261,9 +277,10 @@ async def focus_agent_node(
         context_snippet=context_snippet,
     )
 
+    session_tokens = state.get("total_tokens", 0)
     return {
         "focus_result": envelope,
         "current_agent": "focus",
-        "total_tokens": total_tokens + llm_response.tokens_used,
+        "total_tokens": session_tokens + llm_response.tokens_used,
         **working_update,
     }

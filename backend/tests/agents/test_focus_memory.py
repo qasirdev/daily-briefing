@@ -161,3 +161,78 @@ async def test_focus_continues_when_semantic_retrieval_fails() -> None:
 
     assert update["focus_result"].status == "success"
     assert update["working_memory_tokens"] == 80
+
+
+@pytest.mark.asyncio
+async def test_focus_unwraps_nested_plan_schema_from_llm() -> None:
+    """LLM prompt schema wraps fields in a top-level `plan` key."""
+    mock_llm = AsyncMock()
+    mock_llm.generate = AsyncMock(
+        return_value=LLMResponse(
+            content=json.dumps(
+                {
+                    "plan": {
+                        "summary": "Morning deep work on Q2 report before sprint review.",
+                        "time_blocks": [
+                            {
+                                "start": "09:00",
+                                "end": "11:00",
+                                "activity": "Complete Q2 report",
+                                "priority": "high",
+                                "type": "deep_work",
+                            },
+                        ],
+                    },
+                },
+            ),
+            tokens_used=150,
+            model_used="openai/gpt-4o-mini",
+            latency_ms=5,
+        ),
+    )
+    mock_llm.primary_model = "openai/gpt-4o-mini"
+
+    with patch(
+        "backend.agents.focus.node.retrieve_agent_memory",
+        new=AsyncMock(return_value=AgentMemoryContext(semantic=(), procedural=(), episodic=())),
+    ):
+        update = await focus_agent_node(_base_state(), mock_llm)
+
+    plan = update["focus_result"].result["plan"]
+    assert plan["summary"] == "Morning deep work on Q2 report before sprint review."
+    assert len(plan["time_blocks"]) == 1
+    assert "plan" not in plan
+
+
+@pytest.mark.asyncio
+async def test_focus_revision_loop_not_blocked_by_session_total_tokens() -> None:
+    """Critic revisions accumulate total_tokens; focus must still invoke the LLM."""
+    state = _base_state()
+    state["total_tokens"] = 17_768
+    state["revision_count"] = 2
+
+    mock_llm = AsyncMock()
+    mock_llm.generate = AsyncMock(
+        return_value=LLMResponse(
+            content=json.dumps(
+                {
+                    "summary": "Revised focus plan",
+                    "time_blocks": [{"start": "09:00", "end": "11:00", "activity": "Deep work"}],
+                },
+            ),
+            tokens_used=150,
+            model_used="openai/gpt-4o-mini",
+            latency_ms=5,
+        ),
+    )
+    mock_llm.primary_model = "openai/gpt-4o-mini"
+
+    with patch(
+        "backend.agents.focus.node.retrieve_agent_memory",
+        new=AsyncMock(return_value=AgentMemoryContext(semantic=(), procedural=(), episodic=())),
+    ):
+        update = await focus_agent_node(state, mock_llm)
+
+    assert update["focus_result"].status == "success"
+    mock_llm.generate.assert_awaited_once()
+    assert update["total_tokens"] == 17_918

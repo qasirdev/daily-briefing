@@ -21,6 +21,7 @@ logger = structlog.get_logger()
 
 DEFAULT_INPUT_BUDGET = 8_000
 DEFAULT_OUTPUT_BUDGET = 2_000
+OPENROUTER_MAX_CHAIN_MODELS = 3
 
 DataClassification = Literal[
     "public",
@@ -255,15 +256,53 @@ class LLMRouter:
         trace_id: str,
         agent_id: str,
     ) -> LLMResponse:
-        return await self._call_provider(
-            client=self._primary,
-            model=self._primary_openrouter_model,
-            messages=messages,
-            max_tokens=max_tokens,
-            trace_id=trace_id,
-            agent_id=agent_id,
-            openrouter_models=self._openrouter_models,
-        )
+        models = list(self._openrouter_models) or [self._primary_openrouter_model]
+        errors: list[str] = []
+        chain_models = models[:OPENROUTER_MAX_CHAIN_MODELS]
+        overflow_models = models[OPENROUTER_MAX_CHAIN_MODELS:]
+
+        if len(chain_models) > 1:
+            try:
+                return await self._call_provider(
+                    client=self._primary,
+                    model=chain_models[0],
+                    messages=messages,
+                    max_tokens=max_tokens,
+                    trace_id=trace_id,
+                    agent_id=agent_id,
+                    openrouter_models=chain_models,
+                )
+            except LLMError as exc:
+                errors.append(f"chain: {exc}")
+                logger.warning(
+                    "openrouter_model_chain_failed",
+                    trace_id=trace_id,
+                    error=str(exc),
+                    models=chain_models,
+                    overflow_models=overflow_models or None,
+                )
+
+        if len(chain_models) > 1 and errors:
+            fallback_models = chain_models[1:] + overflow_models
+        else:
+            fallback_models = chain_models + overflow_models
+        for candidate in fallback_models:
+            try:
+                return await self._call_provider(
+                    client=self._primary,
+                    model=candidate,
+                    messages=messages,
+                    max_tokens=max_tokens,
+                    trace_id=trace_id,
+                    agent_id=agent_id,
+                    openrouter_models=None,
+                )
+            except LLMError as exc:
+                errors.append(f"{candidate}: {exc}")
+                continue
+
+        msg = "; ".join(errors) if errors else "All LLM providers returned empty responses"
+        raise LLMError(msg)
 
     async def _call_provider(
         self,
@@ -299,9 +338,17 @@ class LLMRouter:
                 raise LLMError("LLM request timed out") from exc
             except APIConnectionError as exc:
                 raise LLMError("LLM connection error") from exc
+            except APIStatusError as exc:
+                raise LLMError(str(exc)) from exc
+            except APIError as exc:
+                raise LLMError(str(exc)) from exc
 
             latency_ms = int((time.perf_counter() - start) * 1000)
             choice = completion.choices[0].message.content or ""
+            if not choice.strip():
+                model_used = completion.model or model
+                msg = f"Empty response from model {model_used}"
+                raise LLMError(msg)
             usage = completion.usage
             model_used = completion.model or model
             tokens_used = usage.total_tokens if usage else len(choice) // 4
