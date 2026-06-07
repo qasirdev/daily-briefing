@@ -50,6 +50,7 @@ class ExecutionMetadata(BaseModel):
 
     execution_ms: int = Field(..., ge=0, le=300_000)
     tokens_used: int = Field(..., ge=0, le=128_000)
+    cost_usd: float = Field(default=0.0, ge=0.0)
     model_used: str = Field(..., min_length=1)
     prompt_version: str = Field(..., pattern=r"^v\d+\.\d+\.\d+$")
     trace_id: str = Field(..., min_length=32, max_length=64)

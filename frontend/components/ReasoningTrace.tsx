@@ -3,21 +3,7 @@
 import { useState } from "react";
 
 import { ReasoningFeedback } from "@/components/ReasoningFeedback";
-
-export type ReasoningTraceEntry = {
-  agent_id: string;
-  hitl_layer: string;
-  summary: string;
-  status: "success" | "failure" | "escalated" | "awaiting_human";
-  tokens_used: number;
-  execution_ms: number;
-};
-
-export type ReasoningTraceData = {
-  trace_id: string;
-  entries: ReasoningTraceEntry[];
-  hitl_mode: "human_on_the_loop" | "human_in_the_loop";
-};
+import type { ReasoningTrace as ReasoningTraceData } from "@/lib/briefing-schema";
 
 type ReasoningTraceProps = {
   trace: ReasoningTraceData | null | undefined;

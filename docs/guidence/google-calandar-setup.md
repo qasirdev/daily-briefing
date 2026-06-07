@@ -71,7 +71,7 @@ This guide helps you set up **Google Calendar API** access using OAuth 2.0 and o
 
 2. Click the **gear icon** (top right) and configure:
    - Check **Use your own OAuth credentials**
-   - Paste the **Web application** Client ID and Client Secret from Step 1
+   - Paste the **Web application** Client ID and Client Secret from Step 1 (in .env file , GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET)
    - Leave **OAuth flow** as **Server-side**
    - **Access type:** Offline
    - **Force prompt:** Consent Screen (ensures a refresh token is issued)
@@ -92,7 +92,7 @@ This guide helps you set up **Google Calendar API** access using OAuth 2.0 and o
 
 8. Click **Exchange authorization code for tokens**
 
-9. Copy the **Refresh token** from the response (not the access token)
+9. Copy the **Refresh token** from the response (not the access token) add in .env file GOOGLE_REFRESH_TOKEN
 
 ---
 
@@ -167,6 +167,7 @@ Check logs for calendar MCP startup:
 
 ```bash
 docker logs briefing-smoke 2>&1 | grep -i calendar
+docker compose logs app --tail 100 2>&1
 ```
 
 You should **not** see repeated `Failed to validate Google Calendar credentials` messages.

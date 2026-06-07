@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from backend.llm.router import LLMError, LLMRouter, OPENROUTER_MAX_CHAIN_MODELS
+from backend.llm.router import OPENROUTER_MAX_CHAIN_MODELS, LLMError, LLMRouter
 from backend.settings import Settings
 
 
@@ -105,7 +105,9 @@ async def test_openrouter_chain_caps_models_at_three() -> None:
             agent_id="focus",
         )
 
-    kwargs = create_mock.await_args.kwargs
+    await_args = create_mock.await_args
+    assert await_args is not None
+    kwargs = await_args.kwargs
     assert kwargs["extra_body"]["models"] == models[:OPENROUTER_MAX_CHAIN_MODELS]
 
 

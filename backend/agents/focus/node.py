@@ -251,6 +251,7 @@ async def focus_agent_node(
         metadata=ExecutionMetadata(
             execution_ms=execution_ms,
             tokens_used=llm_response.tokens_used,
+            cost_usd=llm_response.cost_usd,
             model_used=llm_response.model_used,
             prompt_version=resolve_prompt_version("focus"),
             trace_id=trace_id,

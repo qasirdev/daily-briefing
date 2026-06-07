@@ -16,6 +16,7 @@ from backend.api.v1.dlq import router as dlq_router
 from backend.api.v1.export import router as export_router
 from backend.api.v1.feedback import router as feedback_router
 from backend.api.v1.preferences import router as preferences_router
+from backend.api.v1.usage import router as usage_router
 from backend.dependencies import build_llm_router
 from backend.health.router import router as health_router
 from backend.llm.prompt_cache import PromptCacheWarmer
@@ -124,6 +125,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(feedback_router)
     app.include_router(export_router)
     app.include_router(dlq_router)
+    app.include_router(usage_router)
     app.mount("/metrics", make_asgi_app())
 
     return app

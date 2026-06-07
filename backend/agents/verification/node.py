@@ -42,6 +42,7 @@ def _build_envelope(
         metadata=ExecutionMetadata(
             execution_ms=execution_ms,
             tokens_used=llm_response.tokens_used if llm_response else 0,
+            cost_usd=llm_response.cost_usd if llm_response else 0.0,
             model_used=llm_response.model_used if llm_response else "none",
             prompt_version=resolve_prompt_version("verification"),
             trace_id=trace_id,

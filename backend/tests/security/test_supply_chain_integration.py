@@ -62,6 +62,7 @@ async def test_consent_grant_extends_audit_chain() -> None:
 
 async def test_broker_and_bom_integration_settings() -> None:
     settings = Settings(
+        llm_openrouter_models="",
         llm_primary_model="openai/gpt-4o-mini",
         embedding_model="openai/text-embedding-3-small",
         google_refresh_token="token",

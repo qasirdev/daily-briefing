@@ -31,7 +31,12 @@ def test_list_tracked_components_includes_models_and_libraries() -> None:
 
 
 def test_validate_bom_against_settings_passes_with_defaults() -> None:
-    validate_bom_against_settings(Settings())
+    validate_bom_against_settings(
+        Settings(
+            llm_openrouter_models="openai/gpt-oss-120b:free,openai/gpt-4o-mini",
+            llm_primary_model="openai/gpt-oss-120b",
+        ),
+    )
 
 
 def test_validate_bom_fails_when_model_missing(tmp_path: Path) -> None:

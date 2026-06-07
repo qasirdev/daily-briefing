@@ -43,10 +43,11 @@ _AGENT_KEYS = (
 
 def _build_agent_breakdown(
     result: BriefingGraphState,
-) -> tuple[list[str], list[AgentExecutionSummary], str]:
+) -> tuple[list[str], list[AgentExecutionSummary], str, float]:
     agents_invoked: list[str] = []
     breakdown: list[AgentExecutionSummary] = []
     primary_model = "none"
+    total_cost_usd = 0.0
 
     for name, key in _AGENT_KEYS:
         envelope = result.get(key)
@@ -55,17 +56,20 @@ def _build_agent_breakdown(
         agents_invoked.append(name)
         if envelope.metadata.model_used != "none":
             primary_model = envelope.metadata.model_used
+        agent_cost = envelope.metadata.cost_usd
+        total_cost_usd += agent_cost
         breakdown.append(
             AgentExecutionSummary(
                 agent_id=name,
                 execution_ms=envelope.metadata.execution_ms,
                 tokens_used=envelope.metadata.tokens_used,
+                cost_usd=agent_cost,
                 model_used=envelope.metadata.model_used,
                 status=envelope.status,
             ),
         )
 
-    return agents_invoked, breakdown, primary_model
+    return agents_invoked, breakdown, primary_model, total_cost_usd
 
 
 @router.post("/generate", response_model=BriefingResponse)
@@ -142,7 +146,9 @@ async def generate_briefing(request: Request, body: BriefingRequest) -> Briefing
     else:
         response_status = "failure"
 
-    agents_invoked, agent_breakdown, model_used = _build_agent_breakdown(result_state)
+    agents_invoked, agent_breakdown, model_used, total_cost_usd = _build_agent_breakdown(
+        result_state,
+    )
 
     record_briefing_generation(
         status=response_status,
@@ -170,6 +176,7 @@ async def generate_briefing(request: Request, body: BriefingRequest) -> Briefing
         metadata=BriefingMetadata(
             trace_id=trace_id,
             total_tokens=result_state.get("total_tokens", 0),
+            total_cost_usd=total_cost_usd,
             execution_ms=execution_ms,
             model_used=model_used,
             agents_invoked=agents_invoked,

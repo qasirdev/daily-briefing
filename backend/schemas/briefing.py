@@ -26,6 +26,7 @@ class AgentExecutionSummary(BaseModel):
     agent_id: str
     execution_ms: int = Field(..., ge=0)
     tokens_used: int = Field(..., ge=0)
+    cost_usd: float = Field(default=0.0, ge=0.0)
     model_used: str = "none"
     status: Literal["success", "failure", "escalated"] = "success"
 
@@ -37,6 +38,7 @@ class BriefingMetadata(BaseModel):
 
     trace_id: str = Field(..., min_length=32, max_length=64)
     total_tokens: int = Field(..., ge=0)
+    total_cost_usd: float = Field(default=0.0, ge=0.0)
     execution_ms: int = Field(..., ge=0)
     model_used: str = "none"
     agents_invoked: list[str] = Field(default_factory=list)

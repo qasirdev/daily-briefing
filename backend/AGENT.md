@@ -110,13 +110,15 @@ backend/
 | Structured Logging | Use `structlog` for all logging; include `trace_id` in every log |
 | Error Handling | Never catch generic `Exception`; always catch specific types |
 | Imports | Module-level only; stdlib → third party → `backend.*`; run `ruff check backend --fix` for `I001` |
-| Backend verification gate | After every backend task, run the four commands below before marking done |
+| Backend verification gate | After any backend touch, run the **full** four-command gate (no targeted pytest) before marking done |
 
 ---
 
 ## Backend Verification Gate
 
-After completing **every** backend task (implementation, refactor, or test changes), run from the repository root **before marking the task complete**:
+After **any** backend touch, run the **full** gate from the repository root **before marking the task complete**. Partial or targeted checks are not sufficient.
+
+**Counts as a backend touch** (non-exhaustive): `backend/api/**`, `backend/llm/**`, `backend/agents/**`, `backend/tests/**`, `backend/schemas/**`, `infrastructure/ai-bom.yaml`, security/supply-chain tests, and any other file under `backend/` or consumed by backend runtime settings.
 
 ```bash
 uv run ruff check backend && uv run ruff format backend && uv run mypy backend && uv run pytest
@@ -136,9 +138,14 @@ uv run pytest
 | 1 | `uv run ruff check backend` | Zero lint warnings (run `--fix` for import sort `I001`) |
 | 2 | `uv run ruff format backend` | Formatting applied |
 | 3 | `uv run mypy backend` | Zero type errors |
-| 4 | `uv run pytest` | All tests pass |
+| 4 | `uv run pytest` | **All** tests pass (full suite — not a single file or directory) |
 
-Do not mark a backend task complete or commit until **all four** pass. If Ruff reports `I001`, run `uv run ruff check backend --fix`. Capture test output in `logs/` or `proof/` when required by the epic verification gate.
+**Hard rules:**
+
+- Do **not** mark a backend task complete, summarize as done, or commit until **all four** commands pass.
+- Do **not** substitute targeted runs (e.g. `pytest backend/tests/test_account_usage_api.py`) for step 4 — integration tests (AI-BOM vs live `.env`, supply chain, etc.) only surface on the full suite.
+- If Ruff reports `I001`, run `uv run ruff check backend --fix`.
+- Capture test output in `logs/` or `proof/` when required by the epic verification gate.
 
 ---
 

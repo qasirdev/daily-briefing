@@ -1,6 +1,6 @@
 metadata:
   version: "1.0"
-  last_updated: "2026-06-06"
+  last_updated: "2026-06-07"
   owner: platform-security
   supply_chain:
     openssf_scorecard_minimum: 7.0
@@ -12,13 +12,29 @@ metadata:
       > scorecard-results/scorecard.json
 
 models:
+  - name: meta-llama/llama-3.3-70b-instruct:free
+    provider: openrouter
+    version: "3.3"
+    license: Llama Community License
+    provenance: https://openrouter.ai/docs
+    security_posture: vendor-managed
+    role: primary
+
+  - name: deepseek/deepseek-v4-flash
+    provider: openrouter
+    version: "v4"
+    license: Commercial
+    provenance: https://openrouter.ai/docs
+    security_posture: vendor-managed
+    role: openrouter-fallback
+
   - name: openai/gpt-oss-120b
     provider: openrouter
     version: "2025-03"
     license: Commercial
     provenance: https://openrouter.ai/docs
     security_posture: vendor-managed
-    role: primary
+    role: openrouter-fallback
 
   - name: openai/gpt-oss-120b:free
     provider: openrouter

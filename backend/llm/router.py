@@ -12,6 +12,11 @@ from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponen
 
 from backend.llm.models import LLMResponse
 from backend.llm.prompt_cache import infer_cache_provider
+from backend.llm.usage import (
+    extract_completion_tokens,
+    extract_cost_usd,
+    extract_prompt_tokens,
+)
 from backend.metrics import record_llm_cache_usage, record_llm_fallback, record_llm_tokens
 from backend.security.pii import mask_pii
 from backend.settings import Settings
@@ -352,6 +357,9 @@ class LLMRouter:
             usage = completion.usage
             model_used = completion.model or model
             tokens_used = usage.total_tokens if usage else len(choice) // 4
+            prompt_tokens = extract_prompt_tokens(usage) or 0
+            completion_tokens = extract_completion_tokens(usage) or 0
+            cost_usd = extract_cost_usd(usage) or 0.0
             record_llm_tokens(agent_id=agent_id, model=model_used, tokens=tokens_used)
             cached_tokens = self._extract_cached_tokens(usage)
             if self._settings.enable_prompt_caching:
@@ -368,6 +376,9 @@ class LLMRouter:
                 model_requested=model,
                 openrouter_models=openrouter_models,
                 tokens_used=tokens_used,
+                prompt_tokens=prompt_tokens,
+                completion_tokens=completion_tokens,
+                cost_usd=cost_usd,
                 cached_tokens=cached_tokens,
                 latency_ms=latency_ms,
             )
@@ -376,6 +387,9 @@ class LLMRouter:
                 content=choice,
                 model_used=model_used,
                 tokens_used=tokens_used,
+                prompt_tokens=prompt_tokens,
+                completion_tokens=completion_tokens,
+                cost_usd=cost_usd,
                 latency_ms=latency_ms,
             )
 

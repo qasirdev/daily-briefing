@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { DEFAULT_USER_ID, getApiBase } from "@/lib/api";
-import type { ReasoningTraceEntry } from "@/components/ReasoningTrace";
+import type { ReasoningTraceEntry } from "@/lib/briefing-schema";
 
 type ReasoningFeedbackProps = {
   briefingId: string;

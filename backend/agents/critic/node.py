@@ -9,6 +9,7 @@ from typing import Any
 import structlog
 
 from backend.graph.state import BriefingGraphState
+from backend.llm.models import LLMResponse
 from backend.llm.prompt_cache import build_llm_messages, resolve_model_name
 from backend.llm.router import LLMError, LLMRouter
 from backend.logging_config import agent_log_context
@@ -62,9 +63,9 @@ async def _llm_quality_issues(
     llm: LLMRouter,
     *,
     trace_id: str,
-) -> list[str]:
+) -> tuple[list[str], LLMResponse | None]:
     if focus_result is None or focus_result.result is None:
-        return ["Focus agent produced no output"]
+        return ["Focus agent produced no output"], None
 
     settings = get_settings()
     user_content = (
@@ -79,19 +80,24 @@ async def _llm_quality_issues(
         enable_caching=settings.enable_prompt_caching,
     )
     try:
-        response = await llm.generate(messages=messages, trace_id=trace_id, output_budget=512)
+        response = await llm.generate(
+            messages=messages,
+            trace_id=trace_id,
+            agent_id="critic",
+            output_budget=512,
+        )
         parsed = json.loads(response.content)
     except (LLMError, json.JSONDecodeError):
-        return _heuristic_quality_issues(focus_result)
+        return _heuristic_quality_issues(focus_result), None
 
     if not isinstance(parsed, dict):
-        return _heuristic_quality_issues(focus_result)
+        return _heuristic_quality_issues(focus_result), response
     if parsed.get("approved") is True:
-        return []
+        return [], response
     issues = parsed.get("issues", [])
     if isinstance(issues, list):
-        return [str(item) for item in issues if item]
-    return _heuristic_quality_issues(focus_result)
+        return [str(item) for item in issues if item], response
+    return _heuristic_quality_issues(focus_result), response
 
 
 async def critic_agent_node(
@@ -143,8 +149,13 @@ async def critic_agent_node(
                     }
 
                 focus_result = state.get("focus_result")
+                llm_response: LLMResponse | None = None
                 if llm is not None:
-                    issues = await _llm_quality_issues(focus_result, llm, trace_id=trace_id)
+                    issues, llm_response = await _llm_quality_issues(
+                        focus_result,
+                        llm,
+                        trace_id=trace_id,
+                    )
                 else:
                     issues = _heuristic_quality_issues(
                         focus_result if isinstance(focus_result, AgentResultEnvelope) else None,
@@ -166,8 +177,9 @@ async def critic_agent_node(
                     },
                     metadata=ExecutionMetadata(
                         execution_ms=execution_ms,
-                        tokens_used=0,
-                        model_used="none",
+                        tokens_used=llm_response.tokens_used if llm_response else 0,
+                        cost_usd=llm_response.cost_usd if llm_response else 0.0,
+                        model_used=llm_response.model_used if llm_response else "none",
                         prompt_version=resolve_prompt_version("critic"),
                         trace_id=trace_id,
                         data_classification="internal",
@@ -178,6 +190,8 @@ async def critic_agent_node(
                     "critic_result": envelope,
                     "current_agent": "critic",
                 }
+                if llm_response is not None:
+                    update["total_tokens"] = state.get("total_tokens", 0) + llm_response.tokens_used
                 if revision_required:
                     update["revision_count"] = revision_count + 1
                 elif revision_count >= MAX_REVISION_CYCLES and issues:
