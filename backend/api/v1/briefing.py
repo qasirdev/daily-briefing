@@ -34,6 +34,8 @@ _AGENT_KEYS = (
     ("task", "task_result"),
     ("calendar", "calendar_result"),
     ("focus", "focus_result"),
+    ("verification", "verification_result"),
+    ("adversarial", "adversarial_result"),
     ("critic", "critic_result"),
     ("orchestrator", "orchestrator_result"),
 )

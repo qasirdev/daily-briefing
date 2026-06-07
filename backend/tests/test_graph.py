@@ -8,6 +8,7 @@ import pytest
 
 from backend.dependencies import MCPClients
 from backend.graph.builder import (
+    _is_graph_timeout,
     build_briefing_graph,
     route_consensus,
     should_circuit_break,
@@ -58,7 +59,8 @@ async def test_graph_compiles_and_runs() -> None:
         )
         build_llm.return_value = llm
 
-        graph = build_briefing_graph(mcp, llm=llm)
+        settings = Settings(enable_consensus_workflow=False)
+        graph = build_briefing_graph(mcp, llm=llm, settings=settings)
         initial_state: BriefingGraphState = {
             "user_id": "user-1",
             "request_id": "req-1",
@@ -114,6 +116,16 @@ def _success_envelope(agent_id: str) -> AgentResultEnvelope:
             data_classification="internal",
         ),
     )
+
+
+def test_graph_timeout_triggers_dlq_route() -> None:
+    settings = Settings(graph_timeout_seconds=60)
+    state: BriefingGraphState = {
+        "graph_started_at": time.perf_counter() - 61,
+        "focus_result": _success_envelope("focus"),
+    }
+    assert _is_graph_timeout(state, settings) is True
+    assert should_route_to_dlq(state, settings) is True
 
 
 def test_revision_loop_session_tokens_do_not_abort_to_dlq() -> None:

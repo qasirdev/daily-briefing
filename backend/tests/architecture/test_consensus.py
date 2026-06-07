@@ -114,13 +114,14 @@ async def _consensus_graph_patches(
     verification_return: dict[str, Any],
     adversarial_return: dict[str, Any],
     trace_id: str,
+    settings: Settings | None = None,
 ) -> AsyncIterator[Any]:
     """Patch upstream agents so integration tests isolate consensus routing."""
     mcp = MCPClients(
         postgres=PostgresMCPClient(host="localhost", port=5443),
         calendar=CalendarMCPClient(host="localhost", port=5444),
     )
-    settings = Settings(enable_consensus_workflow=True)
+    resolved_settings = settings or Settings(enable_consensus_workflow=True)
     llm = AsyncMock()
     llm.generate = AsyncMock(
         return_value=LLMResponse(
@@ -157,7 +158,7 @@ async def _consensus_graph_patches(
             AsyncMock(return_value=adversarial_return),
         ),
     ):
-        graph = build_briefing_graph(mcp, llm=llm, settings=settings)
+        graph = build_briefing_graph(mcp, llm=llm, settings=resolved_settings)
         try:
             yield graph
         finally:
@@ -211,6 +212,67 @@ async def test_consensus_agreement_path() -> None:
 
 
 @pytest.mark.asyncio
+async def test_consensus_disagreement_proceeds_to_critic_when_human_escalation_disabled() -> None:
+    """Major disagreement routes to Critic when consensus_human_escalation is false."""
+    verification_return = {
+        "verification_result": AgentResultEnvelope(
+            agent_id="verification",
+            canonical_role="verifier",
+            status="escalated",
+            result={
+                "status": "discrepancies_found",
+                "verified_claims": [],
+                "flagged_claims": [
+                    {
+                        "claim": "Meeting at 3pm",
+                        "issue": "Calendar shows 2pm",
+                        "source_truth": "Meeting scheduled for 14:00",
+                        "severity": "critical",
+                    },
+                    {
+                        "claim": "High priority task due today",
+                        "issue": "Task due date is tomorrow",
+                        "source_truth": "Due date: 2026-06-05",
+                        "severity": "critical",
+                    },
+                ],
+                "confidence": 0.3,
+            },
+            metadata=_metadata(TRACE_DISAGREEMENT),
+        ),
+        "current_agent": "verification",
+    }
+    adversarial_return = {
+        "adversarial_result": AgentResultEnvelope(
+            agent_id="adversarial",
+            canonical_role="adversarial",
+            status="success",
+            result={
+                "challenges": [],
+                "risk_level": "high",
+                "recommended_action": "reject",
+            },
+            metadata=_metadata(TRACE_DISAGREEMENT),
+        ),
+        "current_agent": "adversarial",
+    }
+
+    settings = Settings(enable_consensus_workflow=True, consensus_human_escalation=False)
+    async with _consensus_graph_patches(
+        verification_return=verification_return,
+        adversarial_return=adversarial_return,
+        trace_id=TRACE_DISAGREEMENT,
+        settings=settings,
+    ) as graph:
+        result = await graph.ainvoke(_base_state(TRACE_DISAGREEMENT))
+
+    assert result["consensus_result"] is not None
+    assert result["consensus_result"]["agreement_level"] == "major_disagreement"
+    assert result.get("critic_result") is not None
+    assert result["status"] != "awaiting_human_review"
+
+
+@pytest.mark.asyncio
 async def test_consensus_disagreement_escalation() -> None:
     """Graph escalates to human review on major disagreement."""
     verification_return = {
@@ -260,6 +322,7 @@ async def test_consensus_disagreement_escalation() -> None:
         verification_return=verification_return,
         adversarial_return=adversarial_return,
         trace_id=TRACE_DISAGREEMENT,
+        settings=Settings(enable_consensus_workflow=True, consensus_human_escalation=True),
     ) as graph:
         result = await graph.ainvoke(_base_state(TRACE_DISAGREEMENT))
 

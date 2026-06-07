@@ -28,6 +28,8 @@ For each assumption in the focus plan, ask:
 | `moderate` | Could change user decisions |
 | `severe` | High-consequence mistake if uncorrected |
 
+Reserve `severe` for claims that **contradict MCP source data** or would cause the user to **miss a real commitment** (overlap, wrong time, wrong priority vs source). Subjective prioritization, time estimates, and scheduling tradeoffs are `moderate` at most — not `severe`.
+
 ### Step 4: Set Risk Level
 
 - `low` — 0 severe, 0–1 moderate

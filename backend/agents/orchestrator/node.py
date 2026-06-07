@@ -280,11 +280,18 @@ async def orchestrator_present_node(state: BriefingGraphState) -> dict[str, Any]
     raw_markdown = "".join(sections)
     briefing = sanitize_markdown(raw_markdown)
 
+    consensus_without_critic = state.get("consensus_result") is not None and not isinstance(
+        state.get("critic_result"),
+        AgentResultEnvelope,
+    )
+
     status: Literal["success", "failure", "degraded", "awaiting_consent"]
     if non_consent_escalations and briefing:
         status = "degraded"
     elif non_consent_escalations:
         status = "failure"
+    elif consensus_without_critic and briefing:
+        status = "degraded"
     else:
         status = "success"
 

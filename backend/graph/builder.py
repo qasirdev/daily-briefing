@@ -147,12 +147,20 @@ def build_briefing_graph(
 
     def route_after_consensus(
         state: BriefingGraphState,
-    ) -> Literal["dlq_handler", "critic_agent", "human_escalation"]:
+    ) -> Literal["dlq_handler", "critic_agent", "human_escalation", "orchestrator_present"]:
+        if (
+            _is_graph_timeout(state, resolved_settings)
+            and has_presentable_results(state)
+            and evaluate_token_budget(state) != "token_budget_exceeded"
+        ):
+            return "orchestrator_present"
         if should_route_to_dlq(state, resolved_settings):
             return "dlq_handler"
         decision = route_consensus(state)
         if decision == "major_disagreement":
-            return "human_escalation"
+            if resolved_settings.consensus_human_escalation:
+                return "human_escalation"
+            return "critic_agent"
         return "critic_agent"
 
     def route_after_critic(
@@ -211,6 +219,7 @@ def build_briefing_graph(
             {
                 "critic_agent": "critic_agent",
                 "human_escalation": "human_escalation",
+                "orchestrator_present": "orchestrator_present",
                 "dlq_handler": "dlq_handler",
             },
         )
