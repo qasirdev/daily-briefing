@@ -39,6 +39,9 @@ If you prefer one command instead of three separate guides:
 ```bash
 cd docs/guidence/observability
 cp observability.env.example .env
+# docker compose -f docker-compose.observability.yml down
+# docker rm -f briefing-alertmanager briefing-grafana briefing-prometheus 2>/dev/null
+
 # Edit .env — set PAGERDUTY_ROUTING_KEY after PagerDuty setup (step 3)
 docker compose -f docker-compose.observability.yml up -d
 ```
@@ -124,9 +127,11 @@ Copy from [observability.env.example](./observability.env.example). Used by Dock
 
 | Problem | Fix |
 |---------|-----|
-| Prometheus shows target **DOWN** | Start backend: `uv run uvicorn backend.main:app --host 0.0.0.0 --port 8010` |
-| Empty metrics in Prometheus | Generate traffic: `curl http://localhost:8010/health` then `curl http://localhost:8010/metrics` |
-| Docker cannot reach app on Mac | Use `host.docker.internal:8010` in `prometheus.yml` (already set in our config) |
+| Prometheus shows target **DOWN** | **Docker app:** set `APP_METRICS_TARGET=host.docker.internal:8088` in `observability/.env`, rebuild app (`docker compose build app && docker compose up -d`), restart Prometheus. **Local uvicorn:** `uv run uvicorn backend.main:app --host 0.0.0.0 --port 8010` and use `APP_METRICS_TARGET=host.docker.internal:8010` |
+| Target DOWN with `503 Server shutting down` | Stale uvicorn on host :8010 — `lsof -i :8010` then `kill <pid>` and restart backend, or switch scrape target to Docker `:8088` |
+| Empty metrics in Prometheus | Generate traffic: `curl http://localhost:8088/health` (Docker) or `:8010/health` (uvicorn), then check `/metrics/` |
+| SLO dashboard "No data" | Recording rules need briefing traffic — run at least one briefing via the UI or `POST /api/v1/briefing` |
+| Docker cannot reach app on Mac | Use `host.docker.internal` in `APP_METRICS_TARGET` (see `observability.env.example`) |
 | PagerDuty test alert not received | Confirm `PAGERDUTY_ROUTING_KEY` in `observability/.env` and restart Alertmanager |
 | Alertmanager restart loop (no PagerDuty key) | Expected when key is empty — stack uses `alertmanager.no-pagerduty.yml`; set key in `.env` for real routing |
 | Grafana `exec /run.sh: exec format error` | Corrupted `latest` image — run `docker rmi grafana/grafana:latest` then `docker compose pull grafana` (compose pins `grafana/grafana:11.5.2`) |

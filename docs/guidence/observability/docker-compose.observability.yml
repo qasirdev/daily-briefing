@@ -5,7 +5,7 @@
 #   # Edit .env — set PAGERDUTY_ROUTING_KEY and GRAFANA_ADMIN_PASSWORD
 #   docker compose -f docker-compose.observability.yml up -d
 #
-# Requires: backend running on host port 8010 (uvicorn)
+# Requires: app running — Docker `docker compose up` (:8088) or uvicorn on :8010
 # Docs: docs/guidence/observability/README.md
 
 services:
@@ -25,7 +25,7 @@ services:
       - /bin/sh
       - -c
       - |
-        sed "s|\$${APP_METRICS_TARGET}|$${APP_METRICS_TARGET:-host.docker.internal:8010}|g" \
+        sed "s|\$${APP_METRICS_TARGET}|$${APP_METRICS_TARGET:-host.docker.internal:8088}|g" \
           /etc/prometheus/prometheus.yml.template > /etc/prometheus/prometheus.yml
         exec /bin/prometheus \
           --config.file=/etc/prometheus/prometheus.yml \
