@@ -1,0 +1,234 @@
+<mxfile host="app.diagrams.net">
+  <diagram id="wOYFPxaHfE7fVTeeKQNR" name="Page-1">
+    <mxGraphModel dx="1414" dy="716" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="grp_client" parent="1" style="swimlane;startSize=30;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=13;" value="🌐 Client Layer" vertex="1">
+          <mxGeometry height="90" width="280" x="40" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="ui" parent="grp_client" style="rounded=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=11;" value="Next.js 16 Dashboard&#xa;React 19 + Tailwind v4" vertex="1">
+          <mxGeometry height="40" width="200" x="40" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="grp_container" parent="1" style="swimlane;startSize=30;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=13;" value="🐳 Production Container (Docker)" vertex="1">
+          <mxGeometry height="150" width="280" x="40" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="nginx" parent="grp_container" style="rounded=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;fontSize=11;" value="Nginx Reverse Proxy&#xa;Port 8088 → 80" vertex="1">
+          <mxGeometry height="40" width="200" x="40" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="api" parent="grp_container" style="rounded=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=11;" value="FastAPI Backend&#xa;LangGraph Multi-Agent Orchestration" vertex="1">
+          <mxGeometry height="40" width="200" x="40" y="95" as="geometry" />
+        </mxCell>
+        <mxCell id="grp_agents" parent="1" style="swimlane;startSize=30;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;fontSize=13;" value="🤖 Six-Agent Verification Pipeline" vertex="1">
+          <mxGeometry height="440" width="520" x="380" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="orch" parent="grp_agents" style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=11;" value="🎯 Orchestrator&#xa;Supervisor + Presenter" vertex="1">
+          <mxGeometry height="50" width="160" x="190" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="task" parent="grp_agents" style="rounded=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=11;" value="📋 Task Agent&#xa;Doer" vertex="1">
+          <mxGeometry height="50" width="140" x="60" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="cal" parent="grp_agents" style="rounded=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=11;" value="📅 Calendar Agent&#xa;Tool Operator" vertex="1">
+          <mxGeometry height="50" width="140" x="320" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="focus" parent="grp_agents" style="rounded=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=11;" value="🔍 Focus Agent&#xa;Planner" vertex="1">
+          <mxGeometry height="50" width="140" x="230" y="250" as="geometry" />
+        </mxCell>
+        <mxCell id="verify" parent="grp_agents" style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=11;" value="✅ Verification Agent&#xa;Validator" vertex="1">
+          <mxGeometry height="50" width="140" x="60" y="310" as="geometry" />
+        </mxCell>
+        <mxCell id="adv" parent="grp_agents" style="rounded=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;fontSize=11;" value="⚔️ Adversarial Agent&#xa;Red Team" vertex="1">
+          <mxGeometry height="50" width="140" x="320" y="304" as="geometry" />
+        </mxCell>
+        <mxCell id="crit" parent="grp_agents" style="rounded=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontStyle=1;fontSize=11;" value="🛡️ Critic Agent&#xa;Safety Gatekeeper" vertex="1">
+          <mxGeometry height="50" width="140" x="169" y="376" as="geometry" />
+        </mxCell>
+        <mxCell id="dlq" parent="grp_agents" style="rounded=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;fontStyle=1;fontSize=11;" value="💀 Dead Letter Queue" vertex="1">
+          <mxGeometry height="50" width="140" x="420" y="365" as="geometry" />
+        </mxCell>
+        <mxCell id="e_orch_task" edge="1" parent="grp_agents" source="orch" style="edgeStyle=orthogonalEdgeStyle;" target="task">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_orch_cal" edge="1" parent="grp_agents" source="orch" style="edgeStyle=orthogonalEdgeStyle;" target="cal">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_task_focus" edge="1" parent="grp_agents" source="task" style="edgeStyle=orthogonalEdgeStyle;" target="focus">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_cal_focus" edge="1" parent="grp_agents" source="cal" style="edgeStyle=orthogonalEdgeStyle;" target="focus">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="390" y="215" />
+              <mxPoint x="310" y="215" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_focus_verify" edge="1" parent="grp_agents" source="focus" style="edgeStyle=orthogonalEdgeStyle;" target="verify">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="160" y="275" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_verify_adv" edge="1" parent="grp_agents" source="verify" style="edgeStyle=orthogonalEdgeStyle;" target="adv">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="220" y="325" />
+              <mxPoint x="220" y="325" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_adv_crit" edge="1" parent="grp_agents" source="adv" style="edgeStyle=orthogonalEdgeStyle;" target="crit">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="390" y="380" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_crit_orch" edge="1" parent="grp_agents" style="edgeStyle=orthogonalEdgeStyle;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="220" y="233" />
+              <mxPoint x="221" y="233" />
+            </Array>
+            <mxPoint x="220" y="376" as="sourcePoint" />
+            <mxPoint x="221" y="90" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_crit_dlq" edge="1" parent="grp_agents" source="crit" style="edgeStyle=orthogonalEdgeStyle;dashed=1;endArrow=open;" target="dlq" value="security violation">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="390" y="401" />
+              <mxPoint x="390" y="401" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_api_sec" edge="1" parent="grp_agents" style="edgeStyle=orthogonalEdgeStyle;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="-100" y="244" as="sourcePoint" />
+            <mxPoint x="720" y="292" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="grp_memory" parent="1" style="swimlane;startSize=30;fillColor=#ffe6cc;strokeColor=#d79b00;fontStyle=1;fontSize=13;" value="🧠 CoALA 4-Layer Memory" vertex="1">
+          <mxGeometry height="230" width="280" x="960" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="work_mem" parent="grp_memory" style="rounded=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" value="Working Memory&#xa;Context Window" vertex="1">
+          <mxGeometry height="40" width="200" x="40" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="sem_mem" parent="grp_memory" style="rounded=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" value="Semantic Memory&#xa;PostgreSQL + Vector DB" vertex="1">
+          <mxGeometry height="40" width="200" x="40" y="88" as="geometry" />
+        </mxCell>
+        <mxCell id="proc_mem" parent="grp_memory" style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" value="Procedural Memory&#xa;Skills &amp; Tools" vertex="1">
+          <mxGeometry height="40" width="200" x="40" y="138" as="geometry" />
+        </mxCell>
+        <mxCell id="epis_mem" parent="grp_memory" style="rounded=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;" value="Episodic Memory&#xa;Past Sessions" vertex="1">
+          <mxGeometry height="40" width="200" x="40" y="185" as="geometry" />
+        </mxCell>
+        <mxCell id="grp_security" parent="1" style="swimlane;startSize=30;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;fontSize=13;" value="🔐 Security Layer" vertex="1">
+          <mxGeometry height="232" width="280" x="960" y="293" as="geometry" />
+        </mxCell>
+        <mxCell id="spot" parent="grp_security" style="rounded=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" value="Spotlighting&#xa;Indirect Injection Defence" vertex="1">
+          <mxGeometry height="40" width="200" x="40" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="const" parent="grp_security" style="rounded=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" value="Constitutional Classifiers&#xa;Jailbreak Detection" vertex="1">
+          <mxGeometry height="40" width="200" x="40" y="88" as="geometry" />
+        </mxCell>
+        <mxCell id="poison" parent="grp_security" style="rounded=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" value="Tool Poisoning Defence&#xa;MCP Validation" vertex="1">
+          <mxGeometry height="40" width="200" x="40" y="138" as="geometry" />
+        </mxCell>
+        <mxCell id="deputy" parent="grp_security" style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" value="Confused Deputy Prevention&#xa;Delegation Tokens" vertex="1">
+          <mxGeometry height="40" width="200" x="40" y="184" as="geometry" />
+        </mxCell>
+        <mxCell id="grp_integrations" parent="1" style="swimlane;startSize=30;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=13;" value="🔌 External Integrations" vertex="1">
+          <mxGeometry height="150" width="650" x="340" y="530" as="geometry" />
+        </mxCell>
+        <mxCell id="mcp_pg" parent="grp_integrations" style="shape=cylinder3;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontStyle=1;" value="PostgreSQL MCP&#xa;Supabase via stdio&#xa;RLS + Supavisor" vertex="1">
+          <mxGeometry height="70" width="160" x="20" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="mcp_cal" parent="grp_integrations" style="shape=cylinder3;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontStyle=1;" value="Google Calendar MCP&#xa;OAuth 2.0 + JIT Consent&#xa;SSRF Protection" vertex="1">
+          <mxGeometry height="70" width="175" x="205" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="llm" parent="grp_integrations" style="rounded=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;fontStyle=1;" value="LLM Router&#xa;OpenRouter / Claude Opus 4.8&#xa;GPT-5.5 / Local Llama 3.1&#xa;★ 90% Cost Savings via Prompt Caching" vertex="1">
+          <mxGeometry height="90" width="220" x="387" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="grp_obs" parent="1" style="swimlane;startSize=30;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=13;" value="📊 Observability" vertex="1">
+          <mxGeometry height="200" width="280" x="40" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="otel" parent="grp_obs" style="rounded=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" value="OpenTelemetry&#xa;Distributed Tracing" vertex="1">
+          <mxGeometry height="40" width="200" x="40" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="prom" parent="grp_obs" style="rounded=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" value="Prometheus Metrics&#xa;SLO Monitoring" vertex="1">
+          <mxGeometry height="40" width="200" x="40" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="drift" parent="grp_obs" style="rounded=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" value="Drift Detection&#xa;Dwell Time SLO &lt; 1hr" vertex="1">
+          <mxGeometry height="40" width="200" x="40" y="140" as="geometry" />
+        </mxCell>
+        <mxCell id="e_ui_nginx" edge="1" parent="1" source="ui" style="edgeStyle=orthogonalEdgeStyle;" target="nginx">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_nginx_api" edge="1" parent="1" source="nginx" style="edgeStyle=orthogonalEdgeStyle;" target="api">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_api_agents" edge="1" parent="1" source="api" style="edgeStyle=orthogonalEdgeStyle;" target="orch">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="650" y="270" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_agents_mem" edge="1" parent="1" source="orch" style="edgeStyle=orthogonalEdgeStyle;" target="work_mem">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_task_pg" edge="1" parent="1" source="task" style="edgeStyle=orthogonalEdgeStyle;" target="mcp_pg">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="430" y="195" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_cal_mcp" edge="1" parent="1" source="cal" style="edgeStyle=orthogonalEdgeStyle;" target="mcp_cal">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="760" y="400" />
+              <mxPoint x="680" y="400" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_focus_llm" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="856" y="315" />
+            </Array>
+            <mxPoint x="746" y="315" as="sourcePoint" />
+            <mxPoint x="856" y="570" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_verify_llm" edge="1" parent="1" source="verify" style="edgeStyle=orthogonalEdgeStyle;" target="llm">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="750" y="390" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_adv_llm" edge="1" parent="1" source="adv" style="edgeStyle=orthogonalEdgeStyle;" target="llm">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="780" y="520" />
+              <mxPoint x="780" y="520" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_crit_llm" edge="1" parent="1" source="crit" style="edgeStyle=orthogonalEdgeStyle;" target="llm">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="820" y="460" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_api_obs" edge="1" parent="1" source="api" style="edgeStyle=orthogonalEdgeStyle;" target="otel">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
