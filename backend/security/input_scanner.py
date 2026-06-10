@@ -1,11 +1,12 @@
-"""Unified input security scanner — regex + constitutional layers."""
+"""Unified input security scanner — regex, PromptGuard 2, and constitutional layers."""
 
 from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from backend.security.constitutional_classifier import ConstitutionalClassifier
+from backend.security.constitutional import ConstitutionalClassifier
 from backend.security.injection import PromptInjectionDetector
+from backend.security.prompt_guard import PromptGuardService, build_prompt_guard_service
 
 
 class InputScanResult(BaseModel):
@@ -20,19 +21,30 @@ class InputScanResult(BaseModel):
     confidence: float = Field(default=0.0, ge=0.0, le=1.0)
     constitutional_rule: str | None = None
     blocked_source: str | None = None
+    prompt_guard_score: float | None = None
 
 
 class InputSecurityScanner:
-    """Scan untrusted text through regex then constitutional classifiers."""
+    """Scan untrusted text through regex, PromptGuard 2, then constitutional classifiers."""
 
     def __init__(
         self,
         *,
         regex_detector: PromptInjectionDetector | None = None,
+        prompt_guard: PromptGuardService | None = None,
         constitutional: ConstitutionalClassifier | None = None,
     ) -> None:
         self._regex = regex_detector or PromptInjectionDetector()
+        self._prompt_guard_override = prompt_guard
+        self._prompt_guard: PromptGuardService | None = None
         self._constitutional = constitutional or ConstitutionalClassifier()
+
+    def _get_prompt_guard(self) -> PromptGuardService:
+        if self._prompt_guard_override is not None:
+            return self._prompt_guard_override
+        if self._prompt_guard is None:
+            self._prompt_guard = build_prompt_guard_service()
+        return self._prompt_guard
 
     def scan(
         self,
@@ -51,6 +63,17 @@ class InputSecurityScanner:
                 confidence=regex_result.confidence,
             )
 
+        pg_result = self._get_prompt_guard().scan(text, trace_id=trace_id, source=source)
+        if pg_result.is_blocked:
+            return InputScanResult(
+                is_blocked=True,
+                layer="prompt_guard",
+                violation_type=pg_result.reason,
+                matched_pattern="prompt_guard",
+                confidence=pg_result.score,
+                prompt_guard_score=pg_result.score,
+            )
+
         constitutional_result = self._constitutional.classify(
             text,
             trace_id=trace_id,
@@ -66,7 +89,7 @@ class InputSecurityScanner:
                 constitutional_rule=constitutional_result.violated_rule,
             )
 
-        return InputScanResult(is_blocked=False)
+        return InputScanResult(is_blocked=False, prompt_guard_score=pg_result.score or None)
 
     def scan_many(
         self,
@@ -85,5 +108,6 @@ class InputSecurityScanner:
                     confidence=result.confidence,
                     constitutional_rule=result.constitutional_rule,
                     blocked_source=source,
+                    prompt_guard_score=result.prompt_guard_score,
                 )
         return InputScanResult(is_blocked=False)

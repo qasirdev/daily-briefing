@@ -37,3 +37,11 @@ def test_cached_assembly_loads_for_all_llm_agents(agent_id: str) -> None:
     assembly = build_cached_prompt_assembly(agent_id)
     assert assembly.estimated_tokens >= 1
     assert assembly.blocks[0].name == "system"
+
+
+@pytest.mark.parametrize("agent_id", LLM_AGENT_DIRS)
+def test_cached_assembly_includes_skills_block(agent_id: str) -> None:
+    assembly = build_cached_prompt_assembly(agent_id)
+    block_names = [block.name for block in assembly.blocks]
+    assert "skills" in block_names
+    assert block_names.index("skills") > block_names.index("tools")

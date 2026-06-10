@@ -73,9 +73,42 @@ The security documentation MUST include:
 2. **Threat Model** — Mermaid diagram of attack surfaces
 3. **Authentication & Authorization** — OAuth flows, token lifecycle
 4. **Prompt Injection Defense** — Detection patterns, quarantine process
-5. **Data Classification** — What data flows where, PII handling
-6. **Cryptographic Standards** — Algorithms used, key management
-7. **Incident Response** — Security event escalation process
+5. **Regression corpus inventory** — Payload and regex pattern counts with `corpus-inventory` marker
+6. **Data Classification** — What data flows where, PII handling
+7. **Cryptographic Standards** — Algorithms used, key management
+8. **Incident Response** — Security event escalation process
+
+### Test Suite Documentation Sync
+
+When tests are added or removed under `backend/tests/`, update counts in **all** of:
+
+| File | What to update |
+|---|---|
+| `docs/SECURITY.md` | Test suite inventory table + `<!-- test-inventory:total=N -->` |
+| `README.md` | Tests badge, feature bullets, tech stack table, tree diagram, quick-start comments + marker |
+| `backend/AGENT.md` | Testing Requirements section + marker |
+| `AGENT.md` | Workflow rule reference + marker |
+| `007-01-ai-daily-briefing-assistant-v2.0.0.md` | Marker (near input-security section) |
+| `SECURITY.md` (root) | Pointer to inventory (if counts cited) |
+
+Verify with: `uv run pytest backend/tests/test_suite_inventory.py`
+
+Get the authoritative count: `uv run pytest --collect-only -q backend/tests`
+
+### Injection Corpus Documentation Sync
+
+When security test vectors change, update counts in **all** of:
+
+| File | What to update |
+|---|---|
+| `docs/SECURITY.md` | Regression corpus inventory table + `<!-- corpus-inventory:payloads=N,patterns=M -->` |
+| `README.md` | Security posture section counts + marker |
+| `backend/AGENT.md` | Prompt injection section counts + marker |
+| `007-01-ai-daily-briefing-assistant-v2.0.0.md` | Input security layer table + marker |
+| `SECURITY.md` (root) | Pointer to inventory (if counts cited) |
+| `docs/learning/week6-owasp-agent-governance.md` | Corpus references (if counts cited) |
+
+Verify with: `uv run pytest backend/tests/security/test_corpus_inventory.py`
 
 ### OWASP Checklist Format
 
@@ -192,6 +225,8 @@ Before completing documentation updates:
 | ✅ Accuracy | All code references match actual implementation |
 | ✅ Completeness | All required sections present |
 | ✅ Currency | Version numbers and dates are current |
+| ✅ Test suite inventory | Total pytest collection count matches docs (`test_suite_inventory.py`) |
+| ✅ Corpus inventory | Injection payload/pattern counts match code (`test_corpus_inventory.py`) |
 | ✅ Links | All internal links resolve correctly |
 | ✅ Examples | Code examples are syntactically correct |
 | ✅ Diagrams | Mermaid diagrams render correctly |
@@ -265,4 +300,4 @@ After PR merged to `epic/autonomus-implementation` (via **merge commit**, not sq
 
 ---
 
-*Documentation Agent Rules — Version 1.6.0 — May 2026*
+*Documentation Agent Rules — Version 1.7.0 — June 2026*

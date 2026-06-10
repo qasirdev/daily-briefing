@@ -15,6 +15,7 @@ V2_STATIC_FILES = (
     "examples.md",
     "output-schema.md",
     "tools.md",
+    "skills.md",
     "reasoning.md",
     "guardrails.md",
     "input-security.md",

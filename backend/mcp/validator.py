@@ -87,7 +87,7 @@ class MCPResponseValidator:
                     except ValueError as exc:
                         issues.append(f"event[{index}]: {exc}")
 
-        if tool == "tasks.list":
+        if tool in {"tasks.list", "tasks.update"}:
             rows = sanitized.get("rows", [])
             if isinstance(rows, list):
                 for index, row in enumerate(rows):
@@ -97,6 +97,12 @@ class MCPResponseValidator:
                     title = row.get("title")
                     if title is not None and len(str(title)) > 500:
                         issues.append(f"row[{index}]: title exceeds 500 characters")
+            if tool == "tasks.update":
+                updated = sanitized.get("updated_count")
+                if updated is not None and not isinstance(updated, int):
+                    issues.append("updated_count must be an integer")
+                if updated is not None and isinstance(updated, int) and updated < 0:
+                    issues.append("updated_count must be non-negative")
 
         issues.extend(injection_hits)
 

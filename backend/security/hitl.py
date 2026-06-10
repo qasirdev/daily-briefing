@@ -52,7 +52,7 @@ HITL_LAYERS: tuple[HitlLayer, ...] = (
         owner="agent",
         status="implemented",
         control="Critic revision loop with revision_count cap",
-        test_module="backend/tests/test_graph.py",
+        test_module="backend/tests/integration/test_langgraph.py",
     ),
     HitlLayer(
         layer_id="execution",

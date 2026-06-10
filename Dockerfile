@@ -40,6 +40,13 @@ COPY backend/ ./backend/
 COPY prompts/ ./prompts/
 COPY --from=backend-builder /app/.venv /app/.venv
 
+# Optional: preload PromptGuard 2 model during build (requires HF_TOKEN build arg).
+ARG HF_TOKEN=""
+RUN if [ -n "$HF_TOKEN" ]; then \
+    export HF_TOKEN="$HF_TOKEN" TOKENIZERS_PARALLELISM=true && \
+    python -c "from llamafirewall.scanners.promptguard_utils import PromptGuard; PromptGuard()"; \
+    fi
+
 COPY --from=frontend-builder /app/frontend/.next/standalone ./frontend/.next/standalone
 COPY --from=frontend-builder /app/frontend/.next/static ./frontend/.next/standalone/.next/static
 COPY --from=frontend-builder /app/frontend/public ./frontend/.next/standalone/public

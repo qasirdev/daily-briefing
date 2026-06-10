@@ -26,8 +26,13 @@ def validate_calendar_response(response: dict[str, Any]) -> dict[str, Any]:
 
 
 def validate_task_response(response: dict[str, Any]) -> dict[str, Any]:
-    """Validate and sanitize task MCP payloads."""
+    """Validate and sanitize task list MCP payloads."""
     return _tool_manager.validate_response("tasks.list", response)
+
+
+def validate_task_update_response(response: dict[str, Any]) -> dict[str, Any]:
+    """Validate and sanitize task update MCP payloads."""
+    return _tool_manager.validate_response("tasks.update", response)
 
 
 def spotlight_task_rows(rows: list[dict[str, object]]) -> list[dict[str, object]]:

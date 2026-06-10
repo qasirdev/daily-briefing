@@ -14,6 +14,23 @@ PRODUCTION_AGENT_DIRS = (
     "verification",
     "adversarial",
     "orchestrator",
+    "security",
+)
+
+V2_REQUIRED_FILES = (
+    "system.md",
+    "context.md",
+    "instructions.md",
+    "examples.md",
+    "output-schema.md",
+    "tools.md",
+    "skills.md",
+    "reasoning.md",
+    "guardrails.md",
+    "input-security.md",
+    "quality-checklist.md",
+    "CHANGELOG.md",
+    "CONTRACT.md",
 )
 
 LLM_AGENT_DIRS = ("focus", "critic", "verification", "adversarial")
@@ -54,3 +71,16 @@ def test_focus_input_security_block_is_cacheable() -> None:
     security_block = next(block for block in assembly.blocks if block.name == "input-security")
     assert security_block.cache_control is True
     assert "Spotlighting" in security_block.content
+
+
+@pytest.mark.parametrize("agent_id", PRODUCTION_AGENT_DIRS)
+def test_v2_prompt_pack_has_required_files(agent_id: str) -> None:
+    agent_dir = PROMPTS_ROOT / agent_id
+    for filename in V2_REQUIRED_FILES:
+        assert (agent_dir / filename).is_file(), f"{agent_id} missing {filename}"
+
+
+@pytest.mark.parametrize("agent_id", PRODUCTION_AGENT_DIRS)
+def test_contract_version_is_v2(agent_id: str) -> None:
+    contract = (PROMPTS_ROOT / agent_id / "CONTRACT.md").read_text(encoding="utf-8")
+    assert "v2.0.0" in contract, f"{agent_id} CONTRACT.md must declare v2.0.0"

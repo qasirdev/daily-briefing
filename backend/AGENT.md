@@ -90,7 +90,9 @@ backend/
 │   └── consent.py              # Consent models
 ├── security/
 │   ├── __init__.py
-│   ├── injection.py            # Prompt injection detection
+│   ├── injection_patterns.py   # Regex signatures (OWASP corpus)
+│   ├── injection.py            # Prompt injection detector + normalisation
+│   ├── prompt_guard.py         # LlamaFirewall PromptGuard 2 ML layer
 │   ├── spotlighting.py         # EXTERNAL_CONTENT markers (Gap #114)
 │   └── sanitization.py         # Output sanitization
 └── tests/
@@ -426,51 +428,47 @@ class PostgresMCPClient(MCPClient):
 
 ## Prompt Injection Detection
 
+Three-layer `InputSecurityScanner` pipeline:
+
+1. **Regex** — `PromptInjectionDetector` (277 patterns in `injection_patterns.py`, NFKC/base64/hex normalisation, `rapidfuzz` fuzzy match)
+2. **ML** — `PromptGuardService` wrapping Meta **LlamaFirewall PromptGuard 2** (`meta-llama/Llama-Prompt-Guard-2-86M`)
+3. **Constitutional** — policy rules from `backend/security/rules.yaml`
+
 ```python
-import re
-from dataclasses import dataclass
+from backend.security.input_scanner import InputSecurityScanner
 
-INJECTION_PATTERNS = [
-    r"ignore\s+(all\s+)?previous\s+instructions?",
-    r"disregard\s+(your\s+)?(training|instructions?)",
-    r"you\s+are\s+now\s+(in\s+)?debug\s+mode",
-    r"\[\[SYSTEM\]\]",
-    r"<\|im_start\|>",
-    r"```system",
-]
-
-@dataclass
-class InjectionDetectionResult:
-    is_suspicious: bool
-    matched_pattern: str | None
-    confidence: float
-
-class PromptInjectionDetector:
-    """Detects potential prompt injection attempts."""
-    
-    def __init__(self):
-        self._patterns = [re.compile(p, re.IGNORECASE) for p in INJECTION_PATTERNS]
-    
-    def detect(self, text: str) -> InjectionDetectionResult:
-        """Scan text for injection patterns."""
-        for pattern in self._patterns:
-            if pattern.search(text):
-                return InjectionDetectionResult(
-                    is_suspicious=True,
-                    matched_pattern=pattern.pattern,
-                    confidence=0.9,
-                )
-        
-        return InjectionDetectionResult(
-            is_suspicious=False,
-            matched_pattern=None,
-            confidence=0.0,
-        )
+scanner = InputSecurityScanner()
+result = scanner.scan(untrusted_text, trace_id=trace_id, source="calendar")
+if result.is_blocked:
+    # result.layer is "regex", "prompt_guard", or "constitutional"
+    ...
 ```
+
+Environment variables:
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `LLAMAFIREWALL_ENABLED` | `true` | Enable PromptGuard 2 ML layer |
+| `LLAMAFIREWALL_BLOCK_THRESHOLD` | `0.9` | Jailbreak score threshold |
+| `LLAMAFIREWALL_MODEL` | `meta-llama/Llama-Prompt-Guard-2-86M` | Hugging Face model id |
+| `HF_TOKEN` | — | Required to download model on first run |
+| `TOKENIZERS_PARALLELISM` | — | Set `true` for parallel PromptGuard inference |
+
+<!-- corpus-inventory:payloads=285,patterns=277 -->
+
+Regression corpus: **285** payloads in `backend/tests/security/test_injection_payloads.py` (`INJECTION_PAYLOADS`); **277** regex signatures in `backend/security/injection_patterns.py`. Consumed by `tests/unit/test_security.py` and `tests/security/test_injection.py`.
+
+**When extending injection tests:** add payloads → add patterns → update `corpus-inventory` markers in `docs/SECURITY.md`, `README.md`, `backend/AGENT.md`, `007-01-ai-daily-briefing-assistant-v2.0.0.md` → run `uv run pytest backend/tests/security/test_corpus_inventory.py`.
+
+**When adding/removing tests:** update `test-inventory` markers in the same tracked docs → run `uv run pytest backend/tests/test_suite_inventory.py`.
 
 ---
 
 ## Testing Requirements
+
+<!-- test-inventory:total=1193 -->
+
+**Suite size:** **1193** pytest cases under `backend/tests/` (unit · security · integration · E2E). When adding or removing tests, update the `test-inventory` marker in `README.md`, `docs/SECURITY.md`, `AGENT.md`, `backend/AGENT.md`, and `007-01-ai-daily-briefing-assistant-v2.0.0.md`, then run `uv run pytest backend/tests/test_suite_inventory.py`.
 
 ### Unit Tests
 

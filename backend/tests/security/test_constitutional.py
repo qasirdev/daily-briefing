@@ -6,7 +6,7 @@ from collections.abc import Iterator
 
 import pytest
 
-from backend.security.constitutional_classifier import (
+from backend.security.constitutional import (
     ConstitutionalClassifier,
     ConstitutionalRule,
     clear_rules_cache,
@@ -103,7 +103,7 @@ def test_input_scanner_constitutional_layer() -> None:
         source="calendar",
     )
     assert result.is_blocked is True
-    assert result.layer in ("regex", "constitutional")
+    assert result.layer in ("regex", "prompt_guard", "constitutional")
 
 
 def test_input_scanner_clean_passes() -> None:

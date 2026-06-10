@@ -52,6 +52,19 @@ def test_tool_manager_enforces_allowlist() -> None:
         manager.authorize_tool(agent_id="focus_agent", tool="tasks.list", session_id="sess-1")
 
 
+def test_validator_rejects_invalid_tasks_update_count(validator: MCPResponseValidator) -> None:
+    response = {"updated_count": -1, "rows": []}
+    result = validator.validate("tasks.update", response)
+    assert result.valid is False
+    assert any("updated_count" in issue for issue in result.issues)
+
+
+def test_validator_accepts_clean_tasks_update_payload(validator: MCPResponseValidator) -> None:
+    response = {"updated_count": 1, "rows": [{"title": "Ship feature", "status": "done"}]}
+    result = validator.validate("tasks.update", response)
+    assert result.valid is True
+
+
 def test_tool_manager_enforces_chaining_limit() -> None:
     manager = ToolManager()
     session_id = "sess-chain"

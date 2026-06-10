@@ -25,8 +25,10 @@ AGENT_CONTROLS: tuple[AgentControl, ...] = (
         agent_id="AGENT01",
         name="Agent Goal Hijack",
         status="implemented",
-        control="PromptInjectionDetector + ConstitutionalClassifier + Critic escalation",
-        test_module="backend/tests/security/test_injection.py",
+        control=(
+            "PromptInjectionDetector + PromptGuard 2 + ConstitutionalClassifier + Critic escalation"
+        ),
+        test_module="backend/tests/unit/test_security.py",
     ),
     AgentControl(
         agent_id="AGENT02",

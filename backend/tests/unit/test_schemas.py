@@ -1,4 +1,4 @@
-"""AgentResultEnvelope schema tests."""
+"""Pydantic schema validation tests."""
 
 import pytest
 from pydantic import ValidationError
@@ -11,7 +11,7 @@ def _metadata(**overrides: object) -> ExecutionMetadata:
         "execution_ms": 10,
         "tokens_used": 0,
         "model_used": "none",
-        "prompt_version": "v1.5.0",
+        "prompt_version": "v2.0.0",
         "trace_id": "a" * 32,
         "data_classification": "internal",
     }

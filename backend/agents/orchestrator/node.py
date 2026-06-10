@@ -314,7 +314,7 @@ async def orchestrator_present_node(state: BriefingGraphState) -> dict[str, Any]
             execution_ms=execution_ms,
             tokens_used=state.get("total_tokens", 0),
             model_used="none",
-            prompt_version="v1.5.0",
+            prompt_version=resolve_prompt_version("orchestrator"),
             trace_id=trace_id,
             data_classification="confidential",
         ),

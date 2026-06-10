@@ -1,4 +1,4 @@
-"""LangGraph scaffold tests."""
+"""Full LangGraph execution integration tests."""
 
 import time
 from datetime import UTC, date, datetime
@@ -15,25 +15,21 @@ from backend.graph.builder import (
     should_route_to_dlq,
 )
 from backend.graph.state import BriefingGraphState
-from backend.llm.models import LLMResponse
 from backend.mcp.calendar import CalendarMCPClient
 from backend.mcp.postgres import PostgresMCPClient
 from backend.schemas.envelope import AgentResultEnvelope, ExecutionMetadata
 from backend.settings import Settings
+from backend.tests.conftest import MockMCPBundle
 
 
 @pytest.mark.asyncio
-async def test_graph_compiles_and_runs() -> None:
-    postgres = PostgresMCPClient(host="localhost", port=5443)  # default 5433
-    calendar = CalendarMCPClient(host="localhost", port=5444)  # default 5434
-    mcp = MCPClients(postgres=postgres, calendar=calendar)
+async def test_graph_compiles_and_runs(
+    mock_mcp: MockMCPBundle,
+    mock_openrouter: AsyncMock,
+) -> None:
+    mcp = mock_mcp.as_clients()
 
     with (
-        patch.object(
-            PostgresMCPClient,
-            "query",
-            AsyncMock(return_value={"rows": []}),
-        ),
         patch(
             "backend.graph.builder.focus_agent_node",
             AsyncMock(
@@ -48,19 +44,10 @@ async def test_graph_compiles_and_runs() -> None:
             "backend.graph.builder.build_llm_router",
         ) as build_llm,
     ):
-        llm = AsyncMock()
-        llm.generate = AsyncMock(
-            return_value=LLMResponse(
-                content='{"time_blocks": [], "summary": "Plan"}',
-                model_used="test",
-                tokens_used=5,
-                latency_ms=1,
-            ),
-        )
-        build_llm.return_value = llm
+        build_llm.return_value = mock_openrouter
 
         settings = Settings(enable_consensus_workflow=False)
-        graph = build_briefing_graph(mcp, llm=llm, settings=settings)
+        graph = build_briefing_graph(mcp, llm=mock_openrouter, settings=settings)
         initial_state: BriefingGraphState = {
             "user_id": "user-1",
             "request_id": "req-1",
@@ -84,16 +71,9 @@ async def test_graph_compiles_and_runs() -> None:
             "critic_result": None,
         }
 
-        with (
-            patch.object(
-                CalendarMCPClient,
-                "get_events",
-                AsyncMock(return_value=[]),
-            ),
-            patch(
-                "backend.agents.calendar.node.consent_store.has_valid_consent",
-                return_value=True,
-            ),
+        with patch(
+            "backend.agents.calendar.node.consent_store.has_valid_consent",
+            return_value=True,
         ):
             result = await graph.ainvoke(initial_state)
 
@@ -160,6 +140,117 @@ def test_route_consensus_minor_disagreement() -> None:
         },
     }
     assert route_consensus(state) == "minor_disagreement"
+
+
+def test_graph_consensus_module_reexports_spec_path() -> None:
+    from backend.graph import consensus as consensus_module
+
+    assert hasattr(consensus_module, "consensus_evaluator_node")
+    assert hasattr(consensus_module, "route_consensus")
+
+
+@pytest.mark.asyncio
+async def test_timeout_after_adversarial_does_not_bypass_critic_to_present() -> None:
+    """Graph timeout must not present a briefing without Critic review (v2.0.0)."""
+    postgres = PostgresMCPClient(host="localhost", port=5443)
+    calendar = CalendarMCPClient(host="localhost", port=5444)
+    mcp = MCPClients(postgres=postgres, calendar=calendar)
+    present_mock = AsyncMock(
+        return_value={
+            "final_briefing": "bypassed",
+            "status": "success",
+            "current_agent": "orchestrator",
+        },
+    )
+
+    success_meta = ExecutionMetadata(
+        execution_ms=1,
+        tokens_used=10,
+        model_used="test",
+        prompt_version="v2.0.0",
+        trace_id="a" * 32,
+        data_classification="internal",
+    )
+    verification_ok = AgentResultEnvelope(
+        agent_id="verification",
+        canonical_role="verifier",
+        status="success",
+        result={"issues": []},
+        metadata=success_meta,
+    )
+    adversarial_ok = AgentResultEnvelope(
+        agent_id="adversarial",
+        canonical_role="critic",
+        status="success",
+        result={"concerns": []},
+        metadata=success_meta,
+    )
+
+    with (
+        patch.object(PostgresMCPClient, "query", AsyncMock(return_value={"rows": []})),
+        patch.object(CalendarMCPClient, "get_events", AsyncMock(return_value=[])),
+        patch("backend.agents.calendar.node.consent_store.has_valid_consent", return_value=True),
+        patch(
+            "backend.graph.builder.verification_agent_node",
+            AsyncMock(
+                return_value={
+                    "verification_result": verification_ok,
+                    "current_agent": "verification",
+                },
+            ),
+        ),
+        patch(
+            "backend.graph.builder.adversarial_agent_node",
+            AsyncMock(
+                return_value={
+                    "adversarial_result": adversarial_ok,
+                    "current_agent": "adversarial",
+                },
+            ),
+        ),
+        patch("backend.graph.builder.orchestrator_present_node", present_mock),
+        patch(
+            "backend.graph.builder.focus_agent_node",
+            AsyncMock(
+                return_value={
+                    "focus_result": _success_envelope("focus"),
+                    "current_agent": "focus",
+                    "total_tokens": 10,
+                },
+            ),
+        ),
+    ):
+        settings = Settings(enable_consensus_workflow=True, graph_timeout_seconds=1)
+        llm = AsyncMock()
+        graph = build_briefing_graph(mcp, llm=llm, settings=settings)
+        initial_state: BriefingGraphState = {
+            "user_id": "user-1",
+            "request_id": "req-timeout",
+            "trace_id": "c" * 32,
+            "requested_at": datetime.now(UTC),
+            "target_date": date.today(),
+            "current_agent": "",
+            "revision_count": 0,
+            "total_tokens": 10,
+            "graph_started_at": time.perf_counter() - 5,
+            "status": "pending",
+            "final_briefing": None,
+            "consent_required": False,
+            "consent_context": None,
+            "consent_request": None,
+            "dlq_events": [],
+            "orchestrator_result": None,
+            "task_result": None,
+            "calendar_result": None,
+            "focus_result": None,
+            "critic_result": None,
+        }
+        result = await graph.ainvoke(initial_state)
+
+    await mcp.close()
+    present_mock.assert_not_called()
+    assert result.get("critic_result") is None
+    assert result.get("final_briefing") != "bypassed"
 
 
 @pytest.mark.asyncio

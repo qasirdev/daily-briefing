@@ -1,4 +1,4 @@
-"""Briefing API tests."""
+"""FastAPI endpoint integration tests."""
 
 from collections.abc import AsyncGenerator
 from unittest.mock import AsyncMock, patch
@@ -25,11 +25,14 @@ async def api_client(api_app: FastAPI) -> AsyncGenerator[AsyncClient, None]:
 
 
 @pytest.mark.asyncio
-async def test_generate_briefing_success(api_client: AsyncClient) -> None:
+async def test_generate_briefing_success(
+    api_client: AsyncClient,
+    mock_openrouter: AsyncMock,
+) -> None:
     mock_result = {
         "status": "success",
         "final_briefing": "<p>Briefing</p>",
-        "total_tokens": 10,
+        "total_tokens": mock_openrouter.return_value.tokens_used,
         "task_result": True,
         "calendar_result": True,
         "focus_result": True,
@@ -46,6 +49,8 @@ async def test_generate_briefing_success(api_client: AsyncClient) -> None:
     assert response.status_code == 200
     payload = response.json()
     assert payload["status"] == "success"
+    assert "briefing" in payload
+    assert payload["metadata"]["total_tokens"] > 0
     assert "x-trace-id" in response.headers
 
 
@@ -75,6 +80,32 @@ async def test_generate_briefing_exposes_failure_reason(api_client: AsyncClient)
 
 
 @pytest.mark.asyncio
+async def test_generate_briefing_mcp_timeout_degraded(
+    api_client: AsyncClient,
+    mock_mcp_timeout: object,
+) -> None:
+    mock_result = {
+        "status": "degraded",
+        "final_briefing": "",
+        "total_tokens": 0,
+        "failure_reason": "mcp_timeout",
+        "task_result": None,
+        "calendar_result": None,
+    }
+    with patch("backend.api.v1.briefing.build_briefing_graph") as build_graph:
+        graph = AsyncMock()
+        graph.ainvoke.return_value = mock_result
+        build_graph.return_value = graph
+        response = await api_client.post(
+            "/api/v1/briefing/generate",
+            json={"user_id": "user-1"},
+        )
+    payload = response.json()
+    assert payload["status"] == "degraded"
+    assert mock_mcp_timeout is not None
+
+
+@pytest.mark.asyncio
 async def test_generate_briefing_unexpected_error_returns_failure_fields(
     api_client: AsyncClient,
 ) -> None:
@@ -97,3 +128,10 @@ async def test_generate_briefing_unexpected_error_returns_failure_fields(
 async def test_generate_briefing_requires_user_id(api_client: AsyncClient) -> None:
     response = await api_client.post("/api/v1/briefing/generate", json={})
     assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_local_llm_fallback_fixture_available(mock_local_llm: AsyncMock) -> None:
+    """System falls back to local LLM when OpenRouter is unavailable (testing.mdc)."""
+    response = await mock_local_llm()
+    assert "local" in response.model_used.lower()

@@ -155,11 +155,9 @@ def build_briefing_graph(
 
     def route_after_focus(
         state: BriefingGraphState,
-    ) -> Literal["dlq_handler", "critic_agent", "verification_agent", "orchestrator_present"]:
+    ) -> Literal["dlq_handler", "critic_agent", "verification_agent"]:
         if should_route_to_dlq(state, resolved_settings):
             return "dlq_handler"
-        if should_circuit_break(state, resolved_settings) and has_presentable_results(state):
-            return "orchestrator_present"
         if consensus_enabled:
             return "verification_agent"
         return "critic_agent"
@@ -179,14 +177,8 @@ def build_briefing_graph(
 
     def route_after_adversarial(
         state: BriefingGraphState,
-    ) -> Literal["dlq_handler", "critic_agent", "focus_agent", "orchestrator_present"]:
+    ) -> Literal["dlq_handler", "critic_agent", "focus_agent"]:
         adversarial = state.get("adversarial_result")
-        if (
-            _is_graph_timeout(state, resolved_settings)
-            and has_presentable_results(state)
-            and evaluate_token_budget(state) != "token_budget_exceeded"
-        ):
-            return "orchestrator_present"
         if should_route_to_dlq(state, resolved_settings):
             return "dlq_handler"
         if isinstance(adversarial, AgentResultEnvelope) and adversarial.status == "escalated":
@@ -260,7 +252,6 @@ def build_briefing_graph(
             {
                 "verification_agent": "verification_agent",
                 "critic_agent": "critic_agent",
-                "orchestrator_present": "orchestrator_present",
                 "dlq_handler": "dlq_handler",
             },
         )
@@ -279,7 +270,6 @@ def build_briefing_graph(
             {
                 "critic_agent": "critic_agent",
                 "focus_agent": "focus_agent",
-                "orchestrator_present": "orchestrator_present",
                 "dlq_handler": "dlq_handler",
             },
         )
@@ -299,7 +289,6 @@ def build_briefing_graph(
             route_after_focus,
             {
                 "critic_agent": "critic_agent",
-                "orchestrator_present": "orchestrator_present",
                 "dlq_handler": "dlq_handler",
             },
         )

@@ -33,7 +33,7 @@ _One intelligent multi-agent pipeline — your tasks, calendar, and priorities u
 ### Security & Quality
 
 [![OWASP GenAI](https://img.shields.io/badge/OWASP-GenAI%20Top%2010-000000?style=flat-square)](docs/SECURITY.md)
-[![Tests](https://img.shields.io/badge/Tests-455%20total-00C853?style=flat-square)](backend/tests/)
+[![Tests](https://img.shields.io/badge/Tests-1193%20total-00C853?style=flat-square)](backend/tests/)
 [![Coverage](https://img.shields.io/badge/Coverage->80%25-00C853?style=flat-square)](backend/tests/)
 [![MyPy](https://img.shields.io/badge/MyPy-strict-blue?style=flat-square)](https://mypy-lang.org/)
 [![Ruff](https://img.shields.io/badge/Ruff-linting-FCC21B?style=flat-square)](https://docs.astral.sh/ruff/)
@@ -70,11 +70,12 @@ Every morning at **6:00 AM**, a secure, enterprise-grade AI pipeline automatical
 
 1. **📋 Pulls Your Tasks** — Retrieves highest-priority items from PostgreSQL via secure MCP integration with Row-Level Security
 2. **📅 Fetches Your Calendar** — Connects to Google Calendar with time-bounded JIT consent (<15 min token TTL)
-3. **🔍 Generates Your Plan** — Uses Claude Opus 4.8 or GPT-5.5 to create an intelligent, time-blocked work plan
-4. **✅ Verifies Quality** — Verification Agent validates logic, completeness, and schema compliance
-5. **⚔️ Stress Tests** — Adversarial Agent challenges assumptions and finds edge cases
-6. **🛡️ Security Review** — Critic Agent scans for prompt injection, jailbreak attempts, and PII leakage
-7. **🎯 Delivers Briefing** — Orchestrator synthesizes consensus into one clean, sanitized, actionable briefing
+3. **🔒 Scans Untrusted Data** — Input Security Gate runs regex, **LlamaFirewall PromptGuard 2**, and constitutional classifiers on MCP payloads before any LLM call
+4. **🔍 Generates Your Plan** — Uses Claude Opus 4.8 or GPT-5.5 to create an intelligent, time-blocked work plan
+5. **✅ Verifies Quality** — Verification Agent validates logic, completeness, and schema compliance
+6. **⚔️ Stress Tests** — Adversarial Agent challenges assumptions and finds edge cases
+7. **🛡️ Security Review** — Critic Agent re-scans for prompt injection, jailbreak attempts, and PII leakage
+8. **🎯 Delivers Briefing** — Orchestrator synthesizes consensus into one clean, sanitized, actionable briefing
 
 **No tab-switching. No manual assembly. No security compromises.** Just clarity, from the moment your day begins.
 
@@ -132,7 +133,7 @@ By structuring agent prompts for caching, the system achieves **70-90% token cos
 </tr>
 <tr>
 <td>🚨 <strong>Security-Aware</strong></td>
-<td>Malicious calendar invites with embedded prompts are <strong>spotlighted and quarantined</strong> before reaching agents.</td>
+<td>Malicious calendar invites are blocked by the <strong>Input Security Gate</strong> (regex → PromptGuard 2 → constitutional) before reaching Focus Agent</td>
 </tr>
 <tr>
 <td>💰 <strong>Cost Efficiency</strong></td>
@@ -175,7 +176,7 @@ By structuring agent prompts for caching, the system achieves **70-90% token cos
 <tr>
 <td><strong>📊 Quality Standards</strong></td>
 <td>
-• <strong>455 automated tests</strong> (unit, security, integration, E2E)<br/>
+• <strong>1193 automated tests</strong> (unit, security, integration, E2E)<br/>
 • <strong>Strict MyPy</strong> + <strong>Ruff lint</strong> enforced in CI<br/>
 • <strong>GitHub Actions</strong> CI/CD with automated deployment<br/>
 • <strong>Prometheus SLOs</strong>: P95 latency <10s, Dwell Time <1hr<br/>
@@ -270,7 +271,7 @@ flowchart TB
 | Principle                        | Implementation                                                                                                                |
 | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | **🎯 Orchestrator-as-Presenter** | Only sanitised markdown reaches users. Agents return strict `AgentResultEnvelope` JSON; Orchestrator synthesizes final output |
-| **🛡️ Zero-Trust Security**       | Spotlighting for indirect injection, tool poisoning defense, confused deputy prevention, constitutional classifiers           |
+| **🛡️ Zero-Trust Security**       | Spotlighting, **InputSecurityScanner** (regex + PromptGuard 2 + constitutional), tool poisoning defense, confused deputy prevention |
 | **🧠 Memory Architecture**       | CoALA 4-layer model: Working, Semantic, Procedural, Episodic memory with session isolation                                    |
 | **⚡ Prompt Caching**            | 70-90% token cost reduction via structured prompt caching (Claude + OpenAI)                                                   |
 | **✅ Multi-Agent Verification**  | Generator → Verification → Adversarial → Critic → Consensus workflow prevents hallucinations                                  |
@@ -285,7 +286,7 @@ flowchart TB
 | Innovation                      | Technical Achievement                                                                         | Business Impact                                   |
 | ------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------- |
 | **💰 90% Cost Reduction**       | Structured prompt caching with Claude + OpenAI                                                | **$18K/month savings** at 1K requests/day/agent   |
-| **🔐 Zero-Trust Security**      | First production implementation of Microsoft Research's Spotlighting + Tool Poisoning Defense | **>95% injection defense** (industry avg: 50-70%) |
+| **🔐 Zero-Trust Security**      | Spotlighting + **LlamaFirewall PromptGuard 2** + OWASP regex corpus + constitutional rules | **>95% injection defense** (industry avg: 50-70%) |
 | **✅ Multi-Agent Verification** | Generator → Verification → Adversarial → Critic consensus pipeline                            | **+20% accuracy**, hallucination-resistant        |
 | **🧠 Memory Architecture**      | Production CoALA 4-layer implementation with session isolation                                | Enterprise-grade context management               |
 | **⚡ 2-10× Faster**             | Prompt caching + async MCP stdio transport                                                    | Sub-second cached responses                       |
@@ -299,7 +300,7 @@ flowchart TB
 
 - **52 completed tasks** across 6 MVPs
 - **121 security gaps** addressed (IBM + Claude frameworks)
-- **455 automated tests** (unit · security · integration · E2E)
+- **1193 automated tests** (unit · security · integration · E2E)
 - **6 specialized agents** with multi-layer verification
 - **15K+ lines of production code** (backend + frontend + infrastructure)
 - **11-file prompt structure** per agent (v2.0.0 standards)
@@ -409,7 +410,8 @@ Evaluates consensus across all agents. Synthesizes final briefing only after mul
 | Technology                   | Why We Chose It                      | Benefit                                                                        |
 | ---------------------------- | ------------------------------------ | ------------------------------------------------------------------------------ |
 | **nh3**                      | Rust-backed HTML sanitiser           | Allowlist-based; strips scripts, iframes, and unsafe attributes before storage |
-| **PromptInjectionDetector**  | Custom regex + Unicode normalisation | Catches obfuscated injection attempts that bypass simple keyword filters       |
+| **PromptInjectionDetector**  | Regex + normalisation + rapidfuzz fuzzy match | 285 payloads / 277 patterns; catches base64, hex, Unicode, and zero-width obfuscation |
+| **PromptGuard 2 (LlamaFirewall)** | Meta BERT-style jailbreak classifier | Semantic injection detection; requires `HF_TOKEN` + model preload for production |
 | **PIIDetector + mask_pii()** | Custom PII scanner and masker        | Prevents email, phone, SSN, and card numbers from leaking into LLM payloads    |
 | **SSRFValidator**            | URL allowlist + private IP blocker   | MCP integrations cannot be redirected to internal network endpoints            |
 | **SlowAPI**                  | FastAPI rate limiting                | Enforces per-endpoint request quotas; returns proper 429 responses             |
@@ -437,12 +439,15 @@ Evaluates consensus across all agents. Synthesizes final briefing only after mul
 | ----------------------------- | ------------------------------- | --------------------------------------------------------------------------------- |
 | **Ruff**                      | Extremely fast Python linter    | Replaces Flake8 + isort + pyupgrade; 100× faster; enforces consistent code style  |
 | **MyPy (strict)**             | Static type checking for Python | Catches type errors at development time, not in production                        |
-| **pytest**                    | Python test framework           | 455 tests including unit, security, integration, and E2E scenarios                |
+| **pytest**                    | Python test framework           | 1193 tests including unit, security, integration, and E2E scenarios                |
 | **Cursor Development Agents** | AI-assisted implementation      | Specialised coding, testing, refactor, and documentation agents with scoped rules |
 
 ---
 
 ## 🔐 Security Posture — Zero-Trust from Day One
+
+<!-- test-inventory:total=1193 -->
+<!-- corpus-inventory:payloads=285,patterns=277 -->
 
 This project implements **OWASP GenAI Top 10** — the industry standard for LLM application security — with comprehensive defense-in-depth controls.
 
@@ -458,11 +463,11 @@ This project implements **OWASP GenAI Top 10** — the industry standard for LLM
 <tr>
 <td><strong>LLM01</strong><br/>Prompt Injection</td>
 <td>
+• <strong>Input Security Gate</strong> — regex + <strong>PromptGuard 2 (LlamaFirewall)</strong> + constitutional classifiers<br/>
 • <strong>Spotlighting</strong> for indirect injection (calendar events, emails)<br/>
-• <strong>Constitutional classifiers</strong> detect jailbreak attempts<br/>
 • <strong>Multi-agent verification</strong> (Verification + Adversarial + Critic)<br/>
 • DLQ escalation (security violations never retried)<br/>
-• Input validation with Unicode normalization
+• **285-vector** OWASP regression corpus (`test_injection_payloads.py`) + **277** regex signatures (`injection_patterns.py`); Unicode/base64/fuzzy normalisation
 </td>
 <td><strong>✅ Complete</strong></td>
 </tr>
@@ -590,7 +595,7 @@ Open [http://localhost:3010](http://localhost:3010) — API auto-detects backend
 ```bash
 uv run ruff check backend     # lint
 uv run mypy backend           # type check
-uv run pytest                 # 455 tests
+uv run pytest                 # 1193 tests
 ```
 
 ---
@@ -629,7 +634,7 @@ See [infrastructure/DEPLOYMENT.md](infrastructure/DEPLOYMENT.md) for full rollou
 │   ├── graph/                     LangGraph state machine · Consensus workflow · DLQ routing
 │   ├── llm/                       Prompt caching · Model routing · PII-aware fallback
 │   ├── observability/             OpenTelemetry · Prometheus · Drift detection · Dwell Time SLO
-│   └── tests/                     455 tests: unit · security · integration · E2E
+│   └── tests/                     1193 tests: unit · security · integration · E2E
 │
 ├── 📁 frontend/                   Next.js 16 dashboard
 │   ├── app/                       App Router · Server Components · API routes
@@ -673,7 +678,7 @@ See [infrastructure/DEPLOYMENT.md](infrastructure/DEPLOYMENT.md) for full rollou
 │
 ├── 📁 .cursor/rules/              Cursor Agent development standards
 │   ├── coding.mdc                 Python/TypeScript · Agent patterns
-│   ├── testing.mdc                455 tests · OWASP boundary testing
+│   ├── testing.mdc                1193 tests · OWASP boundary testing
 │   ├── refactor.mdc               Schema validation · Sanitization
 │   └── docs.mdc                   Documentation standards
 │
@@ -686,7 +691,7 @@ See [infrastructure/DEPLOYMENT.md](infrastructure/DEPLOYMENT.md) for full rollou
 
 | Practice               | Implementation                                                                              |
 | ---------------------- | ------------------------------------------------------------------------------------------- |
-| **Testing**            | 455 pytest cases — unit, security, live stdio integration, E2E                              |
+| **Testing**            | 1193 pytest cases — unit, security, live stdio integration, E2E                              |
 | **Static analysis**    | Ruff lint + MyPy strict mode on all backend code                                            |
 | **CI/CD**              | GitHub Actions: lint → typecheck → test → Docker build → sign → publish                     |
 | **Image supply chain** | GHCR publish + Cosign keyless signing + `cosign verify` gate before deploy                  |
@@ -884,7 +889,7 @@ webhook handling, event processing, background jobs, task queues
 - **P2 Production Gaps (15):** 📋 Backlog (Enterprise features, post-launch)
 - **Total Production Gaps:** **53 gaps** tracked in [docs/gaps/production/PROD-GAP-ANALYSIS-REVIEW.md](docs/gaps/production/PROD-GAP-ANALYSIS-REVIEW.md)
 
-> **Production Status:** Code is feature-complete with 455 automated tests. Production infrastructure (staging, DR, monitoring alerts, TLS, load testing) is being hardened in PROD Weeks 1-9. See [PROD-INFRA-OPTIONS.md](docs/gaps/production/PROD-INFRA-OPTIONS.md) for deployment options.
+> **Production Status:** Code is feature-complete with 1193 automated tests. Production infrastructure (staging, DR, monitoring alerts, TLS, load testing) is being hardened in PROD Weeks 1-9. See [PROD-INFRA-OPTIONS.md](docs/gaps/production/PROD-INFRA-OPTIONS.md) for deployment options.
 
 ---
 
@@ -1032,7 +1037,7 @@ See **[docs/guidence/observability/README.md](docs/guidence/observability/README
 uv run ruff check backend         # Lint
 uv run ruff format backend        # Format
 uv run mypy backend               # Type check (strict mode)
-uv run pytest                     # 455 tests (unit · security · integration · E2E)
+uv run pytest                     # 1193 tests (unit · security · integration · E2E)
 uv run pytest --cov=backend       # Coverage report (>80%)
 
 # Security-specific tests

@@ -15,7 +15,7 @@
 
 ### Responsibility
 
-Scan serialised task and calendar `AgentResultEnvelope` payloads with `InputSecurityScanner` (regex + constitutional layers) **before** any Focus LLM call. Blocks prompt-injection attempts early to save tokens and prevent poisoned context reaching planners.
+Scan serialised task and calendar `AgentResultEnvelope` payloads with `InputSecurityScanner` (regex → PromptGuard 2 → constitutional) **before** any Focus LLM call. Blocks prompt-injection attempts early to save tokens and prevent poisoned context reaching planners.
 
 ### Outcomes
 

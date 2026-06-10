@@ -79,6 +79,10 @@ class Settings(BaseSettings):
     enumeration_probe_threshold: int = 10
     enumeration_window_seconds: int = 60
 
+    llamafirewall_enabled: bool = True
+    llamafirewall_block_threshold: float = Field(default=0.9, ge=0.0, le=1.0)
+    llamafirewall_model: str = "meta-llama/Llama-Prompt-Guard-2-86M"
+
     otel_exporter_otlp_endpoint: str = "http://localhost:4317"
     admin_api_key: str = ""
 
