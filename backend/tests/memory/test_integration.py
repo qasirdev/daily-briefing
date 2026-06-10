@@ -209,7 +209,25 @@ async def test_integration_08_working_memory_updates_after_focus_turn() -> None:
     mock_llm = AsyncMock()
     mock_llm.generate = AsyncMock(
         return_value=LLMResponse(
-            content=json.dumps({"summary": "Plan A", "time_blocks": []}),
+            content=json.dumps(
+                {
+                    "summary": "Plan A for today's priorities.",
+                    "time_blocks": [
+                        {
+                            "start": "09:00",
+                            "end": "11:00",
+                            "activity": "Complete priority work",
+                            "priority": "high",
+                            "type": "deep_work",
+                        },
+                    ],
+                    "top_priorities": [
+                        "Complete priority work",
+                        "Review team updates",
+                        "Prepare for meetings",
+                    ],
+                },
+            ),
             tokens_used=200,
             model_used="openai/gpt-4o-mini",
             latency_ms=5,
@@ -219,7 +237,7 @@ async def test_integration_08_working_memory_updates_after_focus_turn() -> None:
 
     update = await focus_agent_node(_focus_state(), mock_llm, semantic_store=mock_store)
     assert update["working_memory_tokens"] == 200
-    assert update["working_memory_context"][-1] == "Plan A"
+    assert update["working_memory_context"][-1] == "Plan A for today's priorities."
 
 
 @pytest.mark.asyncio
@@ -230,7 +248,25 @@ async def test_integration_09_focus_survives_semantic_store_failure() -> None:
     mock_llm = AsyncMock()
     mock_llm.generate = AsyncMock(
         return_value=LLMResponse(
-            content=json.dumps({"summary": "Resilient plan", "time_blocks": []}),
+            content=json.dumps(
+                {
+                    "summary": "Resilient plan for today's priorities.",
+                    "time_blocks": [
+                        {
+                            "start": "09:00",
+                            "end": "11:00",
+                            "activity": "Continue resilient delivery",
+                            "priority": "high",
+                            "type": "deep_work",
+                        },
+                    ],
+                    "top_priorities": [
+                        "Continue resilient delivery",
+                        "Review team updates",
+                        "Prepare for meetings",
+                    ],
+                },
+            ),
             tokens_used=90,
             model_used="openai/gpt-4o-mini",
             latency_ms=5,

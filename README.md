@@ -4,7 +4,7 @@
 
 ### **Stop losing your mornings to information overload.**
 
-*One intelligent multi-agent pipeline — your tasks, calendar, and priorities unified into a single, secure, actionable daily briefing.*
+_One intelligent multi-agent pipeline — your tasks, calendar, and priorities unified into a single, secure, actionable daily briefing._
 
 </div>
 
@@ -33,7 +33,7 @@
 ### Security & Quality
 
 [![OWASP GenAI](https://img.shields.io/badge/OWASP-GenAI%20Top%2010-000000?style=flat-square)](docs/SECURITY.md)
-[![Tests](https://img.shields.io/badge/Tests-97%20passing-00C853?style=flat-square)](backend/tests/)
+[![Tests](https://img.shields.io/badge/Tests-455%20total-00C853?style=flat-square)](backend/tests/)
 [![Coverage](https://img.shields.io/badge/Coverage->80%25-00C853?style=flat-square)](backend/tests/)
 [![MyPy](https://img.shields.io/badge/MyPy-strict-blue?style=flat-square)](https://mypy-lang.org/)
 [![Ruff](https://img.shields.io/badge/Ruff-linting-FCC21B?style=flat-square)](https://docs.astral.sh/ruff/)
@@ -85,7 +85,7 @@ By structuring agent prompts for caching, the system achieves **70-90% token cos
 ---
 
 <div align="center">
-<img width="1681" height="830" alt="AI Daily Briefing Dashboard" src="https://github.com/user-attachments/assets/78de5ec5-fc82-4eee-a0c4-7be82ecc11ab" />
+<img width="1681" height="830" alt="AI Daily Briefing Dashboard" src="https://github.com/user-attachments/assets/1e08da3a-f926-4e8f-8d37-1ac942a4ac5f" />
 
 <img width="1681" height="830" alt="AI Daily Briefing Dashboard" src="https://github.com/user-attachments/assets/00b9d099-1bb0-4247-a5d0-3865eeca2a1b" />
 </div>
@@ -175,7 +175,7 @@ By structuring agent prompts for caching, the system achieves **70-90% token cos
 <tr>
 <td><strong>📊 Quality Standards</strong></td>
 <td>
-• <strong>97 automated tests</strong> (unit, security, integration, E2E)<br/>
+• <strong>455 automated tests</strong> (unit, security, integration, E2E)<br/>
 • <strong>Strict MyPy</strong> + <strong>Ruff lint</strong> enforced in CI<br/>
 • <strong>GitHub Actions</strong> CI/CD with automated deployment<br/>
 • <strong>Prometheus SLOs</strong>: P95 latency <10s, Dwell Time <1hr<br/>
@@ -215,7 +215,7 @@ flowchart TB
         ADV[⚔️ Adversarial Agent<br/>Red Team]
         CRIT[🛡️ Critic Agent<br/>Safety Gatekeeper]
         DLQ[💀 Dead Letter Queue]
-        
+
         ORCH --> TASK
         ORCH --> CAL
         TASK --> FOCUS
@@ -267,14 +267,14 @@ flowchart TB
 
 ### **Core Design Principles**
 
-| Principle | Implementation |
-|-----------|----------------|
+| Principle                        | Implementation                                                                                                                |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | **🎯 Orchestrator-as-Presenter** | Only sanitised markdown reaches users. Agents return strict `AgentResultEnvelope` JSON; Orchestrator synthesizes final output |
-| **🛡️ Zero-Trust Security** | Spotlighting for indirect injection, tool poisoning defense, confused deputy prevention, constitutional classifiers |
-| **🧠 Memory Architecture** | CoALA 4-layer model: Working, Semantic, Procedural, Episodic memory with session isolation |
-| **⚡ Prompt Caching** | 70-90% token cost reduction via structured prompt caching (Claude + OpenAI) |
-| **✅ Multi-Agent Verification** | Generator → Verification → Adversarial → Critic → Consensus workflow prevents hallucinations |
-| **🔐 JIT Credentials** | Short-lived delegation tokens (<15 min TTL), zero standing permissions |
+| **🛡️ Zero-Trust Security**       | Spotlighting for indirect injection, tool poisoning defense, confused deputy prevention, constitutional classifiers           |
+| **🧠 Memory Architecture**       | CoALA 4-layer model: Working, Semantic, Procedural, Episodic memory with session isolation                                    |
+| **⚡ Prompt Caching**            | 70-90% token cost reduction via structured prompt caching (Claude + OpenAI)                                                   |
+| **✅ Multi-Agent Verification**  | Generator → Verification → Adversarial → Critic → Consensus workflow prevents hallucinations                                  |
+| **🔐 JIT Credentials**           | Short-lived delegation tokens (<15 min TTL), zero standing permissions                                                        |
 
 ---
 
@@ -282,24 +282,24 @@ flowchart TB
 
 ### 🚀 What Makes This Project Special
 
-| Innovation | Technical Achievement | Business Impact |
-|------------|----------------------|-----------------|
-| **💰 90% Cost Reduction** | Structured prompt caching with Claude + OpenAI | **$18K/month savings** at 1K requests/day/agent |
-| **🔐 Zero-Trust Security** | First production implementation of Microsoft Research's Spotlighting + Tool Poisoning Defense | **>95% injection defense** (industry avg: 50-70%) |
-| **✅ Multi-Agent Verification** | Generator → Verification → Adversarial → Critic consensus pipeline | **+20% accuracy**, hallucination-resistant |
-| **🧠 Memory Architecture** | Production CoALA 4-layer implementation with session isolation | Enterprise-grade context management |
-| **⚡ 2-10× Faster** | Prompt caching + async MCP stdio transport | Sub-second cached responses |
-| **📦 Comprehensive Codebase** | **15,000+ lines** of production Python/TypeScript with >80% test coverage | Deployment-ready, not a prototype |
-| **🛡️ OWASP Compliant** | Full OWASP GenAI Top 10 coverage (7/7 categories) + OWASP Agent Security Top 10 (8/10) | Enterprise security audit-ready |
-| **🔍 Observability-First** | OpenTelemetry + Prometheus + Dwell Time SLO <1hr | Production-grade monitoring |
-| **🎯 Agent OS Kernel** | Scheduler · Memory Manager · Tool Manager · Identity Manager · Security Monitor | Reusable agent infrastructure |
-| **📋 Supply Chain Security** | AI-BOM + OpenSSF Scorecard + Cosign signing | Provenance tracking for all AI components |
+| Innovation                      | Technical Achievement                                                                         | Business Impact                                   |
+| ------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| **💰 90% Cost Reduction**       | Structured prompt caching with Claude + OpenAI                                                | **$18K/month savings** at 1K requests/day/agent   |
+| **🔐 Zero-Trust Security**      | First production implementation of Microsoft Research's Spotlighting + Tool Poisoning Defense | **>95% injection defense** (industry avg: 50-70%) |
+| **✅ Multi-Agent Verification** | Generator → Verification → Adversarial → Critic consensus pipeline                            | **+20% accuracy**, hallucination-resistant        |
+| **🧠 Memory Architecture**      | Production CoALA 4-layer implementation with session isolation                                | Enterprise-grade context management               |
+| **⚡ 2-10× Faster**             | Prompt caching + async MCP stdio transport                                                    | Sub-second cached responses                       |
+| **📦 Comprehensive Codebase**   | **15,000+ lines** of production Python/TypeScript with >80% test coverage                     | Deployment-ready, not a prototype                 |
+| **🛡️ OWASP Compliant**          | Full OWASP GenAI Top 10 coverage (7/7 categories) + OWASP Agent Security Top 10 (8/10)        | Enterprise security audit-ready                   |
+| **🔍 Observability-First**      | OpenTelemetry + Prometheus + Dwell Time SLO <1hr                                              | Production-grade monitoring                       |
+| **🎯 Agent OS Kernel**          | Scheduler · Memory Manager · Tool Manager · Identity Manager · Security Monitor               | Reusable agent infrastructure                     |
+| **📋 Supply Chain Security**    | AI-BOM + OpenSSF Scorecard + Cosign signing                                                   | Provenance tracking for all AI components         |
 
 ### 📊 By the Numbers
 
 - **52 completed tasks** across 6 MVPs
 - **121 security gaps** addressed (IBM + Claude frameworks)
-- **97 automated tests** (unit · security · integration · E2E)
+- **455 automated tests** (unit · security · integration · E2E)
 - **6 specialized agents** with multi-layer verification
 - **15K+ lines of production code** (backend + frontend + infrastructure)
 - **11-file prompt structure** per agent (v2.0.0 standards)
@@ -316,37 +316,44 @@ flowchart TB
 
 Each morning, **six specialized agents** collaborate through a deterministic verification workflow:
 
-### 1. 📋 Task Agent — *Doer*
+### 1. 📋 Task Agent — _Doer_
+
 Connects to PostgreSQL via Model Context Protocol (MCP stdio). Retrieves and priority-sorts your tasks using Row-Level Security. **Read-only by design** — agents never modify your data without explicit consent.
 
-### 2. 📅 Calendar Agent — *Tool Operator*
+### 2. 📅 Calendar Agent — _Tool Operator_
+
 Fetches today's events from Google Calendar via OAuth with **time-bounded JIT consent** (<15 min TTL). **Spotlighting** wraps all external data in security markers to prevent indirect prompt injection. SSRF validation blocks unauthorized domains.
 
-### 3. 🔍 Focus Agent — *Planner*
+### 3. 🔍 Focus Agent — _Planner_
+
 Generates an intelligent, time-blocked work plan using Claude Opus 4.8 or GPT-5.5. **Zero tool access** — pure reasoning. PII-sensitive data automatically routes to local Llama 3.1 70B for privacy. Structured prompts with **90% token cost savings** via caching.
 
-### 4. ✅ Verification Agent — *Validator*
+### 4. ✅ Verification Agent — _Validator_
+
 Validates Focus Agent output for schema compliance, logic correctness, and completeness. First layer of quality assurance in the multi-agent verification pipeline.
 
-### 5. ⚔️ Adversarial Agent — *Red Team*
+### 5. ⚔️ Adversarial Agent — _Red Team_
+
 Challenges assumptions, finds edge cases, and stress-tests the generated plan. Contrarian perspective ensures robustness before final review.
 
-### 6. 🛡️ Critic Agent — *Safety Gatekeeper*
+### 6. 🛡️ Critic Agent — _Safety Gatekeeper_
+
 Final security and quality review. Runs constitutional classifiers, detects jailbreak attempts, and scans for PII leakage. **Security violations are never retried** — immediately escalated to Dead Letter Queue.
 
-### 7. 🎯 Orchestrator — *Supervisor + Presenter*
+### 7. 🎯 Orchestrator — _Supervisor + Presenter_
+
 Evaluates consensus across all agents. Synthesizes final briefing only after multi-agent verification. Applies dual-layer sanitization (`nh3` backend + `DOMPurify` frontend). **The only agent that produces user-facing markdown.**
 
 ---
 
 ## 🧠 Memory Architecture (CoALA 4-Layer Model)
 
-| Layer | Purpose | Implementation | Retention |
-|-------|---------|----------------|-----------|
-| **Working Memory** | Current context window, active task state | LangGraph state + context management | Session-scoped |
-| **Semantic Memory** | Facts, policies, domain knowledge | PostgreSQL + Vector DB (optional RAG) | Persistent |
-| **Procedural Memory** | Skills, tools, progressive disclosure | JSON skill definitions + access control | Persistent |
-| **Episodic Memory** | Distilled lessons from past sessions | PostgreSQL with session isolation | Configurable (90 days default) |
+| Layer                 | Purpose                                   | Implementation                          | Retention                      |
+| --------------------- | ----------------------------------------- | --------------------------------------- | ------------------------------ |
+| **Working Memory**    | Current context window, active task state | LangGraph state + context management    | Session-scoped                 |
+| **Semantic Memory**   | Facts, policies, domain knowledge         | PostgreSQL + Vector DB (optional RAG)   | Persistent                     |
+| **Procedural Memory** | Skills, tools, progressive disclosure     | JSON skill definitions + access control | Persistent                     |
+| **Episodic Memory**   | Distilled lessons from past sessions      | PostgreSQL with session isolation       | Configurable (90 days default) |
 
 **Security:** Session isolation prevents memory bleed between users. All memory sources treated as untrusted with spotlighting and integrity validation.
 
@@ -356,82 +363,82 @@ Evaluates consensus across all agents. Synthesizes final briefing only after mul
 
 ### 🤖 AI & Orchestration
 
-| Technology | Version | Why We Chose It | Key Benefit |
-|------------|---------|-----------------|-------------|
-| **LangGraph** | 0.4+ | Deterministic state machine for multi-agent workflows | Predictable execution, cycle detection, automatic checkpointing |
-| **Claude Opus 4.8** | Latest | Anthropic's flagship model with adaptive thinking | Superior reasoning for agentic workflows, 90% cost savings via caching |
-| **GPT-5.5** | Latest | OpenAI's production-optimized model | Fast inference, structured outputs, cost-effective |
-| **OpenRouter** | Latest | Unified LLM routing across 200+ providers | Model fallback, A/B testing, zero vendor lock-in |
-| **Model Context Protocol (MCP)** | stdio | Standardized tool interface for agents | Secure, schema-validated tool access with sandboxing |
-| **Local LLM (Llama 3.1 70B)** | 3.1 | Privacy-preserving on-prem inference | PII/confidential data never leaves infrastructure |
-| **Prompt Caching** | Claude + OpenAI | 70-90% token cost reduction | **$18K/month savings** at scale, 2-10x faster responses |
+| Technology                       | Version         | Why We Chose It                                       | Key Benefit                                                            |
+| -------------------------------- | --------------- | ----------------------------------------------------- | ---------------------------------------------------------------------- |
+| **LangGraph**                    | 0.4+            | Deterministic state machine for multi-agent workflows | Predictable execution, cycle detection, automatic checkpointing        |
+| **Claude Opus 4.8**              | Latest          | Anthropic's flagship model with adaptive thinking     | Superior reasoning for agentic workflows, 90% cost savings via caching |
+| **GPT-5.5**                      | Latest          | OpenAI's production-optimized model                   | Fast inference, structured outputs, cost-effective                     |
+| **OpenRouter**                   | Latest          | Unified LLM routing across 200+ providers             | Model fallback, A/B testing, zero vendor lock-in                       |
+| **Model Context Protocol (MCP)** | stdio           | Standardized tool interface for agents                | Secure, schema-validated tool access with sandboxing                   |
+| **Local LLM (Llama 3.1 70B)**    | 3.1             | Privacy-preserving on-prem inference                  | PII/confidential data never leaves infrastructure                      |
+| **Prompt Caching**               | Claude + OpenAI | 70-90% token cost reduction                           | **$18K/month savings** at scale, 2-10x faster responses                |
 
 ### Backend
 
-| Technology | Why We Chose It | Benefit |
-|---|---|---|
-| **FastAPI** | Modern async Python API framework | Automatic OpenAPI docs, native async support, 3× faster than Flask for I/O-bound workloads |
-| **Python 3.12** | Latest stable Python runtime | Improved performance, better error messages, `asyncio` improvements |
-| **Pydantic v2** | Data validation and settings management | 5–50× faster than v1; strict type enforcement prevents malformed agent payloads |
-| **LangChain ecosystem** | LLM tooling and integrations | Battle-tested prompt management, retry logic, and observability hooks |
-| **uv** | Ultra-fast Python package manager | Deterministic installs, lockfile enforcement, 10–100× faster than pip |
-| **Alembic + SQLAlchemy async** | Database migrations and ORM | Type-safe async queries; reproducible schema evolution |
+| Technology                     | Why We Chose It                         | Benefit                                                                                    |
+| ------------------------------ | --------------------------------------- | ------------------------------------------------------------------------------------------ |
+| **FastAPI**                    | Modern async Python API framework       | Automatic OpenAPI docs, native async support, 3× faster than Flask for I/O-bound workloads |
+| **Python 3.12**                | Latest stable Python runtime            | Improved performance, better error messages, `asyncio` improvements                        |
+| **Pydantic v2**                | Data validation and settings management | 5–50× faster than v1; strict type enforcement prevents malformed agent payloads            |
+| **LangChain ecosystem**        | LLM tooling and integrations            | Battle-tested prompt management, retry logic, and observability hooks                      |
+| **uv**                         | Ultra-fast Python package manager       | Deterministic installs, lockfile enforcement, 10–100× faster than pip                      |
+| **Alembic + SQLAlchemy async** | Database migrations and ORM             | Type-safe async queries; reproducible schema evolution                                     |
 
 ### Frontend
 
-| Technology | Why We Chose It | Benefit |
-|---|---|---|
+| Technology                  | Why We Chose It                             | Benefit                                                                                     |
+| --------------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------- |
 | **Next.js 16 (App Router)** | React meta-framework with server components | Streaming UI, built-in routing, SEO-ready, server-side rendering reduces time-to-first-byte |
-| **React 19** | Latest React with concurrent features | Server Components reduce JS bundle size; useOptimistic for snappy UX |
-| **TypeScript 5.x** | Typed JavaScript | Catches integration errors at compile time; agent envelope types shared end-to-end |
-| **Tailwind CSS v4** | Utility-first CSS framework | Consistent design system, zero unused CSS in production |
-| **DOMPurify** | Client-side HTML sanitisation | Last line of defence — strips any unsafe markup before rendering briefing content |
-| **Zod** | TypeScript schema validation | Frontend validates API responses independently; no implicit trust of backend payloads |
+| **React 19**                | Latest React with concurrent features       | Server Components reduce JS bundle size; useOptimistic for snappy UX                        |
+| **TypeScript 5.x**          | Typed JavaScript                            | Catches integration errors at compile time; agent envelope types shared end-to-end          |
+| **Tailwind CSS v4**         | Utility-first CSS framework                 | Consistent design system, zero unused CSS in production                                     |
+| **DOMPurify**               | Client-side HTML sanitisation               | Last line of defence — strips any unsafe markup before rendering briefing content           |
+| **Zod**                     | TypeScript schema validation                | Frontend validates API responses independently; no implicit trust of backend payloads       |
 
 ### Data & Storage
 
-| Technology | Why We Chose It | Benefit |
-|---|---|---|
-| **Supabase (PostgreSQL)** | Managed Postgres with Row-Level Security | Per-user data isolation enforced at the database layer, not just application logic |
-| **Supavisor (port 6543)** | Connection pooler for Supabase | Handles thousands of concurrent connections without PostgreSQL saturation |
-| **PostgreSQL MCP (stdio)** | Agent-safe database access | Parameterised queries only; agents cannot execute arbitrary SQL |
-| **Google Calendar MCP (stdio)** | Calendar integration | Scoped `calendar.readonly` access; OAuth refresh handled securely via env |
+| Technology                      | Why We Chose It                          | Benefit                                                                            |
+| ------------------------------- | ---------------------------------------- | ---------------------------------------------------------------------------------- |
+| **Supabase (PostgreSQL)**       | Managed Postgres with Row-Level Security | Per-user data isolation enforced at the database layer, not just application logic |
+| **Supavisor (port 6543)**       | Connection pooler for Supabase           | Handles thousands of concurrent connections without PostgreSQL saturation          |
+| **PostgreSQL MCP (stdio)**      | Agent-safe database access               | Parameterised queries only; agents cannot execute arbitrary SQL                    |
+| **Google Calendar MCP (stdio)** | Calendar integration                     | Scoped `calendar.readonly` access; OAuth refresh handled securely via env          |
 
 ### Security
 
-| Technology | Why We Chose It | Benefit |
-|---|---|---|
-| **nh3** | Rust-backed HTML sanitiser | Allowlist-based; strips scripts, iframes, and unsafe attributes before storage |
-| **PromptInjectionDetector** | Custom regex + Unicode normalisation | Catches obfuscated injection attempts that bypass simple keyword filters |
-| **PIIDetector + mask_pii()** | Custom PII scanner and masker | Prevents email, phone, SSN, and card numbers from leaking into LLM payloads |
-| **SSRFValidator** | URL allowlist + private IP blocker | MCP integrations cannot be redirected to internal network endpoints |
-| **SlowAPI** | FastAPI rate limiting | Enforces per-endpoint request quotas; returns proper 429 responses |
-| **pyjwt[crypto]** | JWT with RS256 signing | Production-grade asymmetric token verification |
+| Technology                   | Why We Chose It                      | Benefit                                                                        |
+| ---------------------------- | ------------------------------------ | ------------------------------------------------------------------------------ |
+| **nh3**                      | Rust-backed HTML sanitiser           | Allowlist-based; strips scripts, iframes, and unsafe attributes before storage |
+| **PromptInjectionDetector**  | Custom regex + Unicode normalisation | Catches obfuscated injection attempts that bypass simple keyword filters       |
+| **PIIDetector + mask_pii()** | Custom PII scanner and masker        | Prevents email, phone, SSN, and card numbers from leaking into LLM payloads    |
+| **SSRFValidator**            | URL allowlist + private IP blocker   | MCP integrations cannot be redirected to internal network endpoints            |
+| **SlowAPI**                  | FastAPI rate limiting                | Enforces per-endpoint request quotas; returns proper 429 responses             |
+| **pyjwt[crypto]**            | JWT with RS256 signing               | Production-grade asymmetric token verification                                 |
 
 ### Observability & Infrastructure
 
-| Technology | Why We Chose It | Benefit |
-|---|---|---|
-| **OpenTelemetry** | Vendor-neutral distributed tracing | `trace_id` propagated from HTTP request through every agent and log line |
-| **Prometheus** | Metrics collection and alerting | SLO tracking, security violation counters, per-agent token usage (http://localhost:9090) |
-| **Grafana** | Visualization and dashboards | Real-time monitoring, cache performance, dwell time SLO, MITRE coverage (http://localhost:3000) |
-| **Alertmanager** | Alert routing and deduplication | PagerDuty integration, incident management (http://localhost:9093) |
-| **Loki** | Log aggregation (optional) | Centralized logging with retention policies, indexed queries |
-| **structlog** | Structured JSON logging | Machine-parseable logs with consistent fields; security channel for audit events |
-| **Docker (multi-stage)** | Containerised deployment | Reproducible builds; dev/prod parity; minimal attack surface via multi-stage |
-| **Nginx** | Reverse proxy | TLS termination, static asset serving, upstream health-check routing |
-| **Supervisord** | Process manager inside container | Manages uvicorn + Nginx as co-located processes in a single container |
-| **Cosign + Sigstore** | Container image signing | Keyless supply chain verification via GitHub OIDC — proves image provenance |
-| **GitHub Actions** | CI/CD pipeline | Automated lint, typecheck, test, build, and signed image publish on every push |
+| Technology               | Why We Chose It                    | Benefit                                                                                         |
+| ------------------------ | ---------------------------------- | ----------------------------------------------------------------------------------------------- |
+| **OpenTelemetry**        | Vendor-neutral distributed tracing | `trace_id` propagated from HTTP request through every agent and log line                        |
+| **Prometheus**           | Metrics collection and alerting    | SLO tracking, security violation counters, per-agent token usage (http://localhost:9090)        |
+| **Grafana**              | Visualization and dashboards       | Real-time monitoring, cache performance, dwell time SLO, MITRE coverage (http://localhost:3000) |
+| **Alertmanager**         | Alert routing and deduplication    | PagerDuty integration, incident management (http://localhost:9093)                              |
+| **Loki**                 | Log aggregation (optional)         | Centralized logging with retention policies, indexed queries                                    |
+| **structlog**            | Structured JSON logging            | Machine-parseable logs with consistent fields; security channel for audit events                |
+| **Docker (multi-stage)** | Containerised deployment           | Reproducible builds; dev/prod parity; minimal attack surface via multi-stage                    |
+| **Nginx**                | Reverse proxy                      | TLS termination, static asset serving, upstream health-check routing                            |
+| **Supervisord**          | Process manager inside container   | Manages uvicorn + Nginx as co-located processes in a single container                           |
+| **Cosign + Sigstore**    | Container image signing            | Keyless supply chain verification via GitHub OIDC — proves image provenance                     |
+| **GitHub Actions**       | CI/CD pipeline                     | Automated lint, typecheck, test, build, and signed image publish on every push                  |
 
 ### Development Experience
 
-| Technology | Why We Chose It | Benefit |
-|---|---|---|
-| **Ruff** | Extremely fast Python linter | Replaces Flake8 + isort + pyupgrade; 100× faster; enforces consistent code style |
-| **MyPy (strict)** | Static type checking for Python | Catches type errors at development time, not in production |
-| **pytest** | Python test framework | 97 tests including unit, security, integration, and E2E scenarios |
-| **Cursor Development Agents** | AI-assisted implementation | Specialised coding, testing, refactor, and documentation agents with scoped rules |
+| Technology                    | Why We Chose It                 | Benefit                                                                           |
+| ----------------------------- | ------------------------------- | --------------------------------------------------------------------------------- |
+| **Ruff**                      | Extremely fast Python linter    | Replaces Flake8 + isort + pyupgrade; 100× faster; enforces consistent code style  |
+| **MyPy (strict)**             | Static type checking for Python | Catches type errors at development time, not in production                        |
+| **pytest**                    | Python test framework           | 455 tests including unit, security, integration, and E2E scenarios                |
+| **Cursor Development Agents** | AI-assisted implementation      | Specialised coding, testing, refactor, and documentation agents with scoped rules |
 
 ---
 
@@ -543,7 +550,7 @@ This project implements **OWASP GenAI Top 10** — the industry standard for LLM
 
 - [uv](https://docs.astral.sh/uv/) >= 0.5
 - Node.js 22.x (`nvm use`)
-- Docker 27+ *(optional — for full stack)*
+- Docker 27+ _(optional — for full stack)_
 
 ### Backend — local dev on port 8010
 
@@ -583,7 +590,7 @@ Open [http://localhost:3010](http://localhost:3010) — API auto-detects backend
 ```bash
 uv run ruff check backend     # lint
 uv run mypy backend           # type check
-uv run pytest                 # 97 tests
+uv run pytest                 # 455 tests
 ```
 
 ---
@@ -622,7 +629,7 @@ See [infrastructure/DEPLOYMENT.md](infrastructure/DEPLOYMENT.md) for full rollou
 │   ├── graph/                     LangGraph state machine · Consensus workflow · DLQ routing
 │   ├── llm/                       Prompt caching · Model routing · PII-aware fallback
 │   ├── observability/             OpenTelemetry · Prometheus · Drift detection · Dwell Time SLO
-│   └── tests/                     97 tests: unit · security · integration · E2E
+│   └── tests/                     455 tests: unit · security · integration · E2E
 │
 ├── 📁 frontend/                   Next.js 16 dashboard
 │   ├── app/                       App Router · Server Components · API routes
@@ -666,7 +673,7 @@ See [infrastructure/DEPLOYMENT.md](infrastructure/DEPLOYMENT.md) for full rollou
 │
 ├── 📁 .cursor/rules/              Cursor Agent development standards
 │   ├── coding.mdc                 Python/TypeScript · Agent patterns
-│   ├── testing.mdc                97 tests · OWASP boundary testing
+│   ├── testing.mdc                455 tests · OWASP boundary testing
 │   ├── refactor.mdc               Schema validation · Sanitization
 │   └── docs.mdc                   Documentation standards
 │
@@ -677,32 +684,32 @@ See [infrastructure/DEPLOYMENT.md](infrastructure/DEPLOYMENT.md) for full rollou
 
 ## 📊 Engineering Standards
 
-| Practice | Implementation |
-|---|---|
-| **Testing** | 97 pytest cases — unit, security, live stdio integration, E2E |
-| **Static analysis** | Ruff lint + MyPy strict mode on all backend code |
-| **CI/CD** | GitHub Actions: lint → typecheck → test → Docker build → sign → publish |
-| **Image supply chain** | GHCR publish + Cosign keyless signing + `cosign verify` gate before deploy |
-| **Config management** | Pydantic Settings + `.env.example` + `.env.production.example` |
-| **Documentation** | Architecture · Security · Observability · Deployment runbooks |
-| **SLO targets** | 99.5% availability · P95 latency < 10s (see [docs/OBSERVABILITY.md](docs/OBSERVABILITY.md)) |
+| Practice               | Implementation                                                                              |
+| ---------------------- | ------------------------------------------------------------------------------------------- |
+| **Testing**            | 455 pytest cases — unit, security, live stdio integration, E2E                              |
+| **Static analysis**    | Ruff lint + MyPy strict mode on all backend code                                            |
+| **CI/CD**              | GitHub Actions: lint → typecheck → test → Docker build → sign → publish                     |
+| **Image supply chain** | GHCR publish + Cosign keyless signing + `cosign verify` gate before deploy                  |
+| **Config management**  | Pydantic Settings + `.env.example` + `.env.production.example`                              |
+| **Documentation**      | Architecture · Security · Observability · Deployment runbooks                               |
+| **SLO targets**        | 99.5% availability · P95 latency < 10s (see [docs/OBSERVABILITY.md](docs/OBSERVABILITY.md)) |
 
 ---
 
 ## 📚 Documentation Map
 
-| Document | Purpose |
-|---|---|
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System design, agent roles, data flows |
-| [docs/SECURITY.md](docs/SECURITY.md) | OWASP GenAI matrix, threat model, controls |
-| [docs/OBSERVABILITY.md](docs/OBSERVABILITY.md) | Tracing, Prometheus metrics, SLOs |
-| [docs/guidence/observability/README.md](docs/guidence/observability/README.md) | Local Prometheus, Grafana, PagerDuty setup |
-| [docs/AGENTIC-CONSENT.md](docs/AGENTIC-CONSENT.md) | Consent flows, token lifecycle, revocation |
-| [docs/LOCAL-LLM.md](docs/LOCAL-LLM.md) | Local model benchmarks, hardware requirements |
-| [docs/DATA-OWNERSHIP.md](docs/DATA-OWNERSHIP.md) | GDPR compliance, retention, PII handling |
-| [infrastructure/DEPLOYMENT.md](infrastructure/DEPLOYMENT.md) | Production rollout and rollback |
-| [docs/PLAN.md](docs/PLAN.md) | Implementation roadmap — 52/52 tasks complete |
-| [AGENT.md](AGENT.md) | Engineering workflow and conventions |
+| Document                                                                       | Purpose                                       |
+| ------------------------------------------------------------------------------ | --------------------------------------------- |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)                                   | System design, agent roles, data flows        |
+| [docs/SECURITY.md](docs/SECURITY.md)                                           | OWASP GenAI matrix, threat model, controls    |
+| [docs/OBSERVABILITY.md](docs/OBSERVABILITY.md)                                 | Tracing, Prometheus metrics, SLOs             |
+| [docs/guidence/observability/README.md](docs/guidence/observability/README.md) | Local Prometheus, Grafana, PagerDuty setup    |
+| [docs/AGENTIC-CONSENT.md](docs/AGENTIC-CONSENT.md)                             | Consent flows, token lifecycle, revocation    |
+| [docs/LOCAL-LLM.md](docs/LOCAL-LLM.md)                                         | Local model benchmarks, hardware requirements |
+| [docs/DATA-OWNERSHIP.md](docs/DATA-OWNERSHIP.md)                               | GDPR compliance, retention, PII handling      |
+| [infrastructure/DEPLOYMENT.md](infrastructure/DEPLOYMENT.md)                   | Production rollout and rollback               |
+| [docs/PLAN.md](docs/PLAN.md)                                                   | Implementation roadmap — 52/52 tasks complete |
+| [AGENT.md](AGENT.md)                                                           | Engineering workflow and conventions          |
 
 ---
 
@@ -711,6 +718,7 @@ See [infrastructure/DEPLOYMENT.md](infrastructure/DEPLOYMENT.md) for full rollou
 > **Comprehensive Production Codebase** with enterprise-grade multi-agent AI system
 
 ### Core Technologies
+
 ```
 Python 3.12+, FastAPI 0.115+, Pydantic v2, async/await, asyncio, type hints, uv package manager,
 LangGraph 0.4+, LangChain ecosystem, multi-agent orchestration, agentic AI workflows,
@@ -721,6 +729,7 @@ context window management, RAG (Retrieval Augmented Generation), vector database
 ```
 
 ### Backend & Infrastructure
+
 ```
 httpx async client, structlog structured logging, uvicorn ASGI server, tenacity retry logic,
 PostgreSQL 16+, Supabase, Supavisor connection pooling, Row-Level Security (RLS),
@@ -734,6 +743,7 @@ Grafana dashboards, SLO monitoring, Dwell Time SLO, drift detection
 ```
 
 ### Frontend & UI
+
 ```
 TypeScript 5.x+, React 19, Next.js 16 App Router, Server Components, Server Actions,
 Tailwind CSS v4, responsive design, utility-first CSS, component libraries,
@@ -743,6 +753,7 @@ accessibility (WCAG 2.1), semantic HTML, ARIA labels
 ```
 
 ### Security & Compliance
+
 ```
 OWASP GenAI Top 10, LLM security, prompt injection defense, indirect injection prevention,
 spotlighting, constitutional classifiers, jailbreak detection, tool poisoning defense,
@@ -757,6 +768,7 @@ dead letter queue (DLQ), error handling, graceful degradation
 ```
 
 ### Testing & Quality Assurance
+
 ```
 pytest, unit testing, integration testing, E2E testing, security testing,
 OWASP testing, injection testing, sanitization testing, boundary testing,
@@ -767,6 +779,7 @@ supply chain security, vulnerability management, SAST (Static Application Securi
 ```
 
 ### Architecture & Patterns
+
 ```
 multi-agent systems, agent orchestration, supervisor pattern, presenter pattern,
 verification pipeline, adversarial testing, consensus mechanisms, state machines,
@@ -778,6 +791,7 @@ Twelve-Factor App methodology, production readiness, enterprise architecture
 ```
 
 ### AI/ML & LLM Operations
+
 ```
 Large Language Models (LLM), agentic AI, AI agents, AI safety, AI governance,
 prompt engineering, few-shot learning, chain-of-thought reasoning, structured outputs,
@@ -788,6 +802,7 @@ hallucination prevention, output validation, reasoning traces, explainability
 ```
 
 ### APIs & Integrations
+
 ```
 RESTful APIs, Google Calendar API, OAuth 2.0 flows, API security,
 MCP protocol, stdio transport, HTTP transport, tool calling, function calling,
@@ -856,18 +871,20 @@ webhook handling, event processing, background jobs, task queues
 ### Gap Coverage Summary
 
 **Development Phase (Weeks 1-8):**
+
 - **P0 Critical Gaps (24):** ✅ All addressed
 - **P1 High Gaps (52):** ✅ All addressed
 - **P2 Medium Gaps (45):** ✅ All addressed
 - **Total Coverage:** **121/121 gaps** from IBM Multi-Agent AI + Claude Zero-Trust frameworks
 
 **Production Phase (Ongoing - Weeks 9-17):**
+
 - **P0 Production Gaps (14):** 🔄 In progress (CORS, TLS, staging, disaster recovery)
 - **P1 Production Gaps (24):** 🔄 Planned (Grafana dashboards, alerting, load testing)
 - **P2 Production Gaps (15):** 📋 Backlog (Enterprise features, post-launch)
 - **Total Production Gaps:** **53 gaps** tracked in [docs/gaps/production/PROD-GAP-ANALYSIS-REVIEW.md](docs/gaps/production/PROD-GAP-ANALYSIS-REVIEW.md)
 
-> **Production Status:** Code is feature-complete with 97 passing tests. Production infrastructure (staging, DR, monitoring alerts, TLS, load testing) is being hardened in PROD Weeks 1-9. See [PROD-INFRA-OPTIONS.md](docs/gaps/production/PROD-INFRA-OPTIONS.md) for deployment options.
+> **Production Status:** Code is feature-complete with 455 automated tests. Production infrastructure (staging, DR, monitoring alerts, TLS, load testing) is being hardened in PROD Weeks 1-9. See [PROD-INFRA-OPTIONS.md](docs/gaps/production/PROD-INFRA-OPTIONS.md) for deployment options.
 
 ---
 
@@ -875,35 +892,35 @@ webhook handling, event processing, background jobs, task queues
 
 ### Core Documentation
 
-| Document | Purpose |
-|----------|---------|
-| **[007-01-ai-daily-briefing-assistant-v2.0.0.md](007-01-ai-daily-briefing-assistant-v2.0.0.md)** | Complete v2.0.0 specification with 121 gap coverage |
-| **[AGENT.md](AGENT.md)** | Root index · Workflow rules · Engineering standards |
-| **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** | System design · 6-agent pipeline · Data flows · Memory architecture |
-| **[docs/SECURITY.md](docs/SECURITY.md)** | OWASP GenAI Top 10 · Zero-trust controls · Threat model |
-| **[docs/PROMPT-ENGINEERING-GUIDE.md](docs/PROMPT-ENGINEERING-GUIDE.md)** | v2.0.0 standards · Claude + OpenAI best practices · Prompt caching |
-| **[docs/OBSERVABILITY.md](docs/OBSERVABILITY.md)** | Metrics · Tracing · Dwell Time SLO · MITRE ATT&CK |
-| **[docs/MCP.md](docs/MCP.md)** | Tool schemas · Validation · Spotlighting · Sandboxing |
+| Document                                                                                         | Purpose                                                             |
+| ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------- |
+| **[007-01-ai-daily-briefing-assistant-v2.0.0.md](007-01-ai-daily-briefing-assistant-v2.0.0.md)** | Complete v2.0.0 specification with 121 gap coverage                 |
+| **[AGENT.md](AGENT.md)**                                                                         | Root index · Workflow rules · Engineering standards                 |
+| **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**                                                 | System design · 6-agent pipeline · Data flows · Memory architecture |
+| **[docs/SECURITY.md](docs/SECURITY.md)**                                                         | OWASP GenAI Top 10 · Zero-trust controls · Threat model             |
+| **[docs/PROMPT-ENGINEERING-GUIDE.md](docs/PROMPT-ENGINEERING-GUIDE.md)**                         | v2.0.0 standards · Claude + OpenAI best practices · Prompt caching  |
+| **[docs/OBSERVABILITY.md](docs/OBSERVABILITY.md)**                                               | Metrics · Tracing · Dwell Time SLO · MITRE ATT&CK                   |
+| **[docs/MCP.md](docs/MCP.md)**                                                                   | Tool schemas · Validation · Spotlighting · Sandboxing               |
 
 ### Production Documentation
 
-| Document | Purpose |
-|----------|---------|
-| **[docs/gaps/production/PROD-GAP-ANALYSIS-REVIEW.md](docs/gaps/production/PROD-GAP-ANALYSIS-REVIEW.md)** | 53 production gaps · P0/P1/P2 priorities · Implementation roadmap |
-| **[docs/gaps/production/PROD-INFRA-OPTIONS.md](docs/gaps/production/PROD-INFRA-OPTIONS.md)** | 3 deployment options ($5-200/month) · VPS/PaaS/Cloud comparison |
+| Document                                                                                                         | Purpose                                                             |
+| ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| **[docs/gaps/production/PROD-GAP-ANALYSIS-REVIEW.md](docs/gaps/production/PROD-GAP-ANALYSIS-REVIEW.md)**         | 53 production gaps · P0/P1/P2 priorities · Implementation roadmap   |
+| **[docs/gaps/production/PROD-INFRA-OPTIONS.md](docs/gaps/production/PROD-INFRA-OPTIONS.md)**                     | 3 deployment options ($5-200/month) · VPS/PaaS/Cloud comparison     |
 | **[docs/gaps/production/PROD-PROPOSAL-REVIEW-SUMMARY.md](docs/gaps/production/PROD-PROPOSAL-REVIEW-SUMMARY.md)** | Production readiness assessment · Risk analysis · Go/no-go criteria |
-| **[docs/gaps/production/PROD-KICKOFF-PROMPT.md](docs/gaps/production/PROD-KICKOFF-PROMPT.md)** | Production implementation guide · Week-by-week plan |
-| **[docs/DEPLOYMENT-GATES.md](docs/DEPLOYMENT-GATES.md)** | Metric-based release criteria · Gate requirements |
+| **[docs/gaps/production/PROD-KICKOFF-PROMPT.md](docs/gaps/production/PROD-KICKOFF-PROMPT.md)**                   | Production implementation guide · Week-by-week plan                 |
+| **[docs/DEPLOYMENT-GATES.md](docs/DEPLOYMENT-GATES.md)**                                                         | Metric-based release criteria · Gate requirements                   |
 
 ### Setup Guides
 
-| Document | Purpose |
-|----------|---------|
-| **[docs/guidence/docker-setup.md](docs/guidence/docker-setup.md)** | Production deployment · Docker Compose · Nginx config |
-| **[docs/guidence/try-it-locally.md](docs/guidence/try-it-locally.md)** | Local development setup · Backend + Frontend |
-| **[docs/guidence/observability/README.md](docs/guidence/observability/README.md)** | Prometheus + Grafana + Alertmanager setup · Dashboards |
-| **[docs/guidence/supabase-setup.md](docs/guidence/supabase-setup.md)** | PostgreSQL setup · Row-Level Security · Migrations |
-| **[docs/guidence/google-calendar-setup.md](docs/guidence/google-calendar-setup.md)** | OAuth 2.0 setup · MCP calendar integration |
+| Document                                                                             | Purpose                                                |
+| ------------------------------------------------------------------------------------ | ------------------------------------------------------ |
+| **[docs/guidence/docker-setup.md](docs/guidence/docker-setup.md)**                   | Production deployment · Docker Compose · Nginx config  |
+| **[docs/guidence/try-it-locally.md](docs/guidence/try-it-locally.md)**               | Local development setup · Backend + Frontend           |
+| **[docs/guidence/observability/README.md](docs/guidence/observability/README.md)**   | Prometheus + Grafana + Alertmanager setup · Dashboards |
+| **[docs/guidence/supabase-setup.md](docs/guidence/supabase-setup.md)**               | PostgreSQL setup · Row-Level Security · Migrations     |
+| **[docs/guidence/google-calendar-setup.md](docs/guidence/google-calendar-setup.md)** | OAuth 2.0 setup · MCP calendar integration             |
 
 ---
 
@@ -926,15 +943,16 @@ cosign             # For image verification
 
 Three cost-effective infrastructure options are available:
 
-| Option | Provider | Cost/Month | Best For | Setup Guide |
-|--------|----------|------------|----------|-------------|
-| **🥇 VPS** | Hetzner Cloud, DigitalOcean | **$5-20** | MVP, 10-5,000 users | Single server + Docker Compose |
-| **🥈 Managed PaaS** | Render, Railway, Fly.io | **$40-80** | Teams, auto-scaling | Zero-ops, push-to-deploy |
-| **🥉 Managed Cloud** | AWS ECS, Azure Container Apps | **$100-200** | Enterprise, compliance | Full managed services |
+| Option               | Provider                      | Cost/Month   | Best For               | Setup Guide                    |
+| -------------------- | ----------------------------- | ------------ | ---------------------- | ------------------------------ |
+| **🥇 VPS**           | Hetzner Cloud, DigitalOcean   | **$5-20**    | MVP, 10-5,000 users    | Single server + Docker Compose |
+| **🥈 Managed PaaS**  | Render, Railway, Fly.io       | **$40-80**   | Teams, auto-scaling    | Zero-ops, push-to-deploy       |
+| **🥉 Managed Cloud** | AWS ECS, Azure Container Apps | **$100-200** | Enterprise, compliance | Full managed services          |
 
 **Complete infrastructure comparison, cost breakdowns, and deployment guides:** [docs/gaps/production/PROD-INFRA-OPTIONS.md](docs/gaps/production/PROD-INFRA-OPTIONS.md)
 
 **Observability Stack (all options):**
+
 - Prometheus (metrics) + Grafana (dashboards) + Loki (logs)
 - Setup: `docs/guidence/observability/docker-compose.observability.yml`
 - Grafana access: http://localhost:3000 or `http://<your-server>:3000`
@@ -987,15 +1005,16 @@ docker compose -f docker-compose.observability.yml up -d
 
 **Grafana (http://localhost:3000)** provides real-time monitoring:
 
-| Dashboard | Metrics | Purpose |
-|-----------|---------|---------|
-| **SLO Dashboard** | Availability, Latency P95/P99, Error Rate | Overall system health |
+| Dashboard                    | Metrics                                           | Purpose                     |
+| ---------------------------- | ------------------------------------------------- | --------------------------- |
+| **SLO Dashboard**            | Availability, Latency P95/P99, Error Rate         | Overall system health       |
 | **Prompt Cache Performance** | Cache hit rate (>70%), tokens saved, cost savings | Token optimization tracking |
-| **Dwell Time SLO** | Security incident detection time (target <1hr) | Security posture monitoring |
-| **MITRE ATT&CK Coverage** | Technique coverage ratio (target ≥80%) | Security defense coverage |
-| **Agent Performance** | Per-agent latency, token usage, consensus metrics | Agent pipeline health |
+| **Dwell Time SLO**           | Security incident detection time (target <1hr)    | Security posture monitoring |
+| **MITRE ATT&CK Coverage**    | Technique coverage ratio (target ≥80%)            | Security defense coverage   |
+| **Agent Performance**        | Per-agent latency, token usage, consensus metrics | Agent pipeline health       |
 
 **Prometheus (http://localhost:9090)** exposes raw metrics:
+
 - `briefing_generation_duration_seconds` — End-to-end latency
 - `security_dwell_time_seconds` — Time to detect incidents
 - `llm_cache_hits_total` / `llm_cache_misses_total` — Cache efficiency
@@ -1013,7 +1032,7 @@ See **[docs/guidence/observability/README.md](docs/guidence/observability/README
 uv run ruff check backend         # Lint
 uv run ruff format backend        # Format
 uv run mypy backend               # Type check (strict mode)
-uv run pytest                     # 97 tests (unit · security · integration · E2E)
+uv run pytest                     # 455 tests (unit · security · integration · E2E)
 uv run pytest --cov=backend       # Coverage report (>80%)
 
 # Security-specific tests
@@ -1036,7 +1055,7 @@ uv run pytest backend/tests/security/  # OWASP GenAI boundary tests
 
 Built with ❤️ using **Claude Opus 4.8**, **GPT-5.5**, and **Llama 3.1 70B**
 
-*Specification v2.0.0 incorporates 121 security gaps, official Claude + OpenAI prompt engineering guidance, and enterprise-grade multi-agent verification patterns.*
+_Specification v2.0.0 incorporates 121 security gaps, official Claude + OpenAI prompt engineering guidance, and enterprise-grade multi-agent verification patterns._
 
 ---
 

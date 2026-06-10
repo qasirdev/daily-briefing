@@ -20,6 +20,7 @@ from backend.schemas.consent import (
     coerce_consent_service,
 )
 from backend.schemas.envelope import AgentResultEnvelope, ExecutionMetadata
+from backend.security.pii import mask_pii
 from backend.security.sanitization import sanitize_markdown
 from backend.settings import get_settings
 
@@ -46,13 +47,15 @@ def _render_focus_plan(plan: dict[str, object]) -> str:
             if block_count
             else "Focus plan generated."
         )
+    if isinstance(summary, str):
+        summary = mask_pii(summary)
     parts = [f"<p>{summary}</p>"]
     if isinstance(blocks, list) and blocks:
         items = "".join(
             f"<li><strong>"
             f"{format_time_range(block.get('start', ''), block.get('end', ''))}"
             f"</strong>: "
-            f"{block.get('activity', 'Scheduled block')}</li>"
+            f"{mask_pii(str(block.get('activity', 'Scheduled block')))}</li>"
             for block in blocks
             if isinstance(block, dict)
         )
@@ -243,7 +246,8 @@ async def orchestrator_present_node(state: BriefingGraphState) -> dict[str, Any]
         tasks = task_payload.get("tasks", [])
         if isinstance(tasks, list) and tasks:
             items = "".join(
-                f"<li>{task.get('title', 'Task')} ({task.get('priority', 'medium')})</li>"
+                f"<li>{mask_pii(str(task.get('title', 'Task')))} "
+                f"({task.get('priority', 'medium')})</li>"
                 for task in tasks
                 if isinstance(task, dict)
             )
@@ -254,7 +258,8 @@ async def orchestrator_present_node(state: BriefingGraphState) -> dict[str, Any]
         events = calendar_payload.get("events", [])
         if isinstance(events, list) and events:
             items = "".join(
-                f"<li>{event.get('summary', 'Event')} — {event.get('start', '')}</li>"
+                f"<li>{mask_pii(str(event.get('summary', 'Event')))} — "
+                f"{event.get('start', '')}</li>"
                 for event in events
                 if isinstance(event, dict)
             )

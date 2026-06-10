@@ -60,10 +60,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     ):
         llm = build_llm_router(settings)
         cache_warmer = PromptCacheWarmer(settings)
-        try:
-            await cache_warmer.warm_all(llm)
-        except Exception as exc:
-            logger.warning("prompt_cache_initial_warm_failed", error=str(exc))
+        # Warm in background only — blocking warm_all delays uvicorn bind and causes
+        # nginx 502s when OpenRouter rate-limits (429) during startup.
         cache_warmer.start_background_loop(llm)
 
     yield

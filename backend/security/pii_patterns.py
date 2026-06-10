@@ -422,8 +422,12 @@ PII_PATTERNS: tuple[tuple[str, re.Pattern[str], str], ...] = (
     # -------------------------------------------------------------------------
     (
         "uk_national_identity_card",
-        # UK National Identity Card (biometric): 9 alphanumeric (IDGBR format prefix optional)
-        re.compile(r"\b(?:IDGBR)?[A-Z0-9]{9}\b", re.IGNORECASE),
+        # UK National Identity Card (biometric): IDGBR + 9 chars, or standalone
+        # 9-char token with at least one digit (not plain words like "interview")
+        re.compile(
+            r"\b(?:IDGBR[A-Z0-9]{9}|(?=[A-Z0-9]*\d)[A-Z0-9]{9})\b",
+            re.IGNORECASE,
+        ),
         "[REDACTED_UKNIC]",
     ),
     (

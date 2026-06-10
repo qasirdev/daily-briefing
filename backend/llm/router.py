@@ -85,6 +85,7 @@ class LLMRouter:
         force_local: bool = False,
         data_classification: DataClassification = "internal",
         agent_id: str = "llm_router",
+        response_format: dict[str, str] | None = None,
     ) -> LLMResponse:
         estimated_input = sum(len(m.get("content", "")) for m in messages) // 4
         if estimated_input > input_budget * 2:
@@ -121,6 +122,7 @@ class LLMRouter:
                     max_tokens=output_budget,
                     trace_id=trace_id,
                     agent_id=agent_id,
+                    response_format=response_format,
                 )
 
         outbound_messages = self._prepare_outbound_messages(
@@ -134,6 +136,7 @@ class LLMRouter:
                 max_tokens=output_budget,
                 trace_id=trace_id,
                 agent_id=agent_id,
+                response_format=response_format,
             )
         except httpx.TimeoutException as primary_error:
             if self._fallback is None:
@@ -260,6 +263,7 @@ class LLMRouter:
         max_tokens: int,
         trace_id: str,
         agent_id: str,
+        response_format: dict[str, str] | None = None,
     ) -> LLMResponse:
         models = list(self._openrouter_models) or [self._primary_openrouter_model]
         errors: list[str] = []
@@ -276,6 +280,7 @@ class LLMRouter:
                     trace_id=trace_id,
                     agent_id=agent_id,
                     openrouter_models=chain_models,
+                    response_format=response_format,
                 )
             except LLMError as exc:
                 errors.append(f"chain: {exc}")
@@ -301,6 +306,7 @@ class LLMRouter:
                     trace_id=trace_id,
                     agent_id=agent_id,
                     openrouter_models=None,
+                    response_format=response_format,
                 )
             except LLMError as exc:
                 errors.append(f"{candidate}: {exc}")
@@ -319,26 +325,28 @@ class LLMRouter:
         trace_id: str,
         agent_id: str,
         openrouter_models: list[str] | None = None,
+        response_format: dict[str, str] | None = None,
     ) -> LLMResponse:
         async with start_async_span(f"llm.{model}.generate", llm_model=model):
             start = time.perf_counter()
+            completion_kwargs: dict[str, Any] = {
+                "model": model,
+                "messages": messages,
+                "max_tokens": max_tokens,
+            }
+            if response_format is not None:
+                completion_kwargs["response_format"] = response_format
             try:
                 if openrouter_models:
                     completion = await client.chat.completions.create(
-                        model=model,
-                        messages=messages,  # type: ignore[arg-type]
-                        max_tokens=max_tokens,
+                        **completion_kwargs,
                         extra_body={
                             "models": openrouter_models,
                             "route": self._settings.llm_openrouter_route,
                         },
                     )
                 else:
-                    completion = await client.chat.completions.create(
-                        model=model,
-                        messages=messages,  # type: ignore[arg-type]
-                        max_tokens=max_tokens,
-                    )
+                    completion = await client.chat.completions.create(**completion_kwargs)
             except httpx.TimeoutException as exc:
                 raise LLMError("LLM request timed out") from exc
             except APIConnectionError as exc:

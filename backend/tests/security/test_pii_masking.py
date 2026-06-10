@@ -93,3 +93,19 @@ def test_bare_calendar_date_is_not_date_of_birth() -> None:
     detector = PIIDetector()
     matches = detector.detect("Meeting on 05-06-2026 at 14:30")
     assert not any(match.kind == "date_of_birth" for match in matches)
+
+
+_CALENDAR_INTERVIEW_CASES: tuple[str, ...] = (
+    "SThree: 1st stage interview with Qasir Mehmood - AI Engineer — 10-06-2026 at 12:00",
+    "AI Engineer Interview with Qasir Mehmood — 10-06-2026 at 14:00",
+)
+
+
+@pytest.mark.parametrize("text", _CALENDAR_INTERVIEW_CASES)
+def test_interview_in_calendar_title_is_not_uk_nic(text: str) -> None:
+    """Common 9-letter words in event titles must not be mistaken for UK NIC numbers."""
+    masked = mask_pii(text)
+    assert "[REDACTED_UKNIC]" not in masked
+    assert "interview" in masked.lower()
+    detector = PIIDetector()
+    assert not any(match.kind == "uk_national_identity_card" for match in detector.detect(text))

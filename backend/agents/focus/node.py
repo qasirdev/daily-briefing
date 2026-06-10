@@ -8,7 +8,10 @@ from typing import Any
 
 import structlog
 
+from backend.agents.focus.schema import MINIMAL_EMPTY_FOCUS_PLAN, validate_focus_plan
 from backend.graph.state import BriefingGraphState
+from backend.llm.json_response import parse_llm_json
+from backend.llm.models import LLMResponse
 from backend.llm.prompt_cache import build_llm_messages, resolve_model_name
 from backend.llm.router import DataClassification, LLMError, LLMRouter
 from backend.memory.audit import memory_audit_trail
@@ -40,6 +43,66 @@ def _normalize_focus_plan(parsed: dict[str, object]) -> dict[str, object]:
     if isinstance(inner, dict):
         return inner
     return parsed
+
+
+def _build_focus_retry_prompt(errors: list[str]) -> str:
+    joined = "; ".join(errors)
+    return (
+        f"Your previous response was invalid: {joined}. "
+        "Return ONLY a JSON object matching output-schema.md. "
+        "No markdown fences, preamble, or explanation."
+    )
+
+
+def _load_focus_plan(content: str) -> dict[str, object]:
+    """Parse and validate a focus plan from raw LLM text."""
+    parsed = _normalize_focus_plan(parse_llm_json(content))
+    errors = validate_focus_plan(parsed)
+    if errors:
+        msg = "; ".join(errors)
+        raise ValueError(msg)
+    return parsed
+
+
+def _focus_load_errors(exc: BaseException) -> list[str]:
+    if isinstance(exc, json.JSONDecodeError):
+        return ["Response is not valid JSON"]
+    if isinstance(exc, ValueError):
+        return [str(exc)]
+    return [str(exc)]
+
+
+def _escalated_focus_envelope(
+    *,
+    start: float,
+    trace_id: str,
+    total_tokens_used: int,
+    llm_response: LLMResponse,
+    errors: list[str],
+) -> AgentResultEnvelope:
+    execution_ms = int((time.perf_counter() - start) * 1000)
+    return AgentResultEnvelope(
+        agent_id="focus",
+        canonical_role="planner",
+        status="escalated",
+        escalation=EscalationPayload(
+            reason="max_retries_exceeded",
+            target_agent="orchestrator",
+            context=json.dumps(
+                {"stage": "parse_or_validate", "errors": errors},
+                ensure_ascii=True,
+            ),
+        ),
+        metadata=ExecutionMetadata(
+            execution_ms=execution_ms,
+            tokens_used=total_tokens_used,
+            cost_usd=llm_response.cost_usd,
+            model_used=llm_response.model_used,
+            prompt_version=resolve_prompt_version("focus"),
+            trace_id=trace_id,
+            data_classification="confidential",
+        ),
+    )
 
 
 async def _persist_focus_summary(
@@ -200,6 +263,7 @@ async def focus_agent_node(
             output_budget=FOCUS_OUTPUT_BUDGET,
             data_classification=data_classification,
             agent_id="focus",
+            response_format={"type": "json_object"},
         )
     except LLMError as exc:
         execution_ms = int((time.perf_counter() - start) * 1000)
@@ -223,24 +287,60 @@ async def focus_agent_node(
         )
         return {"focus_result": envelope, "current_agent": "focus"}
 
+    total_tokens_used = llm_response.tokens_used
+    load_errors: list[str] = []
     try:
-        plan = json.loads(llm_response.content)
-    except json.JSONDecodeError:
-        text = llm_response.content.strip()
-        if text.startswith("```"):
-            text = (
-                text.removeprefix("```json").removeprefix("```").strip().removesuffix("```").strip()
-            )
+        plan = _load_focus_plan(llm_response.content)
+    except (json.JSONDecodeError, ValueError) as exc:
+        load_errors = _focus_load_errors(exc)
+        logger.warning(
+            "focus_plan_load_failed_retrying",
+            trace_id=trace_id,
+            model_used=llm_response.model_used,
+            errors=load_errors,
+        )
+        retry_messages = [
+            *messages,
+            {"role": "assistant", "content": llm_response.content},
+            {"role": "user", "content": _build_focus_retry_prompt(load_errors)},
+        ]
         try:
-            plan = json.loads(text)
-        except json.JSONDecodeError:
-            plan = {"time_blocks": [], "summary": "Focus plan could not be parsed. Please retry."}
+            retry_response = await llm.generate(
+                messages=retry_messages,
+                trace_id=trace_id,
+                input_budget=FOCUS_INPUT_BUDGET,
+                output_budget=FOCUS_OUTPUT_BUDGET,
+                data_classification=data_classification,
+                agent_id="focus",
+                response_format={"type": "json_object"},
+            )
+        except LLMError as exc:
+            envelope = _escalated_focus_envelope(
+                start=start,
+                trace_id=trace_id,
+                total_tokens_used=total_tokens_used,
+                llm_response=llm_response,
+                errors=[*load_errors, f"retry_llm_error: {exc}"],
+            )
+            return {"focus_result": envelope, "current_agent": "focus"}
 
-    if isinstance(plan, dict):
-        plan = _normalize_focus_plan(plan)
+        total_tokens_used += retry_response.tokens_used
+        llm_response = retry_response
+        try:
+            plan = _load_focus_plan(retry_response.content)
+        except (json.JSONDecodeError, ValueError) as retry_exc:
+            retry_errors = _focus_load_errors(retry_exc)
+            envelope = _escalated_focus_envelope(
+                start=start,
+                trace_id=trace_id,
+                total_tokens_used=total_tokens_used,
+                llm_response=llm_response,
+                errors=retry_errors,
+            )
+            return {"focus_result": envelope, "current_agent": "focus"}
 
     if not tasks and not events:
-        plan = {"time_blocks": [], "summary": "Minimal plan — no tasks or events available."}
+        plan = dict(MINIMAL_EMPTY_FOCUS_PLAN)
 
     execution_ms = int((time.perf_counter() - start) * 1000)
     envelope = AgentResultEnvelope(
@@ -250,7 +350,7 @@ async def focus_agent_node(
         result={"plan": plan},
         metadata=ExecutionMetadata(
             execution_ms=execution_ms,
-            tokens_used=llm_response.tokens_used,
+            tokens_used=total_tokens_used,
             cost_usd=llm_response.cost_usd,
             model_used=llm_response.model_used,
             prompt_version=resolve_prompt_version("focus"),
@@ -274,7 +374,7 @@ async def focus_agent_node(
     working_update = _working_memory.record_agent_turn(
         state,
         agent_id="focus",
-        tokens_used=llm_response.tokens_used,
+        tokens_used=total_tokens_used,
         context_snippet=context_snippet,
     )
 
@@ -282,6 +382,6 @@ async def focus_agent_node(
     return {
         "focus_result": envelope,
         "current_agent": "focus",
-        "total_tokens": session_tokens + llm_response.tokens_used,
+        "total_tokens": session_tokens + total_tokens_used,
         **working_update,
     }
