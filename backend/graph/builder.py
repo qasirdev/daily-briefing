@@ -31,6 +31,7 @@ from backend.kernel.scheduler import Scheduler
 from backend.llm.router import LLMRouter
 from backend.schemas.envelope import AgentResultEnvelope
 from backend.security.token_budget import (
+    MAX_CRITIC_REVISION_CYCLES,
     evaluate_token_budget,
     has_presentable_results,
     is_session_token_exceeded,
@@ -241,7 +242,9 @@ def build_briefing_graph(
             return "dlq_handler"
         if isinstance(critic, AgentResultEnvelope) and critic.result:
             if critic.result.get("revision_required") is True:
-                return "focus_agent"
+                revision_count = state.get("revision_count", 0)
+                if revision_count < MAX_CRITIC_REVISION_CYCLES:
+                    return "focus_agent"
         if consensus_enabled:
             return "consensus_evaluator"
         return "orchestrator_present"

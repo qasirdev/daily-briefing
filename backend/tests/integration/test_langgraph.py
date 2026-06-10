@@ -18,6 +18,7 @@ from backend.graph.state import BriefingGraphState
 from backend.mcp.calendar import CalendarMCPClient
 from backend.mcp.postgres import PostgresMCPClient
 from backend.schemas.envelope import AgentResultEnvelope, ExecutionMetadata
+from backend.security.token_budget import AGENT_TOKEN_BUDGETS, HARD_LIMIT_MULTIPLIER
 from backend.settings import Settings
 from backend.tests.conftest import MockMCPBundle
 
@@ -125,9 +126,10 @@ async def test_critic_revision_routes_to_dlq_when_token_budget_exceeded(
     """Critic revision must not loop when per-agent token budget is exceeded (v2.0.0)."""
     mcp = mock_mcp.as_clients()
     trace_id = "d" * 32
+    focus_over_hard_limit = AGENT_TOKEN_BUDGETS["focus"] * HARD_LIMIT_MULTIPLIER + 1
     metadata = ExecutionMetadata(
         execution_ms=1,
-        tokens_used=25_000,
+        tokens_used=focus_over_hard_limit,
         model_used="test",
         prompt_version="v2.0.0",
         trace_id=trace_id,
@@ -144,10 +146,11 @@ async def test_critic_revision_routes_to_dlq_when_token_budget_exceeded(
                 metadata=metadata,
             ),
             "current_agent": "focus",
-            "total_tokens": 25_000,
+            "total_tokens": focus_over_hard_limit,
         }
 
     async def critic_requests_revision(state: BriefingGraphState, llm: object) -> dict[str, object]:
+        revision_count = state.get("revision_count", 0) + 1
         return {
             "critic_result": AgentResultEnvelope(
                 agent_id="critic",
@@ -157,7 +160,7 @@ async def test_critic_revision_routes_to_dlq_when_token_budget_exceeded(
                     "approved": False,
                     "revision_required": True,
                     "issues": ["Plan needs more detail"],
-                    "review_cycle": 1,
+                    "review_cycle": revision_count,
                 },
                 metadata=ExecutionMetadata(
                     execution_ms=1,
@@ -169,7 +172,7 @@ async def test_critic_revision_routes_to_dlq_when_token_budget_exceeded(
                 ),
             ),
             "current_agent": "critic",
-            "revision_count": 1,
+            "revision_count": revision_count,
         }
 
     with (
@@ -187,7 +190,7 @@ async def test_critic_revision_routes_to_dlq_when_token_budget_exceeded(
             "target_date": date.today(),
             "current_agent": "",
             "revision_count": 0,
-            "total_tokens": 25_000,
+            "total_tokens": focus_over_hard_limit,
             "graph_started_at": time.perf_counter(),
             "status": "pending",
             "final_briefing": None,
