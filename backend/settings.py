@@ -51,7 +51,7 @@ class Settings(BaseSettings):
 
     token_budget_max: int = 16_000
     graph_timeout_seconds: int = 60
-    enable_consensus_workflow: bool = False
+    enable_consensus_workflow: bool = True
     consensus_human_escalation: bool = True
 
     enable_prompt_caching: bool = True

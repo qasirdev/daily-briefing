@@ -22,7 +22,9 @@ from backend.schemas.briefing import (
     BriefingResponse,
 )
 from backend.schemas.consent import ConsentPromptRequest
+from backend.schemas.dlq import DLQReason
 from backend.schemas.envelope import AgentResultEnvelope
+from backend.security.failure_messages import failure_message_for
 from backend.security.rate_limit import limiter
 from backend.settings import get_settings
 from backend.telemetry import start_async_span
@@ -33,6 +35,7 @@ router = APIRouter(prefix="/api/v1/briefing", tags=["briefing"])
 _AGENT_KEYS = (
     ("task", "task_result"),
     ("calendar", "calendar_result"),
+    ("input_security_gate", "input_security_result"),
     ("focus", "focus_result"),
     ("verification", "verification_result"),
     ("adversarial", "adversarial_result"),
@@ -91,6 +94,9 @@ async def generate_briefing(request: Request, body: BriefingRequest) -> Briefing
         "target_date": body.target_date or date.today(),
         "current_agent": "",
         "revision_count": 0,
+        "verification_retry_count": 0,
+        "adversarial_retry_count": 0,
+        "regeneration_constraints": None,
         "total_tokens": 0,
         "graph_started_at": time.perf_counter(),
         "status": "pending",
@@ -99,9 +105,12 @@ async def generate_briefing(request: Request, body: BriefingRequest) -> Briefing
         "consent_context": None,
         "consent_request": None,
         "dlq_events": [],
+        "failure_reason": None,
+        "failure_message": None,
         "orchestrator_result": None,
         "task_result": None,
         "calendar_result": None,
+        "input_security_result": None,
         "focus_result": None,
         "critic_result": None,
     }
@@ -114,7 +123,7 @@ async def generate_briefing(request: Request, body: BriefingRequest) -> Briefing
             status_code=status.HTTP_504_GATEWAY_TIMEOUT,
             detail="Briefing generation timed out",
         ) from exc
-    except Exception as exc:
+    except (RuntimeError, ValueError, TypeError, OSError) as exc:
         execution_ms = int((time.perf_counter() - started) * 1000)
         logger.exception("briefing_generation_failed", trace_id=trace_id, error=str(exc))
         return BriefingResponse(
@@ -126,7 +135,8 @@ async def generate_briefing(request: Request, body: BriefingRequest) -> Briefing
                 execution_ms=execution_ms,
                 agents_invoked=[],
             ),
-            consent_context=str(exc),
+            failure_reason="unexpected_error",
+            failure_message=failure_message_for("unexpected_error"),
         )
     finally:
         await mcp.close()
@@ -170,6 +180,15 @@ async def generate_briefing(request: Request, body: BriefingRequest) -> Briefing
 
     reasoning_trace = collect_reasoning_traces(result_state)
 
+    failure_reason_raw = result_state.get("failure_reason")
+    failure_reason: DLQReason | None = None
+    if isinstance(failure_reason_raw, str) and failure_reason_raw:
+        failure_reason = failure_reason_raw  # type: ignore[assignment]
+
+    failure_message = result_state.get("failure_message")
+    if not failure_message and failure_reason:
+        failure_message = failure_message_for(failure_reason)
+
     return BriefingResponse(
         status=response_status,  # type: ignore[arg-type]
         briefing=result_state.get("final_briefing") or "",
@@ -185,4 +204,6 @@ async def generate_briefing(request: Request, body: BriefingRequest) -> Briefing
         consent_context=result_state.get("consent_context"),
         consent_request=consent_request,
         reasoning_trace=reasoning_trace,
+        failure_reason=failure_reason,
+        failure_message=failure_message,
     )

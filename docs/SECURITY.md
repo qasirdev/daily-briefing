@@ -29,7 +29,7 @@ This document describes how every one of those risks is handled — not theoreti
 | **Primary threat** | Indirect prompt injection via third-party calendar events |
 | **Architecture pattern** | Orchestrator-as-Presenter — only sanitised markdown ever reaches users |
 | **Controls** | Regex injection detector · `nh3` + DOMPurify sanitisation · per-agent token budgets · SlowAPI rate limits · SSRF allowlists |
-| **Verification** | 8 dedicated security test modules + E2E security scenarios; CI runs Ruff, MyPy, and full pytest suite |
+| **Verification** | Security test modules + E2E scenarios; CI runs backend gate (Ruff, MyPy, pytest) and frontend `npm run test:coverage` (≥75%) |
 | **Production hardening** | Cosign-signed images · structured security logging · DLQ for violations · Prometheus security metrics |
 
 ---
@@ -59,7 +59,7 @@ Every security event is logged with a `trace_id` linking it to the originating H
 
 | ID | Vulnerability | Status | Control Implemented | Test Coverage |
 |---|---|---|---|---|
-| **LLM01** | Prompt Injection | ✅ **Implemented** | Critic Agent + `PromptInjectionDetector`, Unicode normalisation, DLQ escalation, no-retry policy | [`test_injection.py`](../backend/tests/security/test_injection.py) |
+| **LLM01** | Prompt Injection | ✅ **Implemented** | Input Security Gate + Critic + `PromptInjectionDetector`, spotlighting, DLQ escalation, no-retry | [`test_injection.py`](../backend/tests/security/test_injection.py) · [`test_spotlighting.py`](../backend/tests/security/test_spotlighting.py) · [`test_input_security_gate.py`](../backend/tests/security/test_input_security_gate.py) |
 | **LLM02** | Insecure Output Handling | ✅ **Implemented** | `sanitize_markdown()` (nh3), Orchestrator-as-Presenter pattern, DOMPurify on frontend | [`test_sanitization.py`](../backend/tests/security/test_sanitization.py) |
 | **LLM03** | Training Data Poisoning | ⬜ **N/A** | No custom model training; third-party models only | N/A |
 | **LLM04** | Model Denial of Service | ✅ **Implemented** | Per-agent token budgets (2× hard limit), graph circuit breaker, SlowAPI rate limits | [`test_token_budget.py`](../backend/tests/security/test_token_budget.py) · [`test_rate_limits.py`](../backend/tests/security/test_rate_limits.py) |
@@ -175,9 +175,11 @@ flowchart LR
     DLQ --> MET
 ```
 
-**Module map:** `backend/security/` — `injection.py` · `sanitization.py` · `pii.py` · `ssrf.py` · `token_budget.py` · `rate_limit.py`
+**Module map:** `backend/security/` — `injection.py` · `spotlighting.py` · `sanitization.py` · `pii.py` · `ssrf.py` · `token_budget.py` · `rate_limit.py`
 
-**Graph order (implemented):** Task + Calendar (parallel) → Focus → Critic (injection scan + quality gate) → Orchestrator (present) or DLQ.
+**Graph order (implemented):** Task + Calendar (parallel) → **Input Security Gate** (MCP injection scan) → Focus → Verification/Adversarial (when consensus enabled) → Critic (second injection scan + quality gate) → Orchestrator (present) or DLQ.
+
+**API failure fields:** When the pipeline aborts, `POST /api/v1/briefing/generate` returns `failure_reason` (DLQ reason code) and `failure_message` (user-safe explanation). Security blocks use `failure_reason: "security_violation_detected"` — never retried automatically.
 
 ---
 
@@ -192,23 +194,36 @@ This attack vector is particularly dangerous because:
 - Meeting invites from external parties cannot be pre-screened
 - The injected instruction appears in trusted calendar data, not user input
 
+### Spotlighting (Gap #114)
+
+Untrusted MCP and memory context sent to the Focus LLM is wrapped in `<<<EXTERNAL_CONTENT>>>` … `<<</EXTERNAL_CONTENT>>>` markers via `backend/security/spotlighting.py`. Focus prompts treat spotlighted blocks as **data only** (see `prompts/focus/input-security.md`). This complements regex/constitutional scanning — markers instruct the model; scanners block execution.
+
 ### Detection Pipeline
 
-Injection scanning runs in the **Critic Agent** after the Focus Agent has produced a plan. The Critic serialises task, calendar, and focus `AgentResultEnvelope` payloads and scans them with `PromptInjectionDetector`. Detected violations block Orchestrator presentation and route to the DLQ.
+Injection scanning uses **defense-in-depth** with two layers:
+
+1. **Input Security Gate** (`backend/graph/input_security_gate.py`) — runs immediately after task/calendar fetch, **before** any Focus LLM call. Scans serialised MCP payloads with `InputSecurityScanner` (regex + constitutional classifiers). Blocks early to avoid token spend on poisoned context.
+2. **Critic Agent** — runs after Focus (and verification/adversarial when consensus is enabled). Re-scans task, calendar, and focus JSON before Orchestrator presentation.
+
+Detected violations block Orchestrator presentation and route to the DLQ. The API exposes `failure_reason` and `failure_message` on `BriefingResponse`.
 
 ```mermaid
 flowchart TB
     PARALLEL["📋 Task + 📅 Calendar\n(parallel fetch)"]
+    GATE["🔒 Input Security Gate\nInputSecurityScanner"]
+    GATE_FLAG{Injection\nin MCP data?}
     FOCUS["🔍 Focus Agent\nLLM plan from task/calendar context"]
-    CRIT["🛡️ Critic Agent\nPromptInjectionDetector"]
-    FLAG{Injection\ndetected?}
+    CRIT["🛡️ Critic Agent\nsecond scan + quality gate"]
+    CRIT_FLAG{Injection\nin focus path?}
     ORCH["🎯 Orchestrator\nSanitised briefing"]
     LOG["📋 Security log\ntrace_id + pattern"]
     DLQ["💀 Dead Letter Queue\nPersisted — no retry"]
 
-    PARALLEL --> FOCUS --> CRIT --> FLAG
-    FLAG -->|No| ORCH
-    FLAG -->|Yes| LOG --> DLQ
+    PARALLEL --> GATE --> GATE_FLAG
+    GATE_FLAG -->|Yes| LOG --> DLQ
+    GATE_FLAG -->|No| FOCUS --> CRIT --> CRIT_FLAG
+    CRIT_FLAG -->|No| ORCH
+    CRIT_FLAG -->|Yes| LOG --> DLQ
 ```
 
 ### Detection Patterns
@@ -228,15 +243,27 @@ All patterns are implemented in `backend/security/injection.py` with Unicode nor
 
 When injection is detected, the response is deterministic and non-negotiable:
 
-1. **Escalate** — Critic returns `status: "escalated"` with `escalation.reason = "security_violation_detected"`
+1. **Escalate** — Input Security Gate or Critic returns `status: "escalated"` with `escalation.reason = "security_violation_detected"`
 2. **Log** — Full security event logged with `trace_id`, pattern matched, and confidence score
 3. **Route to DLQ** — Graph routes to `dlq_handler`; event persisted for security team review
 4. **No retry** — Security violations are **never** retried automatically
-5. **No user output** — Orchestrator presentation is skipped; user receives a safe failure/degraded response
+5. **No user output** — Orchestrator presentation is skipped; user receives `status: "failure"` with `failure_message`
 
 ```json
 {
-  "agent_id": "critic",
+  "status": "failure",
+  "briefing": "",
+  "failure_reason": "security_violation_detected",
+  "failure_message": "Briefing blocked: suspected prompt injection in calendar data.",
+  "metadata": { "trace_id": "…" }
+}
+```
+
+Envelope example (gate or critic):
+
+```json
+{
+  "agent_id": "input_security_gate",
   "status": "escalated",
   "escalation": {
     "reason": "security_violation_detected",
@@ -505,6 +532,8 @@ Every event carries a `trace_id` linking it to the originating HTTP request, ena
 | Test module | What it validates |
 |---|---|
 | `test_injection.py` | Pattern matching · Unicode normalisation · DLQ escalation |
+| `test_spotlighting.py` | `<<<EXTERNAL_CONTENT>>>` wrapping · idempotent markers |
+| `test_input_security_gate.py` | Pre-focus MCP scan · graph skips Focus on block |
 | `test_sanitization.py` | nh3 allowlist correctness · Script stripping · Content logging |
 | `test_pii_masking.py` | PII detection accuracy · Masking correctness · Envelope integration |
 | `test_mcp_security.py` | SSRF allowlist enforcement · Private IP blocking |

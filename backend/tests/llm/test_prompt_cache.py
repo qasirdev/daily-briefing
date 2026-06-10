@@ -7,6 +7,7 @@ import pytest
 from backend.llm.prompt_cache import (
     OPENAI_AUTO_CACHE_MIN_TOKENS,
     build_llm_messages,
+    estimate_input_tokens,
     is_claude_model,
     openai_cache_eligible,
 )
@@ -42,7 +43,10 @@ def test_critic_cached_prompt_has_v2_structure() -> None:
     block_names = {block.name for block in assembly.blocks}
     assert "instructions" in block_names
     assert "examples" in block_names
-    assert len(assembly.blocks) >= 7
+    assert "output-schema" in block_names
+    assert "quality-checklist" in block_names
+    assert "input-security" in block_names
+    assert len(assembly.blocks) >= 10
 
 
 def test_focus_cached_prompt_exceeds_openai_threshold() -> None:
@@ -62,6 +66,20 @@ def test_claude_system_blocks_include_cache_control() -> None:
     assert blocks
     assert all("cache_control" in block for block in blocks)
     assert all(block["cache_control"] == {"type": "ephemeral"} for block in blocks)
+
+
+def test_estimate_input_tokens_excludes_cached_system_when_dynamic_only() -> None:
+    messages = build_llm_messages(
+        "focus",
+        "small dynamic payload",
+        model="openai/gpt-4o-mini",
+        enable_caching=True,
+    )
+    full_estimate = estimate_input_tokens(messages, dynamic_only=False)
+    dynamic_estimate = estimate_input_tokens(messages, dynamic_only=True)
+    assert full_estimate > OPENAI_AUTO_CACHE_MIN_TOKENS
+    assert dynamic_estimate < full_estimate
+    assert dynamic_estimate == max(len("small dynamic payload") // 4, 1)
 
 
 def test_build_llm_messages_places_user_content_last() -> None:

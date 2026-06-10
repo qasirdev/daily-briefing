@@ -1,10 +1,14 @@
 "use client";
 
-import DOMPurify from "dompurify";
 import { useMemo } from "react";
 
 import { ObservabilityBadge } from "@/components/ObservabilityBadge";
-import type { ObservabilityData } from "@/lib/briefing-schema";
+import { sanitizeHtml } from "@/lib/sanitize";
+import {
+  isSecurityBlockedBriefing,
+  resolveBriefingAlertMessage,
+  type ObservabilityData,
+} from "@/lib/briefing-schema";
 import type { AccountUsage } from "@/lib/account-usage";
 import type { VisitUsageStats } from "@/lib/cost-tracking";
 
@@ -16,6 +20,8 @@ type BriefingDashboardProps = {
   accountUsage?: AccountUsage | null;
   loading?: boolean;
   onRetry?: () => void;
+  failureReason?: string | null;
+  failureMessage?: string | null;
 };
 
 export function BriefingDashboard({
@@ -26,15 +32,18 @@ export function BriefingDashboard({
   accountUsage = null,
   loading = false,
   onRetry,
+  failureReason = null,
+  failureMessage = null,
 }: BriefingDashboardProps) {
-  const sanitizedHtml = useMemo(() => {
-    if (!briefing.trim()) {
-      return "";
-    }
-    return DOMPurify.sanitize(briefing, { USE_PROFILES: { html: true } });
-  }, [briefing]);
+  const sanitizedHtml = useMemo(() => sanitizeHtml(briefing), [briefing]);
 
-  const showDegradedAlert = status === "degraded" || status === "failure" || status === "awaiting_consent";
+  const showDegradedAlert =
+    status === "degraded" ||
+    status === "failure" ||
+    status === "awaiting_consent" ||
+    status === "awaiting_human_review";
+  const isSecurityBlock = isSecurityBlockedBriefing(failureReason);
+  const alertMessage = resolveBriefingAlertMessage(status, failureReason, failureMessage);
 
   if (loading) {
     return (
@@ -51,12 +60,14 @@ export function BriefingDashboard({
       {showDegradedAlert ? (
         <div
           role="alert"
-          className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-100"
+          className={
+            isSecurityBlock
+              ? "rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-red-900 dark:border-red-700 dark:bg-red-950/40 dark:text-red-100"
+              : "rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-100"
+          }
         >
-          {status === "awaiting_consent"
-            ? "Calendar access requires consent before a full briefing can be generated."
-            : "Some briefing components were degraded. Review the observability details below."}
-          {onRetry ? (
+          {alertMessage}
+          {onRetry && !isSecurityBlock ? (
             <button
               type="button"
               className="ml-3 rounded-md bg-amber-800 px-3 py-1 text-sm text-white hover:bg-amber-900"

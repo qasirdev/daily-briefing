@@ -18,6 +18,7 @@ class BriefingGraphState(TypedDict, total=False):
     orchestrator_result: AgentResultEnvelope | None
     task_result: AgentResultEnvelope | None
     calendar_result: AgentResultEnvelope | None
+    input_security_result: AgentResultEnvelope | None
     focus_result: AgentResultEnvelope | None
     verification_result: AgentResultEnvelope | None
     adversarial_result: AgentResultEnvelope | None
@@ -26,6 +27,9 @@ class BriefingGraphState(TypedDict, total=False):
 
     current_agent: str
     revision_count: int
+    verification_retry_count: int
+    adversarial_retry_count: int
+    regeneration_constraints: str | None
     total_tokens: int
     graph_started_at: float
 
@@ -46,3 +50,5 @@ class BriefingGraphState(TypedDict, total=False):
     consent_context: str | None
     consent_request: dict[str, object] | None
     dlq_events: list[dict[str, str]]
+    failure_reason: str | None
+    failure_message: str | None

@@ -20,6 +20,8 @@ from backend.metrics import (
 )
 from backend.prompt_version import resolve_prompt_version
 from backend.schemas.envelope import AgentResultEnvelope, EscalationPayload, ExecutionMetadata
+from backend.security.external_texts import collect_external_texts
+from backend.security.failure_messages import failure_message_for
 from backend.security.input_scanner import InputSecurityScanner
 from backend.settings import get_settings
 from backend.telemetry import start_async_span
@@ -28,19 +30,6 @@ logger = structlog.get_logger()
 
 MAX_REVISION_CYCLES = 2
 _scanner = InputSecurityScanner()
-
-
-def _collect_external_texts(state: BriefingGraphState) -> dict[str, str]:
-    texts: dict[str, str] = {}
-    for label, key in (
-        ("task", "task_result"),
-        ("calendar", "calendar_result"),
-        ("focus", "focus_result"),
-    ):
-        envelope = state.get(key)
-        if isinstance(envelope, AgentResultEnvelope) and envelope.result is not None:
-            texts[label] = json.dumps(envelope.result, ensure_ascii=True)
-    return texts
 
 
 def _heuristic_quality_issues(focus_result: AgentResultEnvelope | None) -> list[str]:
@@ -112,7 +101,8 @@ async def critic_agent_node(
     with agent_log_context(trace_id=trace_id, agent_id="critic"):
         async with start_async_span("agent.critic.execute", agent_id="critic", agent_role="critic"):
             with observe_agent_execution(agent_id="critic", role="critic"):
-                scan = _scanner.scan_many(_collect_external_texts(state), trace_id=trace_id)
+                external_texts = collect_external_texts(state)
+                scan = _scanner.scan_many(external_texts, trace_id=trace_id)
                 if scan.is_blocked:
                     if scan.layer == "constitutional" and scan.constitutional_rule:
                         record_constitutional_violation(
@@ -146,6 +136,11 @@ async def critic_agent_node(
                         "critic_result": envelope,
                         "current_agent": "critic",
                         "status": "failure",
+                        "failure_reason": "security_violation_detected",
+                        "failure_message": failure_message_for(
+                            "security_violation_detected",
+                            source=scan.blocked_source,
+                        ),
                     }
 
                 focus_result = state.get("focus_result")

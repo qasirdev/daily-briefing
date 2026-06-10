@@ -11,7 +11,7 @@ from openai import APIConnectionError, APIError, APIStatusError, AsyncOpenAI
 from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
 
 from backend.llm.models import LLMResponse
-from backend.llm.prompt_cache import infer_cache_provider
+from backend.llm.prompt_cache import estimate_input_tokens, infer_cache_provider
 from backend.llm.usage import (
     extract_completion_tokens,
     extract_cost_usd,
@@ -87,7 +87,10 @@ class LLMRouter:
         agent_id: str = "llm_router",
         response_format: dict[str, str] | None = None,
     ) -> LLMResponse:
-        estimated_input = sum(len(m.get("content", "")) for m in messages) // 4
+        estimated_input = estimate_input_tokens(
+            messages,
+            dynamic_only=self._settings.enable_prompt_caching,
+        )
         if estimated_input > input_budget * 2:
             msg = "Token budget exceeded for input"
             raise LLMError(msg)
@@ -375,6 +378,7 @@ class LLMRouter:
                     provider=infer_cache_provider(model_used),
                     model=model_used,
                     cached_tokens=cached_tokens,
+                    agent_id=agent_id,
                 )
 
             logger.info(

@@ -73,7 +73,7 @@ def _task_envelope(trace_id: str) -> AgentResultEnvelope:
 def _calendar_envelope(trace_id: str) -> AgentResultEnvelope:
     return AgentResultEnvelope(
         agent_id="calendar",
-        canonical_role="doer",
+        canonical_role="tool_operator",
         status="success",
         result={"events": [{"summary": "Sprint Review", "start": "14:00"}]},
         metadata=_metadata(trace_id),
@@ -330,7 +330,7 @@ async def test_consensus_disagreement_escalation() -> None:
     assert result["consensus_result"] is not None
     assert result["consensus_result"]["major_concerns"] >= 2
     assert result["consensus_result"]["agreement_level"] == "major_disagreement"
-    assert result.get("critic_result") is None
+    assert result.get("critic_result") is not None
 
 
 @pytest.mark.asyncio

@@ -184,7 +184,8 @@ def test_security_integration_10_critic_prompt_has_v2_blocks() -> None:
     assert "system" in block_names
     assert "instructions" in block_names
     assert "examples" in block_names
-    assert len(assembly.blocks) >= 7
+    assert "input-security" in block_names
+    assert len(assembly.blocks) >= 8
 
 
 @pytest.mark.asyncio

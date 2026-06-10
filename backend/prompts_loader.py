@@ -13,9 +13,12 @@ V2_STATIC_FILES = (
     "context.md",
     "instructions.md",
     "examples.md",
+    "output-schema.md",
     "tools.md",
     "reasoning.md",
     "guardrails.md",
+    "input-security.md",
+    "quality-checklist.md",
 )
 
 LEGACY_STATIC_FILES = (
@@ -23,6 +26,7 @@ LEGACY_STATIC_FILES = (
     "skills.md",
     "tools.md",
     "guardrails.md",
+    "input-security.md",
 )
 
 

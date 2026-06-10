@@ -93,3 +93,6 @@ async def test_critic_escalates_on_injection() -> None:
     assert envelope.status == "escalated"
     assert envelope.escalation is not None
     assert envelope.escalation.reason == "security_violation_detected"
+    assert envelope.escalation.retry_allowed is False
+    assert update.get("failure_reason") == "security_violation_detected"
+    assert "task data" in (update.get("failure_message") or "")

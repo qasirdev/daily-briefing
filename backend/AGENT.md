@@ -67,10 +67,13 @@ backend/
 │       ├── __init__.py
 │       └── node.py
 ├── graph/
+│   ├── AGENT.md                # Graph kernel nodes (input security gate)
 │   ├── __init__.py
 │   ├── state.py                # BriefingGraphState definition
 │   ├── builder.py              # Graph construction
-│   └── nodes.py                # Node registry
+│   ├── input_security_gate.py  # Pre-focus MCP injection scan (kernel)
+│   ├── dlq_handler.py            # Dead letter queue terminal node
+│   └── nodes.py                # Node registry placeholders
 ├── mcp/
 │   ├── __init__.py
 │   ├── client.py               # MCP client base
@@ -88,6 +91,7 @@ backend/
 ├── security/
 │   ├── __init__.py
 │   ├── injection.py            # Prompt injection detection
+│   ├── spotlighting.py         # EXTERNAL_CONTENT markers (Gap #114)
 │   └── sanitization.py         # Output sanitization
 └── tests/
     ├── conftest.py
@@ -105,6 +109,7 @@ backend/
 | Agent Envelope Protocol | Every LangGraph node MUST return a validated `AgentResultEnvelope` |
 | ReAct Loop Limits | The Critic Agent enforces a strict 2-cycle maximum revision loop |
 | Escalation | Failures after 2 cycles, MCP timeouts, and injection detections route to DLQ |
+| Input security gate | `input_security_gate` scans task/calendar JSON before Focus; returns `input_security_result` envelope |
 | MCP Usage | Prefer MCP tool calls over custom repository wrappers |
 | Type Safety | All public functions must have complete type annotations |
 | Structured Logging | Use `structlog` for all logging; include `trace_id` in every log |
@@ -221,6 +226,7 @@ class BriefingGraphState(TypedDict):
     # Agent outputs (accumulated)
     task_result: AgentResultEnvelope | None
     calendar_result: AgentResultEnvelope | None
+    input_security_result: AgentResultEnvelope | None
     focus_result: AgentResultEnvelope | None
     critic_result: AgentResultEnvelope | None
     
@@ -231,7 +237,9 @@ class BriefingGraphState(TypedDict):
     
     # Final output
     final_briefing: str | None
-    status: Literal["pending", "success", "failure", "degraded"]
+    failure_reason: str | None
+    failure_message: str | None
+    status: Literal["pending", "success", "failure", "degraded", "awaiting_consent", "awaiting_human_review"]
 ```
 
 ---

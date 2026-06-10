@@ -1,7 +1,7 @@
 """Canonical envelope for all inter-agent communication."""
 
 from datetime import UTC, datetime
-from typing import Literal, Self
+from typing import Any, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator, model_validator
 
@@ -69,6 +69,10 @@ class ExecutionMetadata(BaseModel):
         ge=0,
         description="Total count of violations (cached for performance)",
     )
+    spotlighting_applied: bool = Field(
+        default=False,
+        description="True when external MCP/memory content was wrapped in spotlight markers",
+    )
 
 
 class EscalationPayload(BaseModel):
@@ -78,6 +82,8 @@ class EscalationPayload(BaseModel):
 
     reason: Literal[
         "security_violation_detected",
+        "verification_failed",
+        "adversarial_concerns",
         "max_retries_exceeded",
         "token_budget_exceeded",
         "mcp_timeout",
@@ -86,6 +92,18 @@ class EscalationPayload(BaseModel):
     ]
     target_agent: str = "orchestrator"
     context: str = ""
+    retry_allowed: bool = Field(
+        default=True,
+        description="False for security violations and other no-retry escalations",
+    )
+
+    @model_validator(mode="before")
+    @classmethod
+    def enforce_retry_policy(cls, data: Any) -> Any:
+        if isinstance(data, dict) and data.get("reason") == "security_violation_detected":
+            if data.get("retry_allowed", True):
+                return {**data, "retry_allowed": False}
+        return data
 
 
 class AgentResultEnvelope(BaseModel):

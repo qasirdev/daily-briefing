@@ -1,5 +1,11 @@
 # Critic Prompt Changelog
 
+## [2.0.1] - 2026-06-10
+
+### Added
+- `input-security.md` — spotlighting, constitutional classifiers, DLQ escalation rules
+- Included in `build_cached_prompt_assembly("critic")` static prefix
+
 ## [2.0.0] - 2026-06-06
 
 ### Added (DB-120)

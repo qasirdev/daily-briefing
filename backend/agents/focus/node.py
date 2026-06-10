@@ -10,9 +10,14 @@ import structlog
 
 from backend.agents.focus.schema import MINIMAL_EMPTY_FOCUS_PLAN, validate_focus_plan
 from backend.graph.state import BriefingGraphState
+from backend.kernel.memory_manager import MemoryManager
 from backend.llm.json_response import parse_llm_json
 from backend.llm.models import LLMResponse
-from backend.llm.prompt_cache import build_llm_messages, resolve_model_name
+from backend.llm.prompt_cache import (
+    build_llm_messages,
+    estimate_input_tokens,
+    resolve_model_name,
+)
 from backend.llm.router import DataClassification, LLMError, LLMRouter
 from backend.memory.audit import memory_audit_trail
 from backend.memory.embeddings import embed_text_async
@@ -21,10 +26,10 @@ from backend.memory.retrieval import (
     retrieve_agent_memory,
 )
 from backend.memory.semantic import SemanticMemoryStore
-from backend.memory.working import WorkingMemoryManager
 from backend.preferences.store import preference_store
 from backend.prompt_version import resolve_prompt_version
 from backend.schemas.envelope import AgentResultEnvelope, EscalationPayload, ExecutionMetadata
+from backend.security.spotlighting import spotlight_external_content
 from backend.security.token_budget import AGENT_TOKEN_BUDGETS, HARD_LIMIT_MULTIPLIER
 from backend.settings import Settings, get_settings
 
@@ -34,7 +39,7 @@ FOCUS_INPUT_BUDGET = AGENT_TOKEN_BUDGETS["focus"]
 FOCUS_OUTPUT_BUDGET = 2_000
 
 _default_semantic_store = SemanticMemoryStore()
-_working_memory = WorkingMemoryManager()
+_memory_manager = MemoryManager()
 
 
 def _normalize_focus_plan(parsed: dict[str, object]) -> dict[str, object]:
@@ -101,6 +106,7 @@ def _escalated_focus_envelope(
             prompt_version=resolve_prompt_version("focus"),
             trace_id=trace_id,
             data_classification="confidential",
+            spotlighting_applied=True,
         ),
     )
 
@@ -214,10 +220,19 @@ async def focus_agent_node(
     )
     user_content = (
         "<user_data>\n"
-        f"{user_context}\n"
+        f"{spotlight_external_content(user_context)}\n"
         "</user_data>\n"
         "Create a JSON plan with time_blocks including task references."
     )
+    constraints = state.get("regeneration_constraints")
+    if isinstance(constraints, str) and constraints.strip():
+        user_content = (
+            "<regeneration_constraints>\n"
+            f"{constraints}\n"
+            "</regeneration_constraints>\n"
+            "Revise the focus plan to address the verification or adversarial feedback above.\n\n"
+            f"{user_content}"
+        )
     messages = build_llm_messages(
         "focus",
         user_content,
@@ -225,7 +240,10 @@ async def focus_agent_node(
         enable_caching=settings.enable_prompt_caching,
     )
 
-    estimated_input = sum(len(m.get("content", "")) for m in messages) // 4
+    estimated_input = estimate_input_tokens(
+        messages,
+        dynamic_only=settings.enable_prompt_caching,
+    )
     focus_hard_limit = FOCUS_INPUT_BUDGET * HARD_LIMIT_MULTIPLIER
     if estimated_input > focus_hard_limit:
         execution_ms = int((time.perf_counter() - start) * 1000)
@@ -248,6 +266,7 @@ async def focus_agent_node(
                 prompt_version=resolve_prompt_version("focus"),
                 trace_id=trace_id,
                 data_classification="internal",
+                spotlighting_applied=True,
             ),
         )
         return {"focus_result": envelope, "current_agent": "focus"}
@@ -283,6 +302,7 @@ async def focus_agent_node(
                 prompt_version=resolve_prompt_version("focus"),
                 trace_id=trace_id,
                 data_classification="internal",
+                spotlighting_applied=True,
             ),
         )
         return {"focus_result": envelope, "current_agent": "focus"}
@@ -356,6 +376,7 @@ async def focus_agent_node(
             prompt_version=resolve_prompt_version("focus"),
             trace_id=trace_id,
             data_classification="confidential",
+            spotlighting_applied=True,
         ),
     )
 
@@ -371,7 +392,7 @@ async def focus_agent_node(
 
     summary_snippet = plan.get("summary")
     context_snippet = str(summary_snippet) if isinstance(summary_snippet, str) else None
-    working_update = _working_memory.record_agent_turn(
+    working_update = _memory_manager.working.record_agent_turn(
         state,
         agent_id="focus",
         tokens_used=total_tokens_used,

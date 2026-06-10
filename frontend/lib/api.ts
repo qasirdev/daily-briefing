@@ -1,3 +1,5 @@
+import { briefingResponseSchema, type BriefingResponse } from "@/lib/briefing-schema";
+
 const LOCAL_DEV_BACKEND = "http://127.0.0.1:8010";
 
 /** Ports where nginx serves both UI and /api on the same origin (Docker). */
@@ -35,3 +37,23 @@ export function getApiBase(): string {
 }
 
 export const DEFAULT_USER_ID = "user-1";
+
+export async function fetchBriefing(userId: string = DEFAULT_USER_ID): Promise<BriefingResponse> {
+  const res = await fetch(`${getApiBase()}/api/v1/briefing/generate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ user_id: userId }),
+  });
+  const payload: unknown = await res.json();
+  if (!res.ok) {
+    const detail =
+      typeof payload === "object" &&
+      payload !== null &&
+      "detail" in payload &&
+      typeof payload.detail === "string"
+        ? payload.detail
+        : `Briefing request failed (${res.status})`;
+    throw new Error(detail);
+  }
+  return briefingResponseSchema.parse(payload);
+}

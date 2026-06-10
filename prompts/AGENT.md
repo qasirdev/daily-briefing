@@ -21,7 +21,8 @@ prompts/
 │   ├── system.md               # System prompt (persona)
 │   ├── skills.md               # Agent capabilities
 │   ├── tools.md                # Available tools/MCP
-│   └── guardrails.md           # Safety constraints
+│   ├── guardrails.md           # Safety constraints
+│   └── input-security.md       # Spotlighting + constitutional rules (v2.0.0)
 ├── task/
 │   ├── CONTRACT.md
 │   ├── CHANGELOG.md
@@ -35,21 +36,23 @@ prompts/
 │   ├── system.md
 │   ├── skills.md
 │   ├── tools.md
-│   └── guardrails.md
+│   └── input-security.md
 ├── focus/
 │   ├── CONTRACT.md
 │   ├── CHANGELOG.md
 │   ├── system.md
 │   ├── skills.md
 │   ├── tools.md
-│   └── guardrails.md
+│   └── input-security.md
 ├── critic/
 │   ├── CONTRACT.md
 │   ├── CHANGELOG.md
 │   ├── system.md
 │   ├── skills.md
 │   ├── tools.md
-│   └── guardrails.md
+│   └── input-security.md
+├── verification/               # v2.0.0 LLM verifier
+├── adversarial/                  # v2.0.0 red-team verifier
 └── security/
     ├── CONTRACT.md
     ├── CHANGELOG.md
@@ -64,7 +67,8 @@ prompts/
 | Rule | Behaviour |
 |---|---|
 | Decoupled Architecture | Prompts MUST live outside Python code for versioning and hot-reload |
-| Required Files | Every agent prompt directory MUST contain all 6 files |
+| Required Files | v2.0.0 agents: 11-file structure including `input-security.md` (see `007-01-ai-daily-briefing-assistant-v2.0.0.md`) |
+| Input security | Every production agent directory MUST include `input-security.md` with spotlighting markers |
 | Living Contracts | `CONTRACT.md` defines canonical role, token budget, and expected schema |
 | Instruction Hierarchy | System prompts are for persona/guardrails ONLY; user data in separate blocks |
 | Versioning | Every prompt change MUST update version and `CHANGELOG.md` |

@@ -16,6 +16,7 @@ _AGENT_LAYER_MAP: dict[str, HitlLayerId] = {
     "verification": "review",
     "adversarial": "review",
     "critic": "review",
+    "input_security_gate": "input",
     "human_escalation": "override",
 }
 
@@ -23,6 +24,7 @@ _AGENT_STATE_KEYS: tuple[tuple[str, str], ...] = (
     ("orchestrator", "orchestrator_result"),
     ("task", "task_result"),
     ("calendar", "calendar_result"),
+    ("input_security_gate", "input_security_result"),
     ("focus", "focus_result"),
     ("verification", "verification_result"),
     ("adversarial", "adversarial_result"),

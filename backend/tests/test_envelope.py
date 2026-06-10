@@ -3,7 +3,7 @@
 import pytest
 from pydantic import ValidationError
 
-from backend.schemas.envelope import AgentResultEnvelope, ExecutionMetadata
+from backend.schemas.envelope import AgentResultEnvelope, EscalationPayload, ExecutionMetadata
 
 
 def _metadata(**overrides: object) -> ExecutionMetadata:
@@ -51,6 +51,20 @@ def test_envelope_rejects_missing_result_on_success() -> None:
             result=None,
             metadata=_metadata(),
         )
+
+
+def test_escalation_security_violation_disallows_retry() -> None:
+    payload = EscalationPayload(
+        reason="security_violation_detected",
+        target_agent="dlq_handler",
+        context="injection_detected",
+    )
+    assert payload.retry_allowed is False
+
+
+def test_execution_metadata_spotlighting_defaults_false() -> None:
+    metadata = _metadata()
+    assert metadata.spotlighting_applied is False
 
 
 def test_envelope_is_frozen() -> None:

@@ -19,6 +19,7 @@ class InputScanResult(BaseModel):
     matched_pattern: str | None = None
     confidence: float = Field(default=0.0, ge=0.0, le=1.0)
     constitutional_rule: str | None = None
+    blocked_source: str | None = None
 
 
 class InputSecurityScanner:
@@ -76,5 +77,13 @@ class InputSecurityScanner:
         for source, text in texts.items():
             result = self.scan(text, trace_id=trace_id, source=source)
             if result.is_blocked:
-                return result
+                return InputScanResult(
+                    is_blocked=True,
+                    layer=result.layer,
+                    violation_type=result.violation_type,
+                    matched_pattern=result.matched_pattern,
+                    confidence=result.confidence,
+                    constitutional_rule=result.constitutional_rule,
+                    blocked_source=source,
+                )
         return InputScanResult(is_blocked=False)

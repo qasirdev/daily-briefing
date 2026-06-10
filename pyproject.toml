@@ -52,6 +52,13 @@ asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 testpaths = ["backend/tests"]
 
+[tool.coverage.run]
+source = ["backend"]
+omit = ["backend/tests/*"]
+
+[tool.coverage.report]
+fail_under = 80
+
 [tool.ruff]
 target-version = "py312"
 line-length = 100
@@ -73,3 +80,8 @@ plugins = ["pydantic.mypy"]
 [[tool.mypy.overrides]]
 module = ["langgraph.*", "slowapi.*", "opentelemetry.*", "pgvector.*"]
 ignore_missing_imports = true
+
+[dependency-groups]
+dev = [
+    "pytest-cov>=7.1.0",
+]
