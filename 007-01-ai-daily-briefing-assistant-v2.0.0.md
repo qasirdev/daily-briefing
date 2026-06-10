@@ -364,7 +364,7 @@ class CalendarEventSchema(BaseModel):
 
 **Three-layer pipeline** (`InputSecurityScanner` in `backend/security/input_scanner.py`):
 
-<!-- test-inventory:total=1199 -->
+<!-- test-inventory:total=1200 -->
 <!-- corpus-inventory:payloads=285,patterns=277 -->
 
 | Layer | Module | Role |

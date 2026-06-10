@@ -29,16 +29,16 @@ This document describes how every one of those risks is handled — not theoreti
 | **Primary threat** | Indirect prompt injection via third-party calendar events |
 | **Architecture pattern** | Orchestrator-as-Presenter — only sanitised markdown ever reaches users |
 | **Controls** | Regex injection detector · `nh3` + DOMPurify sanitisation · per-agent token budgets · SlowAPI rate limits · SSRF allowlists |
-| **Verification** | **1199** backend pytest cases (unit · security · integration · E2E); CI runs backend gate (Ruff, MyPy, pytest) and frontend `npm run test:coverage` (≥75%) |
+| **Verification** | **1200** backend pytest cases (unit · security · integration · E2E); CI runs backend gate (Ruff, MyPy, pytest) and frontend `npm run test:coverage` (≥75%) |
 | **Production hardening** | Cosign-signed images · structured security logging · DLQ for violations · Prometheus security metrics |
 
 ### Test suite inventory
 
-<!-- test-inventory:total=1199 -->
+<!-- test-inventory:total=1200 -->
 
 | Asset | Count | Source |
 |---|---|---|
-| Backend pytest suite | **1199** | [`backend/tests/`](../backend/tests/) — `uv run pytest --collect-only -q backend/tests` |
+| Backend pytest suite | **1200** | [`backend/tests/`](../backend/tests/) — `uv run pytest --collect-only -q backend/tests` |
 
 **Maintenance rule:** When adding or removing test functions or parametrized cases, update every file containing the `test-inventory` marker (see [`test_suite_inventory.py`](../backend/tests/test_suite_inventory.py)). Run `uv run pytest backend/tests/test_suite_inventory.py` before merge.
 

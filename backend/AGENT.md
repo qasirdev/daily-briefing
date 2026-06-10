@@ -482,9 +482,9 @@ Regression corpus: **285** payloads in `backend/tests/security/test_injection_pa
 
 ## Testing Requirements
 
-<!-- test-inventory:total=1199 -->
+<!-- test-inventory:total=1200 -->
 
-**Suite size:** **1199** pytest cases under `backend/tests/` (unit · security · integration · E2E). When adding or removing tests, update the `test-inventory` marker in `README.md`, `docs/SECURITY.md`, `AGENT.md`, `backend/AGENT.md`, and `007-01-ai-daily-briefing-assistant-v2.0.0.md`, then run `uv run pytest backend/tests/test_suite_inventory.py`.
+**Suite size:** **1200** pytest cases under `backend/tests/` (unit · security · integration · E2E). When adding or removing tests, update the `test-inventory` marker in `README.md`, `docs/SECURITY.md`, `AGENT.md`, `backend/AGENT.md`, and `007-01-ai-daily-briefing-assistant-v2.0.0.md`, then run `uv run pytest backend/tests/test_suite_inventory.py`.
 
 ### Unit Tests
 

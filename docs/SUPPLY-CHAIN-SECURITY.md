@@ -56,9 +56,13 @@ ossf-scorecard --repo=github.com/qasirdev/daily-briefing --format=json \
 
 ## pip-audit CI Gate
 
-CI runs `uv run pip-audit --desc on` on every PR. Blocks on **critical** and **high** severity CVEs in production dependencies.
+CI runs `uv run pip-audit --desc on --ignore-vuln GHSA-rrmf-rvhw-rf47` on every PR. Blocks on **critical** and **high** severity CVEs in production dependencies.
 
-**Transitive CVE with no fix:** Document exception in `docs/adr/` with expiry date.
+**Pinned upgrades (2026-06):** `transformers>=5.0.0rc3` and `huggingface-hub>=1.5.0` resolve GHSA-69w3-r845-3855 and PYSEC-2025-217 (transitive via `llamafirewall`).
+
+**Documented exception — `GHSA-rrmf-rvhw-rf47` (`torch`):** Local-only `torch.jit.script` issue with no fixed PyPI release ≤2.12.0. Ignored in CI because PromptGuard inference does not use JIT scripting or untrusted checkpoint loads. Tracked in `infrastructure/ai-bom.yaml` with expiry **2026-12-31**.
+
+**Other transitive CVE with no fix:** Document exception in `docs/adr/` with expiry date.
 
 **Dev-only dependencies:** Excluded from production audit scope (`pip-audit` scans installed runtime deps).
 
