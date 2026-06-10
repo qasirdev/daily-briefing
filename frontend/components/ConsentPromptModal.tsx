@@ -49,6 +49,21 @@ export function ConsentPromptModal({
             ))}
           </ul>
 
+          {request.action_payload ? (
+            <div className="rounded-md border border-amber-200 bg-amber-50 p-3 dark:border-amber-900/50 dark:bg-amber-950/30">
+              <p className="text-xs font-semibold uppercase tracking-wide text-amber-800 dark:text-amber-300">
+                Machine action (verify before approving)
+              </p>
+              <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap break-all text-xs text-zinc-800 dark:text-zinc-200">
+                {JSON.stringify(request.action_payload, null, 2)}
+              </pre>
+            </div>
+          ) : null}
+
+          {request.message ? (
+            <p className="text-sm text-zinc-600 dark:text-zinc-300">{request.message}</p>
+          ) : null}
+
           <label htmlFor="consent-ttl" className="block text-sm font-medium">
             Allow access for
           </label>

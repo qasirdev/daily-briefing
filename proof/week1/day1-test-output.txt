@@ -1,0 +1,20 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.1, pytest-9.0.3, pluggy-1.6.0 -- /Users/qasirmehmood/Projects/qasir-proflle-2026/daily-briefing/.venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /Users/qasirmehmood/Projects/qasir-proflle-2026/daily-briefing
+configfile: pyproject.toml
+plugins: asyncio-1.4.0, langsmith-0.8.7, httpx-0.36.2, anyio-4.13.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collecting ... collected 9 items
+
+backend/tests/observability/test_drift_detection.py::test_guardrail_violation_logging PASSED [ 11%]
+backend/tests/observability/test_drift_detection.py::test_execution_metadata_with_violations PASSED [ 22%]
+backend/tests/observability/test_drift_detection.py::test_guardrail_violation_immutability PASSED [ 33%]
+backend/tests/observability/test_drift_detection.py::test_execution_metadata_immutability PASSED [ 44%]
+backend/tests/observability/test_drift_detection.py::test_violation_confidence_bounds PASSED [ 55%]
+backend/tests/observability/test_drift_detection.py::test_violation_severity_literal PASSED [ 66%]
+backend/tests/observability/test_drift_detection.py::test_context_snippet_max_length PASSED [ 77%]
+backend/tests/test_metrics.py::test_custom_metrics_registered PASSED     [ 88%]
+backend/tests/test_metrics.py::test_record_helpers_do_not_raise PASSED   [100%]
+
+============================== 9 passed in 0.02s ===============================

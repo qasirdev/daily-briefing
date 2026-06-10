@@ -9,18 +9,25 @@ from typing import Any
 import structlog
 
 from backend.graph.state import BriefingGraphState
+from backend.llm.models import LLMResponse
+from backend.llm.prompt_cache import build_llm_messages, resolve_model_name
 from backend.llm.router import LLMError, LLMRouter
 from backend.logging_config import agent_log_context
-from backend.metrics import observe_agent_execution, record_security_violation
-from backend.prompts_loader import build_agent_system_prompt
+from backend.metrics import (
+    observe_agent_execution,
+    record_constitutional_violation,
+    record_security_violation,
+)
+from backend.prompt_version import resolve_prompt_version
 from backend.schemas.envelope import AgentResultEnvelope, EscalationPayload, ExecutionMetadata
-from backend.security.injection import PromptInjectionDetector
+from backend.security.input_scanner import InputSecurityScanner
+from backend.settings import get_settings
 from backend.telemetry import start_async_span
 
 logger = structlog.get_logger()
 
 MAX_REVISION_CYCLES = 2
-_detector = PromptInjectionDetector()
+_scanner = InputSecurityScanner()
 
 
 def _collect_external_texts(state: BriefingGraphState) -> dict[str, str]:
@@ -56,36 +63,41 @@ async def _llm_quality_issues(
     llm: LLMRouter,
     *,
     trace_id: str,
-) -> list[str]:
+) -> tuple[list[str], LLMResponse | None]:
     if focus_result is None or focus_result.result is None:
-        return ["Focus agent produced no output"]
+        return ["Focus agent produced no output"], None
 
-    system_prompt = build_agent_system_prompt("critic")
-    messages = [
-        {"role": "system", "content": system_prompt},
-        {
-            "role": "user",
-            "content": (
-                "Review this focus plan JSON for coherence. "
-                'Return JSON: {"approved": bool, "issues": [string]}\n'
-                f"{json.dumps(focus_result.result, ensure_ascii=True)}"
-            ),
-        },
-    ]
+    settings = get_settings()
+    user_content = (
+        "Review this focus plan JSON for coherence and safety. "
+        "Return JSON matching output-schema.md (approved + issues).\n"
+        f"{json.dumps(focus_result.result, ensure_ascii=True)}"
+    )
+    messages = build_llm_messages(
+        "critic",
+        user_content,
+        model=resolve_model_name(llm),
+        enable_caching=settings.enable_prompt_caching,
+    )
     try:
-        response = await llm.generate(messages=messages, trace_id=trace_id, output_budget=512)
+        response = await llm.generate(
+            messages=messages,
+            trace_id=trace_id,
+            agent_id="critic",
+            output_budget=512,
+        )
         parsed = json.loads(response.content)
     except (LLMError, json.JSONDecodeError):
-        return _heuristic_quality_issues(focus_result)
+        return _heuristic_quality_issues(focus_result), None
 
     if not isinstance(parsed, dict):
-        return _heuristic_quality_issues(focus_result)
+        return _heuristic_quality_issues(focus_result), response
     if parsed.get("approved") is True:
-        return []
+        return [], response
     issues = parsed.get("issues", [])
     if isinstance(issues, list):
-        return [str(item) for item in issues if item]
-    return _heuristic_quality_issues(focus_result)
+        return [str(item) for item in issues if item], response
+    return _heuristic_quality_issues(focus_result), response
 
 
 async def critic_agent_node(
@@ -100,10 +112,15 @@ async def critic_agent_node(
     with agent_log_context(trace_id=trace_id, agent_id="critic"):
         async with start_async_span("agent.critic.execute", agent_id="critic", agent_role="critic"):
             with observe_agent_execution(agent_id="critic", role="critic"):
-                injection = _detector.scan_many(_collect_external_texts(state), trace_id=trace_id)
-                if injection.is_suspicious:
+                scan = _scanner.scan_many(_collect_external_texts(state), trace_id=trace_id)
+                if scan.is_blocked:
+                    if scan.layer == "constitutional" and scan.constitutional_rule:
+                        record_constitutional_violation(
+                            rule_id=scan.constitutional_rule,
+                            severity="critical",
+                        )
                     record_security_violation(
-                        violation_type=injection.matched_pattern or "injection",
+                        violation_type=scan.violation_type or "injection",
                         agent_id="critic",
                     )
                     execution_ms = int((time.perf_counter() - start) * 1000)
@@ -114,13 +131,13 @@ async def critic_agent_node(
                         escalation=EscalationPayload(
                             reason="security_violation_detected",
                             target_agent="dlq_handler",
-                            context=injection.matched_pattern or "injection_detected",
+                            context=scan.violation_type or "injection_detected",
                         ),
                         metadata=ExecutionMetadata(
                             execution_ms=execution_ms,
                             tokens_used=0,
                             model_used="none",
-                            prompt_version="v1.5.0",
+                            prompt_version=resolve_prompt_version("critic"),
                             trace_id=trace_id,
                             data_classification="internal",
                         ),
@@ -132,8 +149,13 @@ async def critic_agent_node(
                     }
 
                 focus_result = state.get("focus_result")
+                llm_response: LLMResponse | None = None
                 if llm is not None:
-                    issues = await _llm_quality_issues(focus_result, llm, trace_id=trace_id)
+                    issues, llm_response = await _llm_quality_issues(
+                        focus_result,
+                        llm,
+                        trace_id=trace_id,
+                    )
                 else:
                     issues = _heuristic_quality_issues(
                         focus_result if isinstance(focus_result, AgentResultEnvelope) else None,
@@ -155,9 +177,10 @@ async def critic_agent_node(
                     },
                     metadata=ExecutionMetadata(
                         execution_ms=execution_ms,
-                        tokens_used=0,
-                        model_used="none",
-                        prompt_version="v1.5.0",
+                        tokens_used=llm_response.tokens_used if llm_response else 0,
+                        cost_usd=llm_response.cost_usd if llm_response else 0.0,
+                        model_used=llm_response.model_used if llm_response else "none",
+                        prompt_version=resolve_prompt_version("critic"),
                         trace_id=trace_id,
                         data_classification="internal",
                     ),
@@ -167,6 +190,8 @@ async def critic_agent_node(
                     "critic_result": envelope,
                     "current_agent": "critic",
                 }
+                if llm_response is not None:
+                    update["total_tokens"] = state.get("total_tokens", 0) + llm_response.tokens_used
                 if revision_required:
                     update["revision_count"] = revision_count + 1
                 elif revision_count >= MAX_REVISION_CYCLES and issues:

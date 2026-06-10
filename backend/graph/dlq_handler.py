@@ -11,13 +11,17 @@ from backend.dlq.store import dlq_store
 from backend.graph.state import BriefingGraphState
 from backend.schemas.dlq import DLQEvent
 from backend.schemas.envelope import AgentResultEnvelope
-from backend.security.token_budget import evaluate_token_budget
+from backend.security.token_budget import evaluate_token_budget, is_session_token_exceeded
+from backend.settings import get_settings
 
 logger = structlog.get_logger()
 
 
 def _resolve_reason(state: BriefingGraphState) -> str:
     if evaluate_token_budget(state) == "token_budget_exceeded":
+        return "token_budget_exceeded"
+    settings = get_settings()
+    if is_session_token_exceeded(state, configured_max=settings.token_budget_max):
         return "token_budget_exceeded"
     for key in ("task_result", "calendar_result", "focus_result", "critic_result"):
         envelope = state.get(key)

@@ -32,7 +32,7 @@ CI/CD, GitHub branch policy, container signing, alerting runbooks, and deploymen
 
 | Workflow | Trigger | Purpose |
 |---|---|---|
-| `.github/workflows/ci.yml` | PR + push to integration | Lint, typecheck, unit/e2e tests, docker build |
+| `.github/workflows/ci.yml` | PR + push to integration | Lint, typecheck, AI-BOM validation, pip-audit, unit/e2e tests, docker build |
 | `.github/workflows/docker-publish.yml` | Push to integration + tags | Build, push GHCR, Cosign sign/verify |
 
 ---
@@ -89,6 +89,8 @@ Unsigned images must be rejected in production environments.
 ## Deployment Reference
 
 See `infrastructure/DEPLOYMENT.md` for step-by-step production deployment, rollback, and monitoring setup.
+
+**Local observability:** See `docs/guidence/observability/README.md` for Prometheus, Grafana, and PagerDuty setup before Week 1 kickoff.
 
 ---
 

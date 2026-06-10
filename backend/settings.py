@@ -51,6 +51,33 @@ class Settings(BaseSettings):
 
     token_budget_max: int = 16_000
     graph_timeout_seconds: int = 60
+    enable_consensus_workflow: bool = False
+    consensus_human_escalation: bool = True
+
+    enable_prompt_caching: bool = True
+    prompt_cache_warm_on_startup: bool = True
+    prompt_cache_warm_interval_seconds: int = 240
+    prompt_cache_warm_agents: str = "focus,critic,verification,adversarial"
+
+    working_memory_token_limit: int = 16_000
+    working_memory_max_snippets: int = 10
+    semantic_memory_embedding_dim: int = 1536
+    semantic_memory_search_top_k: int = 5
+    enable_semantic_memory_retrieval: bool = True
+    embedding_provider: Literal["deterministic", "openrouter"] = "deterministic"
+    embedding_model: str = "openai/text-embedding-3-small"
+
+    vault_mode: Literal["env", "memory"] = "env"
+    credential_ttl_seconds: int = 900
+
+    enable_procedural_memory: bool = True
+    procedural_memory_top_k: int = 5
+    enable_episodic_memory: bool = True
+    episodic_memory_top_k: int = 5
+    enable_agentic_rag: bool = True
+    context_compression_max_chars: int = 6_000
+    enumeration_probe_threshold: int = 10
+    enumeration_window_seconds: int = 60
 
     otel_exporter_otlp_endpoint: str = "http://localhost:4317"
     admin_api_key: str = ""
@@ -99,6 +126,12 @@ class Settings(BaseSettings):
     @property
     def cors_origin_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+
+    @property
+    def prompt_cache_warm_agent_list(self) -> list[str]:
+        return [
+            agent.strip() for agent in self.prompt_cache_warm_agents.split(",") if agent.strip()
+        ]
 
     @property
     def resolved_mcp_postgres_url(self) -> str:

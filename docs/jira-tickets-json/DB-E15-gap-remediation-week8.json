@@ -1,0 +1,52 @@
+{
+  "DB-E15": [
+    {
+      "Issue id": "DB-E15",
+      "Summary": "Week 8: Production Optimization & Agentic RAG",
+      "Issue Type": "Epic",
+      "Description": "Phase 6 gap remediation: evolve static memory retrieval into agentic RAG with dynamic layer decisions, apply context engineering pillars, add source validation and compression, complete reasoning-level feedback UI, implement T1087 enumeration detection, and document deployment gates on metrics.\n\nSCOPE:\n- Gap #33-40: Agentic RAG + context engineering + source validation + compression\n- Gap #59: Deployment gates on metrics\n- Gap #69: Reasoning-level feedback into episodic memory\n- T1087: Account enumeration anomaly detection\n- HITL feedback layer: partial → implemented\n\nEFFORT: XL (40 hours over 5 days)\nPROJECT AREA: Backend, Frontend, Memory, Security, Documentation\nDEPENDENCIES: DB-E14 (Week 7) complete — HITL, per-action authz, reasoning traces, 398+ tests\n\nEPIC LINK: epic/autonomus-implementation-gap\nFEATURE BRANCH: epic/week8-gap-remediation\n\nREFERENCE DOCS:\n- docs/gaps/GAP-ANALYSIS-REVIEW.md (Phase 6)\n- docs/gaps/WEEK8-IMPLEMENTATION-GUIDE.md\n- docs/gaps/WEEK8-KICKOFF-PROMPT.md\n- docs/MEMORY-ARCHITECTURE.md\n- docs/learning/week7-hitl-governance.md\n- 007-01-ai-daily-briefing-assistant-v2.0.0.md\n\nSUCCESS CRITERIA:\n- Agentic RAG decides whether/when/which memory layers to retrieve\n- CONTEXT-ENGINEERING.md documents four IBM pillars\n- ReasoningFeedback component wired to episodic memory\n- T1087 enumeration detector with Prometheus metric\n- DEPLOYMENT-GATES.md + programmatic gate checker\n- HITL feedback layer implemented\n- proof/week8/ complete; 420+ tests passing",
+      "Labels": "gap-remediation,agentic-rag,optimization,week8",
+      "Parent": ""
+    },
+    {
+      "Issue id": "DB-136",
+      "Summary": "Day 1: Agentic RAG Decision Engine (Gaps #33, #37)",
+      "Issue Type": "Task",
+      "Description": "Implement dynamic retrieval decisions — whether, when, and which CoALA layers to query.\n\nIMPLEMENTATION DETAILS:\n- Create backend/memory/agentic_rag.py — RetrievalDecision, decide_retrieval(), refine_query()\n- Add enable_agentic_rag setting (default true)\n- Wire decide_retrieval() into retrieve_agent_memory() before layer fetches\n- Add agentic_rag_decisions_total{decision,layer} Prometheus counter\n- Create docs/CONTEXT-ENGINEERING.md — four pillars: connected access, knowledge layer, precision retrieval, runtime governance\n- Update docs/MEMORY-ARCHITECTURE.md § Agentic RAG\n- Create backend/tests/memory/test_agentic_rag.py\n\nEFFORT: L (8 hours)\nPROJECT AREA: Backend, Documentation\nDEPENDENCIES: DB-E14\n\nTESTING CRITERIA:\n- Empty user_id skips all retrieval layers\n- First briefing (no history) skips semantic, keeps procedural\n- Rich context triggers full layer retrieval\n- test_agentic_rag.py passes (≥8 scenarios)\n\nEDGE CASES:\n- enable_agentic_rag=false: fall back to legacy always-retrieve behavior\n- Query refinement capped at 2 passes\n- Anonymous user: skip durable layers",
+      "Labels": "agentic-rag,memory,week8,gap-33,gap-37",
+      "Parent": "DB-E15"
+    },
+    {
+      "Issue id": "DB-137",
+      "Summary": "Day 2: Source Validation & Context Compression (Gaps #34, #38, #40)",
+      "Issue Type": "Task",
+      "Description": "Cross-reference semantic sources and compress memory payloads to token budget.\n\nIMPLEMENTATION DETAILS:\n- Create backend/memory/source_validation.py — validate_sources(), cross_reference_records()\n- Create backend/memory/context_compression.py — compress_memory_payload(max_chars)\n- Wire validation after semantic search; wire compression before LLM payload in focus node\n- Add context_compression_bytes_saved_total counter\n- Create backend/tests/memory/test_source_validation.py\n- Create backend/tests/memory/test_context_compression.py\n\nEFFORT: M (8 hours)\nPROJECT AREA: Backend\nDEPENDENCIES: DB-136\n\nTESTING CRITERIA:\n- Conflicting source_id/content pairs filtered\n- Payload compressed when exceeding max_chars\n- Deduplication removes identical content hashes\n- Both test modules pass (≥5 scenarios each)\n\nEDGE CASES:\n- Empty semantic results: validation no-op\n- Single record: compression preserves full content\n- Untrusted source_trust: excluded before cross-ref",
+      "Labels": "source-validation,context-compression,memory,week8,gap-34,gap-40",
+      "Parent": "DB-E15"
+    },
+    {
+      "Issue id": "DB-138",
+      "Summary": "Day 3: Reasoning-Level Feedback (Gap #69)",
+      "Issue Type": "Task",
+      "Description": "Capture human corrections at the reasoning step level, not just output edits.\n\nIMPLEMENTATION DETAILS:\n- Create backend/schemas/reasoning_feedback.py — ReasoningFeedbackRequest/Response\n- Create backend/feedback/reasoning.py — store_reasoning_feedback() → episodic lesson\n- Create backend/api/v1/feedback.py — POST /api/v1/feedback/reasoning\n- Register router in main.py\n- Create frontend/components/ReasoningFeedback.tsx — per trace entry rating\n- Integrate into ReasoningTrace.tsx and page.tsx\n- Update backend/security/hitl.py feedback layer to implemented\n- Update docs/OVERRIDE-ROLLBACK.md § Reasoning-Level Feedback\n- Create backend/tests/test_reasoning_feedback.py\n\nEFFORT: L (8 hours)\nPROJECT AREA: Backend, Frontend\nDEPENDENCIES: DB-137\n\nTESTING CRITERIA:\n- Feedback stored as episodic lesson_type reasoning_feedback\n- API returns 201 with lesson_id\n- test_reasoning_feedback.py passes (≥6 scenarios)\n- HITL feedback layer status implemented\n\nEDGE CASES:\n- Empty comment with rating: accept rating-only feedback\n- Invalid agent_id in trace: 422 validation error\n- Duplicate feedback same trace+agent: upsert lesson",
+      "Labels": "reasoning-feedback,hitl,frontend,week8,gap-69",
+      "Parent": "DB-E15"
+    },
+    {
+      "Issue id": "DB-139",
+      "Summary": "Day 4: Enumeration Detection & Deployment Gates (Gaps #59, T1087)",
+      "Issue Type": "Task",
+      "Description": "Detect account enumeration patterns and define metric-based deployment gates.\n\nIMPLEMENTATION DETAILS:\n- Create backend/security/enumeration_detector.py — record_identity_probe(), threshold alerts\n- Wire into consent list and credential broker paths\n- Update mitre_coverage.py T1087 status to detected\n- Create backend/observability/deployment_gates.py — check_deployment_gates()\n- Create docs/DEPLOYMENT-GATES.md — gates tied to MITRE, drift, alert coverage, constitutional rate\n- Add security_enumeration_attempts_total counter\n- Create backend/tests/security/test_enumeration_detector.py\n- Create backend/tests/observability/test_deployment_gates.py\n\nEFFORT: M (8 hours)\nPROJECT AREA: Security, Observability, Documentation\nDEPENDENCIES: DB-138\n\nTESTING CRITERIA:\n- Enumeration threshold (>10 probes/min) triggers alert metric\n- T1087 status detected in mitre registry\n- check_deployment_gates() returns pass/fail per gate\n- Both test modules pass (≥5 scenarios each)\n\nEDGE CASES:\n- Legitimate admin bulk export: whitelist by admin_api_key header\n- Zero alerts: investigation coverage gate passes at 100%\n- Gate check in development: warn-only mode",
+      "Labels": "enumeration,deployment-gates,security,week8,gap-59",
+      "Parent": "DB-E15"
+    },
+    {
+      "Issue id": "DB-140",
+      "Summary": "Day 5: Integration Tests, Proof & Documentation (Phase 6 closeout)",
+      "Issue Type": "Task",
+      "Description": "End-to-end optimization integration tests, proof package, learning doc, PLAN update.\n\nIMPLEMENTATION DETAILS:\n- Create backend/tests/memory/test_optimization_integration.py (≥5 scenarios)\n- Create proof/week8/ with pytest output, gate summary\n- Write docs/learning/week8-production-optimization.md\n- Update docs/PLAN.md Week 8 status\n- Update docs/jira-tickets-json/README.md\n- Update docs/security/MITRE-ATTACK-COVERAGE.md T1087 row\n\nEFFORT: M (8 hours)\nPROJECT AREA: Testing, Documentation\nDEPENDENCIES: DB-136, DB-137, DB-138, DB-139\n\nTESTING CRITERIA:\n- test_optimization_integration.py passes (≥5 scenarios)\n- Full suite: 420+ tests passing\n- proof/week8/README.md lists verification commands\n\nEDGE CASES:\n- Integration test without DB: mock episodic store\n- Proof capture on CI skip: document local-only commands",
+      "Labels": "integration,testing,docs,week8",
+      "Parent": "DB-E15"
+    }
+  ]
+}

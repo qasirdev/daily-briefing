@@ -1,0 +1,11 @@
+* c993bc6 Day 4: Focus memory integration with semantic retrieval and audit trail
+* a89e493 Day 3: Working memory and pgvector semantic memory foundation
+* 1a61bdd chore: apply ruff format to export, dlq store, and health test
+* 239578a Day 2: Verification/adversarial LLM with cached prompts
+* 91b47b8 Day 1: Claude prompt caching with cache warming
+*   aca51f5 Merge pull request #9 from qasirdev/epic/week1-gap-remediation
+|\  
+| * 4e2b1d7 Document backend verification gate and fix ruff lint in tests
+| * 44be77c removed extra file
+| * 7615dbe Week 1 complete: Multi-agent consensus implementation
+| * 089b05a Day 4: Consensus model implementation in LangGraph

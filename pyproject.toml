@@ -24,6 +24,8 @@ dependencies = [
     "sqlalchemy[asyncio]>=2.0",
     "alembic>=1.18.4",
     "mcp>=1.27.2",
+    "pgvector>=0.4.2",
+    "pyyaml>=6.0.2",
 ]
 
 [project.optional-dependencies]
@@ -34,6 +36,8 @@ dev = [
     "httpx>=0.28.0",
     "ruff>=0.8.0",
     "mypy>=1.13.0",
+    "pip-audit>=2.7.0",
+    "types-PyYAML>=6.0.12",
 ]
 
 [build-system]
@@ -55,6 +59,10 @@ line-length = 100
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
 
+[tool.ruff.lint.isort]
+known-first-party = ["backend"]
+combine-as-imports = true
+
 [tool.mypy]
 python_version = "3.12"
 strict = true
@@ -63,5 +71,5 @@ warn_unused_configs = true
 plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]
-module = ["langgraph.*", "slowapi.*", "opentelemetry.*"]
+module = ["langgraph.*", "slowapi.*", "opentelemetry.*", "pgvector.*"]
 ignore_missing_imports = true

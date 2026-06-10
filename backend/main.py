@@ -14,9 +14,14 @@ from backend.api.v1.briefing import router as briefing_router
 from backend.api.v1.consent import router as consent_router
 from backend.api.v1.dlq import router as dlq_router
 from backend.api.v1.export import router as export_router
+from backend.api.v1.feedback import router as feedback_router
 from backend.api.v1.preferences import router as preferences_router
+from backend.api.v1.usage import router as usage_router
+from backend.dependencies import build_llm_router
 from backend.health.router import router as health_router
+from backend.llm.prompt_cache import PromptCacheWarmer
 from backend.logging_config import bind_trace_id, configure_logging, get_logger
+from backend.prompt_version import check_and_invalidate_cache, register_version_snapshot
 from backend.security.rate_limit import register_rate_limiting
 from backend.settings import Settings, get_settings
 from backend.shutdown import ShutdownCoordinator
@@ -43,7 +48,26 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         logger.info("signal_handlers_unavailable")
 
     logger.info("application_started", app_env=settings.app_env, version=settings.app_version)
+
+    register_version_snapshot()
+    check_and_invalidate_cache()
+
+    cache_warmer: PromptCacheWarmer | None = None
+    if (
+        settings.enable_prompt_caching
+        and settings.prompt_cache_warm_on_startup
+        and (settings.openrouter_api_key or settings.local_llm_enabled)
+    ):
+        llm = build_llm_router(settings)
+        cache_warmer = PromptCacheWarmer(settings)
+        # Warm in background only — blocking warm_all delays uvicorn bind and causes
+        # nginx 502s when OpenRouter rate-limits (429) during startup.
+        cache_warmer.start_background_loop(llm)
+
     yield
+
+    if cache_warmer is not None:
+        await cache_warmer.stop()
     await coordinator.shutdown(app)
 
 
@@ -96,8 +120,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(briefing_router)
     app.include_router(consent_router)
     app.include_router(preferences_router)
+    app.include_router(feedback_router)
     app.include_router(export_router)
     app.include_router(dlq_router)
+    app.include_router(usage_router)
     app.mount("/metrics", make_asgi_app())
 
     return app

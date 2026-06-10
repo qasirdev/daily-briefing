@@ -10,4 +10,7 @@ def test_prompts_root_points_at_repo_prompts_dir() -> None:
 
 def test_load_focus_system_prompt() -> None:
     content = load_prompt_file("focus", "system.md")
-    assert "<system>" in content
+    assert "# Focus Agent System Prompt" in content
+    assert "**Version:** 2.0.0" in content
+    assert "## Identity" in content
+    assert "You are the **Focus Agent**" in content

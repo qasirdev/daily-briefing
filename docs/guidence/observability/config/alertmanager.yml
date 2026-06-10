@@ -1,0 +1,42 @@
+# Alertmanager config — routes Prometheus alerts to PagerDuty.
+# PAGERDUTY_ROUTING_KEY is substituted from observability/.env at container start.
+
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: pagerduty-default
+  group_by: ['alertname', 'severity']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  routes:
+    - match:
+        severity: info
+      receiver: 'null'
+    - match:
+        severity: warning
+      receiver: pagerduty-default
+    - match:
+        severity: critical
+      receiver: pagerduty-default
+
+receivers:
+  - name: 'null'
+
+  - name: pagerduty-default
+    pagerduty_configs:
+      - routing_key: '${PAGERDUTY_ROUTING_KEY}'
+        severity: '{{ .CommonLabels.severity }}'
+        description: '{{ .CommonAnnotations.summary }}'
+        client: 'daily-briefing-alertmanager'
+        client_url: 'http://localhost:9090/alerts'
+        details:
+          environment: '${ALERT_ENV}'
+
+inhibit_rules:
+  - source_match:
+      severity: critical
+    target_match:
+      severity: warning
+    equal: ['alertname']

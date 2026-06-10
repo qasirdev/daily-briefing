@@ -78,6 +78,18 @@ class ConsentGrantRequest(BaseModel):
     consent_type: ConsentType | None = None
 
 
+class ConsentActionPayload(BaseModel):
+    """Machine-readable consent action for OWASP Agent #9 trust exploitation defense."""
+
+    model_config = ConfigDict(strict=True)
+
+    service: ConsentService
+    scope: list[str]
+    agent_id: str
+    intent: str = "read_events"
+    resource: str = ""
+
+
 class ConsentPromptRequest(BaseModel):
     """JIT consent prompt payload returned to the frontend."""
 
@@ -89,6 +101,7 @@ class ConsentPromptRequest(BaseModel):
     suggested_ttl_hours: int = Field(default=4, ge=0)
     agent_requesting: str = "calendar"
     message: str = ""
+    action_payload: ConsentActionPayload | None = None
 
 
 class ConsentAuditLog(BaseModel):

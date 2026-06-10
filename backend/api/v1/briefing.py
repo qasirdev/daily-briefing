@@ -14,6 +14,7 @@ from backend.dependencies import build_llm_router, build_mcp_clients
 from backend.graph.builder import build_briefing_graph
 from backend.graph.state import BriefingGraphState
 from backend.metrics import record_briefing_generation
+from backend.observability.reasoning_trace import collect_reasoning_traces
 from backend.schemas.briefing import (
     AgentExecutionSummary,
     BriefingMetadata,
@@ -33,6 +34,8 @@ _AGENT_KEYS = (
     ("task", "task_result"),
     ("calendar", "calendar_result"),
     ("focus", "focus_result"),
+    ("verification", "verification_result"),
+    ("adversarial", "adversarial_result"),
     ("critic", "critic_result"),
     ("orchestrator", "orchestrator_result"),
 )
@@ -40,10 +43,11 @@ _AGENT_KEYS = (
 
 def _build_agent_breakdown(
     result: BriefingGraphState,
-) -> tuple[list[str], list[AgentExecutionSummary], str]:
+) -> tuple[list[str], list[AgentExecutionSummary], str, float]:
     agents_invoked: list[str] = []
     breakdown: list[AgentExecutionSummary] = []
     primary_model = "none"
+    total_cost_usd = 0.0
 
     for name, key in _AGENT_KEYS:
         envelope = result.get(key)
@@ -52,17 +56,20 @@ def _build_agent_breakdown(
         agents_invoked.append(name)
         if envelope.metadata.model_used != "none":
             primary_model = envelope.metadata.model_used
+        agent_cost = envelope.metadata.cost_usd
+        total_cost_usd += agent_cost
         breakdown.append(
             AgentExecutionSummary(
                 agent_id=name,
                 execution_ms=envelope.metadata.execution_ms,
                 tokens_used=envelope.metadata.tokens_used,
+                cost_usd=agent_cost,
                 model_used=envelope.metadata.model_used,
                 status=envelope.status,
             ),
         )
 
-    return agents_invoked, breakdown, primary_model
+    return agents_invoked, breakdown, primary_model, total_cost_usd
 
 
 @router.post("/generate", response_model=BriefingResponse)
@@ -130,6 +137,8 @@ async def generate_briefing(request: Request, body: BriefingRequest) -> Briefing
 
     if result_state.get("consent_required") or graph_status == "awaiting_consent":
         response_status = "awaiting_consent"
+    elif graph_status == "awaiting_human_review":
+        response_status = "awaiting_human_review"
     elif graph_status == "degraded":
         response_status = "degraded"
     elif graph_status == "success":
@@ -137,7 +146,9 @@ async def generate_briefing(request: Request, body: BriefingRequest) -> Briefing
     else:
         response_status = "failure"
 
-    agents_invoked, agent_breakdown, model_used = _build_agent_breakdown(result_state)
+    agents_invoked, agent_breakdown, model_used, total_cost_usd = _build_agent_breakdown(
+        result_state,
+    )
 
     record_briefing_generation(
         status=response_status,
@@ -157,12 +168,15 @@ async def generate_briefing(request: Request, body: BriefingRequest) -> Briefing
     if isinstance(raw_consent, dict):
         consent_request = ConsentPromptRequest.model_validate(raw_consent)
 
+    reasoning_trace = collect_reasoning_traces(result_state)
+
     return BriefingResponse(
         status=response_status,  # type: ignore[arg-type]
         briefing=result_state.get("final_briefing") or "",
         metadata=BriefingMetadata(
             trace_id=trace_id,
             total_tokens=result_state.get("total_tokens", 0),
+            total_cost_usd=total_cost_usd,
             execution_ms=execution_ms,
             model_used=model_used,
             agents_invoked=agents_invoked,
@@ -170,4 +184,5 @@ async def generate_briefing(request: Request, body: BriefingRequest) -> Briefing
         ),
         consent_context=result_state.get("consent_context"),
         consent_request=consent_request,
+        reasoning_trace=reasoning_trace,
     )

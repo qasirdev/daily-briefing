@@ -75,6 +75,59 @@ Every security event is logged with a `trace_id` linking it to the originating H
 
 ---
 
+## ✅ OWASP Agent Top 10 — Compliance Matrix (Gaps #62-65)
+
+Agent-specific vulnerabilities beyond OWASP GenAI LLM Top 10. Registry: `backend/security/owasp_agent.py`.
+
+| ID | Vulnerability | Status | Control | Test Coverage |
+|---|---|---|---|---|
+| **AGENT01** | Agent Goal Hijack | ✅ **Implemented** | `InputSecurityScanner` (regex + constitutional) + Critic escalation | [`test_injection.py`](../backend/tests/security/test_injection.py) · [`test_constitutional_classifier.py`](../backend/tests/security/test_constitutional_classifier.py) |
+| **AGENT02** | Tool Misuse | ✅ **Implemented** | MCP scopes, SSRF allowlists, read-only SQL | [`test_mcp_security.py`](../backend/tests/security/test_mcp_security.py) |
+| **AGENT03** | Agentic Logic Abuse | ✅ **Implemented** | Consensus workflow, Critic quality gate | [`test_consensus.py`](../backend/tests/architecture/test_consensus.py) |
+| **AGENT04** | Memory Poisoning | ✅ **Implemented** | Memory quarantine, ingestion injection scan | [`test_quarantine.py`](../backend/tests/memory/test_quarantine.py) |
+| **AGENT05** | Cascading Failures | ✅ **Implemented** | DLQ routing, circuit breakers, token budgets | [`test_token_budget.py`](../backend/tests/security/test_token_budget.py) |
+| **AGENT06** | Unexpected Code Execution | ⬜ **N/A** | No agent-generated code execution in MVP | N/A |
+| **AGENT07** | Identity & Privilege Abuse | ✅ **Implemented** | JIT CredentialBroker, NHI registry, consent | [`test_vault.py`](../backend/tests/security/test_vault.py) |
+| **AGENT08** | Overwhelming HITL | ✅ **Implemented** | 8-layer HITL architecture, reasoning traces, per-action authz, override paths | [`test_hitl_layers.py`](../backend/tests/security/test_hitl_layers.py) |
+| **AGENT09** | Human-Agent Trust Exploitation | ✅ **Implemented** | Consent modal shows `action_payload` JSON + natural-language message | [`test_governance_integration.py`](../backend/tests/security/test_governance_integration.py) |
+| **AGENT10** | Rogue Agents | ✅ **Implemented** | Guardrail trends, long-term drift, red team cadence | [`test_drift_detection.py`](../backend/tests/observability/test_drift_detection.py) |
+
+Full matrix tests: [`test_owasp_agent_top10.py`](../backend/tests/security/test_owasp_agent_top10.py)
+
+---
+
+## Constitutional Classifiers (Gap #126)
+
+Multi-layer jailbreak defense beyond regex pattern matching.
+
+| Layer | Module | Target |
+|---|---|---|
+| 1 — Regex | `PromptInjectionDetector` | Known injection signatures |
+| 2 — Constitutional | `ConstitutionalClassifier` | Policy violations (DAN mode, exfiltration, privilege escalation) |
+| Unified | `InputSecurityScanner` | Critic agent entry point |
+
+Rules: `backend/security/rules.yaml`  
+Evaluation corpus: `backend/tests/security/jailbreak_corpus.yaml` (≥95% block rate in CI)
+
+Metric: `constitutional_violations_total{rule_id, severity}`
+
+---
+
+## Per-Action Authorization (Gaps #52, #128)
+
+Real-time ABAC evaluation before every credential issuance and MCP action — no stale session privileges.
+
+| Component | Path |
+|---|---|
+| Policy engine | `backend/security/policy_engine.py` |
+| Per-action authorizer | `backend/security/per_action_authz.py` |
+| Broker integration | `backend/security/vault.py` — authz before credential issue |
+| Metric | `per_action_authz_total{service, action, outcome}` |
+
+Tests: [`test_per_action_authz.py`](../backend/tests/security/test_per_action_authz.py)
+
+---
+
 ## 🏗️ Security Architecture
 
 ```mermaid
@@ -510,6 +563,43 @@ GDPR compliance, PII masking, data classification routing, local LLM privacy rou
 SSRF allowlist, private IP blocking, RFC 1918 blocking, Unicode normalisation,
 confidence scoring, injection quarantine, security escalation protocol, no-retry policy
 ```
+
+---
+
+## Cryptographic Audit Integrity (Gaps #123, #51)
+
+Security and delegation events are appended to a **hash-chained audit log** in `backend/security/audit.py`.
+
+| Property | Implementation |
+|---|---|
+| Chain algorithm | `entry_hash = sha256(prev_hash + canonical_json)` |
+| Genesis hash | 64 zero hex characters |
+| PII handling | Store `payload_hash` only — never raw payload |
+| Verification | `verify_audit_chain(entries)` returns `False` on tampering |
+| Persistence | `audit_log` table (Alembic `007_audit_log_sealed`) |
+| Events | `credential_issued`, `credential_revoked`, `consent_granted`, `guardrail_violation`, `delegation_created` |
+
+Consent grants via `backend/consent/store.py` append `consent_granted` entries automatically.
+
+---
+
+## JIT Credential Issuance (Gap #19)
+
+The `CredentialBroker` in `backend/security/vault.py` issues short-lived credentials for MCP integrations.
+
+| Setting | Default | Description |
+|---|---|---|
+| `VAULT_MODE` | `env` | `env` = mediated refresh token; `memory` = OAuth access-token exchange |
+| `CREDENTIAL_TTL_SECONDS` | `900` | Maximum credential lifetime (15 minutes) |
+
+**Flow:**
+
+1. Validate user consent for the target service
+2. Issue or return cached credential within TTL
+3. Append `credential_issued` to sealed audit log
+4. Increment `credential_issuance_total` Prometheus metric
+
+Calendar MCP (`backend/mcp/calendar_stdio.py`) resolves credentials via the broker on every tool call — raw refresh tokens are not read directly by the client.
 
 ---
 

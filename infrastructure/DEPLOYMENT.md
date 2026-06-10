@@ -77,10 +77,14 @@ curl -f http://localhost/health/ready
 
 ## Monitoring Setup
 
+**Local development:** Follow [docs/guidence/observability/README.md](../guidence/observability/README.md) for Prometheus, Grafana, and PagerDuty setup via Docker Compose.
+
+**Production:**
+
 1. Load Prometheus recording rules from `infrastructure/monitoring/recording_rules.yml`.
 2. Load alert rules from `infrastructure/alerting/rules.yml`.
 3. Import `infrastructure/monitoring/grafana-slo-dashboard.json`.
-4. Route alerts per `infrastructure/AGENT.md`.
+4. Route alerts per `infrastructure/AGENT.md` (PagerDuty Events API v2 via Alertmanager).
 
 ---
 

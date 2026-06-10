@@ -1,0 +1,22 @@
+# Alertmanager config for local dev when PAGERDUTY_ROUTING_KEY is unset.
+# Alerts are accepted and visible in the Alertmanager UI only (no external routing).
+
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: 'null'
+  group_by: ['alertname', 'severity']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+
+receivers:
+  - name: 'null'
+
+inhibit_rules:
+  - source_match:
+      severity: critical
+    target_match:
+      severity: warning
+    equal: ['alertname']

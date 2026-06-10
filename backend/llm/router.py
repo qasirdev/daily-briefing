@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import time
-from typing import Literal
+from typing import Any, Literal
 
 import httpx
 import structlog
@@ -11,7 +11,13 @@ from openai import APIConnectionError, APIError, APIStatusError, AsyncOpenAI
 from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
 
 from backend.llm.models import LLMResponse
-from backend.metrics import record_llm_fallback, record_llm_tokens
+from backend.llm.prompt_cache import infer_cache_provider
+from backend.llm.usage import (
+    extract_completion_tokens,
+    extract_cost_usd,
+    extract_prompt_tokens,
+)
+from backend.metrics import record_llm_cache_usage, record_llm_fallback, record_llm_tokens
 from backend.security.pii import mask_pii
 from backend.settings import Settings
 from backend.telemetry import start_async_span
@@ -20,6 +26,7 @@ logger = structlog.get_logger()
 
 DEFAULT_INPUT_BUDGET = 8_000
 DEFAULT_OUTPUT_BUDGET = 2_000
+OPENROUTER_MAX_CHAIN_MODELS = 3
 
 DataClassification = Literal[
     "public",
@@ -55,6 +62,10 @@ class LLMRouter:
             )
 
     @property
+    def primary_model(self) -> str:
+        return self._primary_openrouter_model
+
+    @property
     def fallback_model(self) -> str:
         return self._settings.local_llm_model_id or self._settings.llm_fallback_model
 
@@ -67,13 +78,14 @@ class LLMRouter:
     async def generate(
         self,
         *,
-        messages: list[dict[str, str]],
+        messages: list[dict[str, Any]],
         trace_id: str,
         input_budget: int = DEFAULT_INPUT_BUDGET,
         output_budget: int = DEFAULT_OUTPUT_BUDGET,
         force_local: bool = False,
         data_classification: DataClassification = "internal",
         agent_id: str = "llm_router",
+        response_format: dict[str, str] | None = None,
     ) -> LLMResponse:
         estimated_input = sum(len(m.get("content", "")) for m in messages) // 4
         if estimated_input > input_budget * 2:
@@ -110,6 +122,7 @@ class LLMRouter:
                     max_tokens=output_budget,
                     trace_id=trace_id,
                     agent_id=agent_id,
+                    response_format=response_format,
                 )
 
         outbound_messages = self._prepare_outbound_messages(
@@ -123,6 +136,7 @@ class LLMRouter:
                 max_tokens=output_budget,
                 trace_id=trace_id,
                 agent_id=agent_id,
+                response_format=response_format,
             )
         except httpx.TimeoutException as primary_error:
             if self._fallback is None:
@@ -149,23 +163,45 @@ class LLMRouter:
             )
 
     @staticmethod
+    def _mask_message_content(content: str) -> str:
+        return mask_pii(content)
+
+    @classmethod
     def _prepare_outbound_messages(
-        messages: list[dict[str, str]],
+        cls,
+        messages: list[dict[str, Any]],
         *,
         data_classification: DataClassification,
-    ) -> list[dict[str, str]]:
+    ) -> list[dict[str, Any]]:
         if data_classification not in {"confidential", "confidential_pii"}:
             return messages
-        return [
-            {"role": message["role"], "content": mask_pii(message.get("content", ""))}
-            for message in messages
-        ]
+        outbound: list[dict[str, Any]] = []
+        for message in messages:
+            content = message.get("content", "")
+            if isinstance(content, str):
+                outbound.append(
+                    {"role": message["role"], "content": cls._mask_message_content(content)},
+                )
+                continue
+            if isinstance(content, list):
+                masked_blocks: list[Any] = []
+                for block in content:
+                    if isinstance(block, dict) and block.get("type") == "text":
+                        text = block.get("text", "")
+                        masked_text = cls._mask_message_content(str(text))
+                        masked_blocks.append({**block, "text": masked_text})
+                    else:
+                        masked_blocks.append(block)
+                outbound.append({"role": message["role"], "content": masked_blocks})
+                continue
+            outbound.append(message)
+        return outbound
 
     async def _fallback_from_primary_error(
         self,
         *,
         primary_error: BaseException,
-        messages: list[dict[str, str]],
+        messages: list[dict[str, Any]],
         max_tokens: int,
         trace_id: str,
         agent_id: str,
@@ -193,7 +229,7 @@ class LLMRouter:
     async def _generate_local(
         self,
         *,
-        messages: list[dict[str, str]],
+        messages: list[dict[str, Any]],
         max_tokens: int,
         trace_id: str,
         agent_id: str,
@@ -223,62 +259,123 @@ class LLMRouter:
     async def _call_primary_with_retry(
         self,
         *,
-        messages: list[dict[str, str]],
+        messages: list[dict[str, Any]],
         max_tokens: int,
         trace_id: str,
         agent_id: str,
+        response_format: dict[str, str] | None = None,
     ) -> LLMResponse:
-        return await self._call_provider(
-            client=self._primary,
-            model=self._primary_openrouter_model,
-            messages=messages,
-            max_tokens=max_tokens,
-            trace_id=trace_id,
-            agent_id=agent_id,
-            openrouter_models=self._openrouter_models,
-        )
+        models = list(self._openrouter_models) or [self._primary_openrouter_model]
+        errors: list[str] = []
+        chain_models = models[:OPENROUTER_MAX_CHAIN_MODELS]
+        overflow_models = models[OPENROUTER_MAX_CHAIN_MODELS:]
+
+        if len(chain_models) > 1:
+            try:
+                return await self._call_provider(
+                    client=self._primary,
+                    model=chain_models[0],
+                    messages=messages,
+                    max_tokens=max_tokens,
+                    trace_id=trace_id,
+                    agent_id=agent_id,
+                    openrouter_models=chain_models,
+                    response_format=response_format,
+                )
+            except LLMError as exc:
+                errors.append(f"chain: {exc}")
+                logger.warning(
+                    "openrouter_model_chain_failed",
+                    trace_id=trace_id,
+                    error=str(exc),
+                    models=chain_models,
+                    overflow_models=overflow_models or None,
+                )
+
+        if len(chain_models) > 1 and errors:
+            fallback_models = chain_models[1:] + overflow_models
+        else:
+            fallback_models = chain_models + overflow_models
+        for candidate in fallback_models:
+            try:
+                return await self._call_provider(
+                    client=self._primary,
+                    model=candidate,
+                    messages=messages,
+                    max_tokens=max_tokens,
+                    trace_id=trace_id,
+                    agent_id=agent_id,
+                    openrouter_models=None,
+                    response_format=response_format,
+                )
+            except LLMError as exc:
+                errors.append(f"{candidate}: {exc}")
+                continue
+
+        msg = "; ".join(errors) if errors else "All LLM providers returned empty responses"
+        raise LLMError(msg)
 
     async def _call_provider(
         self,
         *,
         client: AsyncOpenAI,
         model: str,
-        messages: list[dict[str, str]],
+        messages: list[dict[str, Any]],
         max_tokens: int,
         trace_id: str,
         agent_id: str,
         openrouter_models: list[str] | None = None,
+        response_format: dict[str, str] | None = None,
     ) -> LLMResponse:
         async with start_async_span(f"llm.{model}.generate", llm_model=model):
             start = time.perf_counter()
+            completion_kwargs: dict[str, Any] = {
+                "model": model,
+                "messages": messages,
+                "max_tokens": max_tokens,
+            }
+            if response_format is not None:
+                completion_kwargs["response_format"] = response_format
             try:
                 if openrouter_models:
                     completion = await client.chat.completions.create(
-                        model=model,
-                        messages=messages,  # type: ignore[arg-type]
-                        max_tokens=max_tokens,
+                        **completion_kwargs,
                         extra_body={
                             "models": openrouter_models,
                             "route": self._settings.llm_openrouter_route,
                         },
                     )
                 else:
-                    completion = await client.chat.completions.create(
-                        model=model,
-                        messages=messages,  # type: ignore[arg-type]
-                        max_tokens=max_tokens,
-                    )
+                    completion = await client.chat.completions.create(**completion_kwargs)
             except httpx.TimeoutException as exc:
                 raise LLMError("LLM request timed out") from exc
             except APIConnectionError as exc:
                 raise LLMError("LLM connection error") from exc
+            except APIStatusError as exc:
+                raise LLMError(str(exc)) from exc
+            except APIError as exc:
+                raise LLMError(str(exc)) from exc
 
             latency_ms = int((time.perf_counter() - start) * 1000)
             choice = completion.choices[0].message.content or ""
+            if not choice.strip():
+                model_used = completion.model or model
+                msg = f"Empty response from model {model_used}"
+                raise LLMError(msg)
             usage = completion.usage
             model_used = completion.model or model
             tokens_used = usage.total_tokens if usage else len(choice) // 4
+            prompt_tokens = extract_prompt_tokens(usage) or 0
+            completion_tokens = extract_completion_tokens(usage) or 0
+            cost_usd = extract_cost_usd(usage) or 0.0
             record_llm_tokens(agent_id=agent_id, model=model_used, tokens=tokens_used)
+            cached_tokens = self._extract_cached_tokens(usage)
+            if self._settings.enable_prompt_caching:
+                record_llm_cache_usage(
+                    provider=infer_cache_provider(model_used),
+                    model=model_used,
+                    cached_tokens=cached_tokens,
+                )
 
             logger.info(
                 "llm_generation_complete",
@@ -287,6 +384,10 @@ class LLMRouter:
                 model_requested=model,
                 openrouter_models=openrouter_models,
                 tokens_used=tokens_used,
+                prompt_tokens=prompt_tokens,
+                completion_tokens=completion_tokens,
+                cost_usd=cost_usd,
+                cached_tokens=cached_tokens,
                 latency_ms=latency_ms,
             )
 
@@ -294,5 +395,23 @@ class LLMRouter:
                 content=choice,
                 model_used=model_used,
                 tokens_used=tokens_used,
+                prompt_tokens=prompt_tokens,
+                completion_tokens=completion_tokens,
+                cost_usd=cost_usd,
                 latency_ms=latency_ms,
             )
+
+    @staticmethod
+    def _extract_cached_tokens(usage: object | None) -> int:
+        """Extract cached prompt tokens from provider usage metadata."""
+        if usage is None:
+            return 0
+        cache_read = getattr(usage, "cache_read_input_tokens", None)
+        if isinstance(cache_read, int) and cache_read > 0:
+            return cache_read
+        details = getattr(usage, "prompt_tokens_details", None)
+        if details is not None:
+            cached = getattr(details, "cached_tokens", None)
+            if isinstance(cached, int) and cached > 0:
+                return cached
+        return 0

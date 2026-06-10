@@ -246,7 +246,7 @@ Before handing off to Testing Agent:
 - [ ] No duplicate LLM routing code
 - [ ] Output sanitization applied consistently
 - [ ] AgentResultEnvelope schema preserved
-- [ ] Type coverage at 100% (mypy --strict passes)
+- [ ] Backend verification gate passed: `uv run ruff check backend && uv run ruff format backend && uv run mypy backend && uv run pytest`
 
 ---
 

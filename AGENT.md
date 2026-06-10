@@ -20,13 +20,14 @@ co-located AGENT.md files alongside the code they govern.
 |---|---|
 | Token usage | Follow `docs/TOKEN-EFFICIENCY.md` — read before `docs/KICKOFF-PROMPT.md` |
 | Plan mode | Required for any epic/task or task with 3+ steps — check `docs/jira-tickets-json/*.json` |
-| Edge cases | Review the `Description` field in the relevant JSON and implement associated fail-safes |
+| Edge cases | Review the `Description` field in `docs/jira-tickets-json/*.json` — implement every item under `EDGE CASES` (DB-E2 format: `IMPLEMENTATION DETAILS`, `TESTING CRITERIA`, `EDGE CASES` sections per task) |
 | Task log | Write plan to `docs/tasks/todo.md` before any implementation |
 | Verify plan | Check in before starting — do not build on an unconfirmed plan |
 | Subagents | Offload research, exploration, parallel analysis to subagents |
 | Lessons review | Read `docs/tasks/lessons.md` at session start before touching code |
 | Correction loop | After any user correction: update `docs/tasks/lessons.md` immediately |
 | Done gate | Never mark complete without proving it works (tests, logs, diff) |
+| Backend verification gate | Before marking any backend task done, run: `uv run ruff check backend && uv run ruff format backend && uv run mypy backend && uv run pytest` (see `backend/AGENT.md`) |
 | Elegance check | For non-trivial changes: pause and ask "is there a more elegant way?" |
 | Bug reports | Fix autonomously — point at logs/errors and resolve without hand-holding |
 | Security First | Check `docs/SECURITY.md` before modifying agent inputs/outputs |
@@ -35,7 +36,8 @@ co-located AGENT.md files alongside the code they govern.
 | DLQ Handling | Failed agents or unrecoverable MCP timeouts MUST route to the DLQ |
 | Orchestrator-as-Presenter | Only the Orchestrator synthesizes user-facing markdown; sub-agents return JSON |
 | JIT Consent | Never hardcode credentials; respect Agentic Consent for Google Calendar MCP |
-| Prompt creation | New agents in `prompts/` require all 6 files in XML format (see `prompts/AGENT.md`) |
+| Prompt creation | New agents in `prompts/` require all 11 files following v2.0.0 standards: system.md, context.md, instructions.md, examples.md, output-schema.md, tools.md, reasoning.md, guardrails.md, quality-checklist.md, CHANGELOG.md, CONTRACT.md (see `prompts/AGENT.md` and `prompts/focus/` for structure) |
+| Prompt caching | Structure prompts for caching: static content (system, examples) before dynamic (user input), >1024 tokens for OpenAI auto-cache, use Claude's cache_control markers |
 | Agent creation | New agents in `backend/agents/` require a co-located `AGENT.md` |
 | Knowledge capture | New techniques or non-trivial fixes go in `docs/learning/` |
 | Task tracking | Update `docs/tasks/todo.md` and `docs/tasks/lessons.md` on completion |
@@ -70,7 +72,7 @@ co-located AGENT.md files alongside the code they govern.
 | **Supabase setup** | docs/guidence/supabase-setup.md | Option 1 |
 | **Google Calendar OAuth** | docs/guidence/google-calandar-setup.md | Option 1 |
 | Engineering Standards (FE/BE/DB) | docs/ENGINEERING-STANDARDS.md | MVP 1 |
-| Details of epics and tasks | docs/jira-tickets-json/*.json | MVP 1–6 |
+| Details of epics and tasks | docs/jira-tickets-json/*.json (DB-E2 `Description` format — see `docs/jira-tickets-json/README.md`) | MVP 1–6, Gap Weeks 1–8 |
 | Observability & Tracing | docs/OBSERVABILITY.md | MVP 3 |
 | Data Ownership & Learner Loops | docs/DATA-OWNERSHIP.md | MVP 4 |
 | Agentic Consent | docs/AGENTIC-CONSENT.md | MVP 4 |

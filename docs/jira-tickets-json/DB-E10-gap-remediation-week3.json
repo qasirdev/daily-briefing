@@ -1,0 +1,127 @@
+{
+  "epic": {
+    "id": "DB-E10",
+    "key": "DB-E10",
+    "summary": "Week 3: Procedural/Episodic Memory + Prompt Version Management",
+    "description": "Complete CoALA four-layer memory (Procedural + Episodic deferred from Week 2), implement prompt version registry with cache invalidation on version bumps, and wire cross-layer memory retrieval into Focus agent.",
+    "status": "In Progress",
+    "priority": "Critical",
+    "assignee": "Cursor Agents (Coding → Refactor → Testing → Documentation)",
+    "reporter": "Gap Analysis Review",
+    "labels": [
+      "gap-remediation",
+      "memory-architecture",
+      "coala",
+      "prompt-versioning",
+      "pgvector"
+    ],
+    "created": "2026-06-06",
+    "target_completion": "2026-06-13",
+    "epic_link": "epic/autonomus-implementation-gap",
+    "reference_docs": [
+      "docs/gaps/GAP-ANALYSIS-REVIEW.md",
+      "docs/gaps/WEEK3-IMPLEMENTATION-GUIDE.md",
+      "docs/gaps/WEEK3-KICKOFF-PROMPT.md",
+      "docs/learning/week2-caching-and-memory.md",
+      "007-01-ai-daily-briefing-assistant-v2.0.0.md"
+    ],
+    "dependencies": [
+      "DB-E9 (Week 2) complete and merged",
+      "Working + Semantic memory operational (pgvector on Supabase)",
+      "Prompt caching infrastructure from Week 2"
+    ],
+    "decisions": {
+      "scope": "Procedural + Episodic memory Days 1-2, prompt version registry Day 3, integration Day 4, validation Day 5",
+      "vector_store": "pgvector on Supabase (reuse Week 2 stack)",
+      "version_source": "CONTRACT.md per agent directory under prompts/"
+    }
+  },
+  "tasks": [
+    {
+      "id": "DB-111",
+      "key": "DB-111",
+      "summary": "Day 1: Procedural Memory Store",
+      "description": "Implement CoALA procedural memory layer — JSON skill definitions with access control, Alembic migration, ProceduralMemoryStore with progressive disclosure.",
+      "task_type": "Implementation",
+      "story_points": 8,
+      "priority": "High",
+      "status": "In Progress",
+      "acceptance_criteria": [
+        "backend/memory/procedural.py implements ProceduralMemoryStore",
+        "Alembic migration 003 creates procedural_memory table with RLS",
+        "Skills filterable by agent_id and allowed_agents access control",
+        "Tests in backend/tests/memory/test_procedural.py pass"
+      ],
+      "estimated_hours": 8
+    },
+    {
+      "id": "DB-112",
+      "key": "DB-112",
+      "summary": "Day 2: Episodic Memory + Working→Episodic Distillation",
+      "description": "Implement episodic memory for distilled session lessons (not raw logs), session isolation, versioning with supersede support, and working memory distillation in consolidation.py.",
+      "task_type": "Implementation",
+      "story_points": 8,
+      "priority": "High",
+      "status": "To Do",
+      "acceptance_criteria": [
+        "backend/memory/episodic.py implements EpisodicMemoryStore",
+        "Alembic migration 004 creates episodic_memory table with RLS",
+        "consolidate_session_memory distills working snippets to episodic lessons",
+        "Session isolation enforced via user_id + session_id",
+        "Tests in backend/tests/memory/test_episodic.py pass"
+      ],
+      "estimated_hours": 8
+    },
+    {
+      "id": "DB-113",
+      "key": "DB-113",
+      "summary": "Day 3: Prompt Version Registry + Cache Invalidation",
+      "description": "Central prompt version registry reading CONTRACT.md per agent, resolve_prompt_version() for all agents, detect version changes and log cache invalidation events.",
+      "task_type": "Implementation",
+      "story_points": 8,
+      "priority": "High",
+      "status": "To Do",
+      "acceptance_criteria": [
+        "backend/prompt_version.py parses CONTRACT.md versions",
+        "All LLM agents use resolve_prompt_version() in ExecutionMetadata",
+        "Version change detection logs prompt_cache_version_changed",
+        "Tests in backend/tests/test_prompt_version.py pass"
+      ],
+      "estimated_hours": 8
+    },
+    {
+      "id": "DB-114",
+      "key": "DB-114",
+      "summary": "Day 4: Cross-Layer Memory Integration",
+      "description": "Wire procedural and episodic retrieval into retrieval.py and Focus agent; implement semantic memory consolidation (age-based prune).",
+      "task_type": "Implementation",
+      "story_points": 8,
+      "priority": "High",
+      "status": "To Do",
+      "acceptance_criteria": [
+        "retrieve_agent_memory() returns semantic + procedural + episodic context",
+        "Focus agent payload includes procedural_skills and episodic_lessons",
+        "consolidate_semantic_memory prunes rows older than max_age_days",
+        "Memory audit trail covers procedural and episodic layers"
+      ],
+      "estimated_hours": 8
+    },
+    {
+      "id": "DB-115",
+      "key": "DB-115",
+      "summary": "Day 5: Integration Tests, Proof Package & Documentation",
+      "description": "15+ cross-layer integration scenarios, proof/week3/, docs/learning/week3-memory-and-versioning.md, update ARCHITECTURE.md.",
+      "task_type": "Testing + Documentation",
+      "story_points": 8,
+      "priority": "High",
+      "status": "To Do",
+      "acceptance_criteria": [
+        "10+ new integration test scenarios pass",
+        "proof/week3/ captures test output and git history",
+        "docs/learning/week3-memory-and-versioning.md complete",
+        "All four CoALA memory layers documented in ARCHITECTURE.md"
+      ],
+      "estimated_hours": 8
+    }
+  ]
+}

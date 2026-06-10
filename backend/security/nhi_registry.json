@@ -1,0 +1,76 @@
+{
+  "nhi_task_agent_v1": {
+    "nhi_id": "nhi_task_agent_v1",
+    "agent_name": "task",
+    "version": "1.0.0",
+    "capability_level": "low",
+    "risk_level": "low",
+    "lifecycle": "persistent",
+    "access_model": "static",
+    "registered_at": "2026-06-06T16:13:26.713843Z",
+    "registered_by": "system",
+    "external_connections": [
+      "postgres_mcp"
+    ],
+    "secrets_manager": "env",
+    "hitl_required": false
+  },
+  "nhi_calendar_agent_v1": {
+    "nhi_id": "nhi_calendar_agent_v1",
+    "agent_name": "calendar",
+    "version": "1.0.0",
+    "capability_level": "high",
+    "risk_level": "high",
+    "lifecycle": "ephemeral",
+    "access_model": "dynamic",
+    "registered_at": "2026-06-06T16:13:26.713858Z",
+    "registered_by": "system",
+    "external_connections": [
+      "google_calendar_mcp"
+    ],
+    "secrets_manager": "env",
+    "hitl_required": true
+  },
+  "nhi_focus_agent_v1": {
+    "nhi_id": "nhi_focus_agent_v1",
+    "agent_name": "focus",
+    "version": "1.0.0",
+    "capability_level": "high",
+    "risk_level": "low",
+    "lifecycle": "persistent",
+    "access_model": "static",
+    "registered_at": "2026-06-06T16:13:26.713861Z",
+    "registered_by": "system",
+    "external_connections": [],
+    "secrets_manager": "none",
+    "hitl_required": false
+  },
+  "nhi_critic_agent_v1": {
+    "nhi_id": "nhi_critic_agent_v1",
+    "agent_name": "critic",
+    "version": "1.0.0",
+    "capability_level": "low",
+    "risk_level": "low",
+    "lifecycle": "persistent",
+    "access_model": "static",
+    "registered_at": "2026-06-06T16:13:26.713863Z",
+    "registered_by": "system",
+    "external_connections": [],
+    "secrets_manager": "none",
+    "hitl_required": false
+  },
+  "nhi_orchestrator_v1": {
+    "nhi_id": "nhi_orchestrator_v1",
+    "agent_name": "orchestrator",
+    "version": "1.0.0",
+    "capability_level": "high",
+    "risk_level": "low",
+    "lifecycle": "persistent",
+    "access_model": "static",
+    "registered_at": "2026-06-06T16:13:26.713865Z",
+    "registered_by": "system",
+    "external_connections": [],
+    "secrets_manager": "none",
+    "hitl_required": false
+  }
+}

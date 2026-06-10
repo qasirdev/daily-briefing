@@ -168,6 +168,71 @@ Fresh autonomous kickoff only (not every "hi"): then read `docs/KICKOFF-PROMPT.m
 
 ---
 
+## Gap Remediation (8-Week Roadmap)
+
+| Week | Epic | Summary | Status |
+|---|---|---|---|
+| 1 | DB-E8 | Multi-agent consensus + NHI registry | ✅ |
+| 2 | DB-E9 | Prompt caching + Working/Semantic memory | ✅ |
+| 3 | DB-E10 | Procedural/Episodic memory + prompt versioning | ✅ |
+| 4 | DB-E11 | Memory security, AgentOps, live embeddings | ✅ |
+| 5 | DB-E12 | Supply chain + JIT credentials | ✅ |
+| 6 | DB-E13 | OWASP Agent Top 10 + red teaming | ✅ |
+| 7 | DB-E14 | HITL + governance hardening | ✅ |
+| 8 | DB-E15 | Production optimization & agentic RAG | ✅ |
+
+**Week 4 tasks:** DB-116 through DB-120 — see `docs/jira-tickets-json/DB-E11-gap-remediation-week4.json`
+
+**Week 5 tasks:** DB-121 through DB-125 — see `docs/jira-tickets-json/DB-E12-gap-remediation-week5.json` (DB-E2 Description format)
+
+| Task ID | Summary | Status |
+|---|---|---|
+| DB-121 | Day 1: AI-BOM & Supply Chain Documentation (Gap #115) | ✅ |
+| DB-122 | Day 2: OpenSSF Scorecard & Dependency Audit CI (Gap #116) | ✅ |
+| DB-123 | Day 3: Cryptographic Audit Log Sealing (Gaps #123, #51) | ✅ |
+| DB-124 | Day 4: JIT Credential Broker (Gap #19) | ✅ |
+| DB-125 | Day 5: Vendor Assessments, Integration Tests & Proof (Gap #127) | ✅ |
+
+**Week 5 guides:** `docs/gaps/WEEK5-KICKOFF-PROMPT.md`, `docs/gaps/WEEK5-IMPLEMENTATION-GUIDE.md`
+
+**Week 6 tasks:** DB-126 through DB-130 — see `docs/jira-tickets-json/DB-E13-gap-remediation-week6.json`
+
+| Task ID | Summary | Status |
+|---|---|---|
+| DB-126 | Day 1: OWASP Agent Top 10 Compliance Matrix (Gaps #62-65) | ✅ |
+| DB-127 | Day 2: Constitutional Classifiers (Gap #126) | ✅ |
+| DB-128 | Day 3: MITRE ATT&CK Detection Coverage (Gap #129) | ✅ |
+| DB-129 | Day 4: Long-Term Drift, Dwell Time SLO & Alert Coverage (Gaps #122, #134, #135) | ✅ |
+| DB-130 | Day 5: Red Teaming, Consent Hardening & Proof (Gaps #88, #98) | ✅ |
+
+**Week 6 guides:** `docs/gaps/WEEK6-KICKOFF-PROMPT.md`, `docs/gaps/WEEK6-IMPLEMENTATION-GUIDE.md`
+
+**Week 7 tasks:** DB-131 through DB-135 — see `docs/jira-tickets-json/DB-E14-gap-remediation-week7.json`
+
+| Task ID | Summary | Status |
+|---|---|---|
+| DB-131 | Day 1: HITL Layer Architecture & Registry (Gaps #66, #95) | ✅ |
+| DB-132 | Day 2: Per-Action Authorization & Policy Engine (Gap #128) | ✅ |
+| DB-133 | Day 3: Reasoning Trace Observability (Gaps #67-68) | ✅ |
+| DB-134 | Day 4: Governance & Emergency Authorization (Gaps #86, #131) | ✅ |
+| DB-135 | Day 5: Multi-Incident Tabletop, Integration Tests & Proof (Gap #130) | ✅ |
+
+**Week 7 guides:** `docs/gaps/WEEK7-KICKOFF-PROMPT.md`, `docs/gaps/WEEK7-IMPLEMENTATION-GUIDE.md`
+
+**Week 8 tasks:** DB-136 through DB-140 — see `docs/jira-tickets-json/DB-E15-gap-remediation-week8.json`
+
+| Task ID | Summary | Status |
+|---|---|---|
+| DB-136 | Day 1: Agentic RAG Decision Engine (Gaps #33, #37) | ✅ |
+| DB-137 | Day 2: Source Validation & Context Compression (Gaps #34, #38, #40) | ✅ |
+| DB-138 | Day 3: Reasoning-Level Feedback (Gap #69) | ✅ |
+| DB-139 | Day 4: Enumeration Detection & Deployment Gates (Gaps #59, T1087) | ✅ |
+| DB-140 | Day 5: Integration Tests, Proof & Documentation | ✅ |
+
+**Week 8 guides:** `docs/gaps/WEEK8-KICKOFF-PROMPT.md`, `docs/gaps/WEEK8-IMPLEMENTATION-GUIDE.md`
+
+---
+
 ## Summary
 
 | MVP | Epic | Tasks | Completed | Progress |
@@ -179,7 +244,9 @@ Fresh autonomous kickoff only (not every "hi"): then read `docs/KICKOFF-PROMPT.m
 | MVP 5 | DB-E5 | 8 | 8 | 100% |
 | MVP 6 | DB-E6 | 8 | 8 | 100% |
 | Option 1 | DB-E7 | 5 | 5 | 100% |
-| **Total** | **7 Epics** | **57** | **57** | **100%** |
+| Gap Week 4 | DB-E11 | 5 | 5 | 100% |
+| Gap Week 5 | DB-E12 | 5 | 5 | 100% |
+| **Total** | **9 Epics** | **67** | **67** | **100%** |
 
 ---
 

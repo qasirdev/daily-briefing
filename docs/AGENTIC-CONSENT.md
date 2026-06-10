@@ -144,6 +144,21 @@ def calculate_expiry(service: str, consent_type: str) -> datetime | None:
 
 ---
 
+## Human-on-the-Loop Default (Gap #95)
+
+**Week 7 (DB-E14):** Standard briefing runs autonomously with visible override — not full human approval for every step.
+
+| Mode | When | Pipeline Behavior |
+|---|---|---|
+| **Human-on-the-loop** | Default daily briefing | Agents execute; user sees reasoning trace + observability badge |
+| **Human-in-the-loop** | Consensus disagreement, scope-expanding consent | Pipeline pauses at `awaiting_human_review` or consent modal |
+
+Sensitive actions (calendar access, task writes) always require JIT consent regardless of mode.
+
+See `docs/HITL-ARCHITECTURE.md` for the eight-layer model.
+
+---
+
 ## Just-In-Time (JIT) Authorization
 
 ### Agent Interruption Protocol

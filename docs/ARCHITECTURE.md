@@ -1,6 +1,6 @@
 # System Architecture — AI Daily Briefing Assistant
 
-**Version:** 1.6.0 (Option 1 Enterprise Hybrid) | **Last Updated:** May 2026
+**Version:** 1.7.0 (Option 1 Enterprise Hybrid) | **Last Updated:** June 2026
 
 ---
 
@@ -167,6 +167,7 @@ The system operates on a rigorous supervisor-worker pattern with defined roles:
 | **Input** | Aggregated tasks + events context |
 | **Output** | `AgentResultEnvelope` with plan JSON |
 | **Tools/MCP** | LLM only (no external tools) |
+| **Memory** | Working memory (session) + Semantic retrieval (pgvector) |
 | **Security** | Instruction hierarchy enforced |
 
 ### 5. Critic Agent (Critic)
@@ -179,6 +180,112 @@ The system operates on a rigorous supervisor-worker pattern with defined roles:
 | **Output** | `AgentResultEnvelope` with review/approval |
 | **Tools/MCP** | LLM only |
 | **Security** | Final output gatekeeper, prompt injection detector |
+
+---
+
+## Multi-Agent Verification Architecture
+
+When `ENABLE_CONSENSUS_WORKFLOW=true`, the briefing pipeline adds a **Generator → Verification → Adversarial → Consensus** stage between Focus and Critic. Default (`false`) preserves the legacy Focus → Critic path for production stability during Week 1 rollout.
+
+### Workflow Diagram
+
+```mermaid
+graph TD
+    TASK[Task Agent] --> FOCUS[Focus Agent]
+    CAL[Calendar Agent] --> FOCUS
+    FOCUS --> VERIFY[Verification Agent]
+    VERIFY --> ADV[Adversarial Agent]
+    ADV --> CONSENSUS[Consensus Evaluator]
+
+    CONSENSUS -->|Agreement| CRITIC[Critic Agent]
+    CONSENSUS -->|Minor Disagreement| CRITIC
+    CONSENSUS -->|Major Disagreement| HUMAN[Human Escalation]
+
+    CRITIC --> ORCH[Orchestrator]
+    HUMAN --> END_NODE[End — awaiting_human_review]
+```
+
+### Agent Roles (Consensus Path)
+
+| Agent | Role | Purpose |
+|---|---|---|
+| Task Agent | Doer | Fetches tasks from PostgreSQL MCP |
+| Calendar Agent | Tool Operator | Fetches events from Google Calendar MCP |
+| Focus Agent | Planner | Generates briefing plan from aggregated data |
+| Verification Agent | Verifier | Fact-checks Focus output against raw MCP data |
+| Adversarial Agent | Red Team | Challenges assumptions and identifies edge cases |
+| Consensus Evaluator | Aggregator | Counts concerns and selects routing path |
+| Critic Agent | Safety + Quality | Final security scan and quality check |
+| Orchestrator | Supervisor + Presenter | Synthesizes final sanitized markdown |
+
+### Consensus Decision Matrix
+
+| Major Concerns | Moderate Concerns | Route |
+|---|---|---|
+| 0 | 0 | Agreement → Proceed to Critic |
+| 0 | 1+ | Minor Disagreement → Proceed to Critic with warning |
+| 2+ | Any | Major Disagreement → Human Escalation (`awaiting_human_review`) |
+
+Major concerns are counted from Verification `critical` discrepancies (when escalated) and Adversarial `severe` challenges. See `backend/agents/consensus/node.py` and `docs/learning/week1-consensus-pattern.md`.
+
+---
+
+## Prompt Caching (Week 2)
+
+Static agent prompts are assembled in cache-eligible block order and warmed on startup. Dynamic user payloads (MCP data, semantic memory hits) are always appended last and never cached.
+
+| Component | Path |
+|---|---|
+| Prompt assembly | `backend/prompts_loader.py` |
+| Message builder | `backend/llm/prompt_cache.py` |
+| Cache warmer | `PromptCacheWarmer` (240s refresh) |
+| Metrics | `llm_cache_hit_rate`, `llm_cache_hit_total`, `llm_cache_miss_total` |
+| ROI helpers | `backend/llm/cache_roi.py` |
+
+See `docs/learning/week2-caching-and-memory.md` for cache-eligible agents and Week 1 baseline comparison.
+
+---
+
+## CoALA Memory Layers (Week 2–3 — Complete)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Layer 1: Working Memory (ephemeral, LangGraph state)       │
+│  working_memory_tokens | working_memory_limit | context[]   │
+│  Manager: backend/memory/working.py                         │
+│  Metric: working_memory_utilization                         │
+└──────────────────────────┬──────────────────────────────────┘
+                           │ retrieval query
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Layer 2: Semantic Memory (pgvector on Supabase)            │
+│  Table: semantic_memory (HNSW + RLS)                        │
+│  Store: backend/memory/semantic.py                          │
+└──────────────────────────┬──────────────────────────────────┘
+                           │ cross-layer retrieval
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Layer 3: Procedural Memory (learned workflows)             │
+│  Table: procedural_memory (JSON skills + allowed_agents)    │
+│  Store: backend/memory/procedural.py                        │
+└──────────────────────────┬──────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Layer 4: Episodic Memory (distilled session lessons)       │
+│  Table: episodic_memory (versioning + supersede)              │
+│  Store: backend/memory/episodic.py                          │
+│  Distillation: backend/memory/consolidation.py              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+`retrieve_agent_memory()` in `backend/memory/retrieval.py` combines all layers. Focus agent injects `semantic_memory`, `procedural_skills`, and `episodic_lessons` into the LLM payload.
+
+**Prompt versioning:** `backend/prompt_version.py` reads `prompts/{agent}/CONTRACT.md`; version changes log `prompt_cache_version_changed` on startup.
+
+**Migration:** `uv run alembic upgrade head` from project root (`alembic.ini`).
+
+See `docs/learning/week3-memory-and-versioning.md` for Week 3 details.
 
 ---
 
@@ -222,16 +329,22 @@ class BriefingGraphState(TypedDict):
     task_result: AgentResultEnvelope | None
     calendar_result: AgentResultEnvelope | None
     focus_result: AgentResultEnvelope | None
+    verification_result: AgentResultEnvelope | None
+    adversarial_result: AgentResultEnvelope | None
+    consensus_result: dict[str, object] | None
     critic_result: AgentResultEnvelope | None
     
     # Execution tracking
     current_agent: str
     revision_count: int
     total_tokens: int
+    working_memory_tokens: int
+    working_memory_limit: int
+    working_memory_context: list[str]
     
     # Final output
     final_briefing: str | None
-    status: Literal["pending", "success", "failure", "degraded"]
+    status: Literal["pending", "success", "failure", "degraded", "awaiting_consent", "awaiting_human_review"]
 ```
 
 ---
@@ -312,4 +425,4 @@ See `docs/SECURITY.md` for comprehensive security documentation.
 
 ---
 
-*Architecture Documentation — Version 1.6.0 — May 2026*
+*Architecture Documentation — Version 1.7.0 — June 2026*

@@ -1,0 +1,25 @@
+# Prometheus config for local Daily Briefing observability stack.
+# Scrape target uses APP_METRICS_TARGET from docker-compose envsubst.
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']
+
+rule_files:
+  - /etc/prometheus/recording_rules.yml
+  - /etc/prometheus/alert_rules.yml
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: daily-briefing
+    metrics_path: /metrics/
+    static_configs:
+      - targets: ['${APP_METRICS_TARGET}']

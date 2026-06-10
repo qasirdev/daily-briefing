@@ -10,16 +10,26 @@ import structlog
 
 from backend.datetime_format import format_time_range
 from backend.graph.state import BriefingGraphState
+from backend.memory.consolidation import distill_working_to_episodic
+from backend.memory.working import WorkingMemoryManager
 from backend.metrics import record_consent_request
 from backend.schemas.consent import (
     DEFAULT_TTL_HOURS,
+    ConsentActionPayload,
     ConsentPromptRequest,
     coerce_consent_service,
 )
 from backend.schemas.envelope import AgentResultEnvelope, ExecutionMetadata
+from backend.security.pii import mask_pii
 from backend.security.sanitization import sanitize_markdown
+from backend.settings import get_settings
 
 logger = structlog.get_logger()
+
+SERVICE_RESOURCE_LABELS: dict[str, str] = {
+    "google_calendar": "primary calendar events",
+    "postgres_mcp": "user tasks database",
+}
 
 
 def _render_focus_plan(plan: dict[str, object]) -> str:
@@ -37,13 +47,15 @@ def _render_focus_plan(plan: dict[str, object]) -> str:
             if block_count
             else "Focus plan generated."
         )
+    if isinstance(summary, str):
+        summary = mask_pii(summary)
     parts = [f"<p>{summary}</p>"]
     if isinstance(blocks, list) and blocks:
         items = "".join(
             f"<li><strong>"
             f"{format_time_range(block.get('start', ''), block.get('end', ''))}"
             f"</strong>: "
-            f"{block.get('activity', 'Scheduled block')}</li>"
+            f"{mask_pii(str(block.get('activity', 'Scheduled block')))}</li>"
             for block in blocks
             if isinstance(block, dict)
         )
@@ -102,25 +114,87 @@ def build_consent_prompt(state: BriefingGraphState) -> ConsentPromptRequest:
     else:
         ttl = DEFAULT_TTL_HOURS.get(service, 4)
 
+    agent_id = str(context_data.get("agent_id", "calendar"))
+    intent = str(context_data.get("intent", "read_events"))
     record_consent_request(mcp_server=service, outcome="requested")
     return ConsentPromptRequest(
         request_id=state.get("request_id", state.get("trace_id", "0" * 32)),
         service=service,
         scope=scope,
         suggested_ttl_hours=ttl,
-        agent_requesting=str(context_data.get("agent_id", "calendar")),
+        agent_requesting=agent_id,
         message=str(context_data.get("message", state.get("consent_context") or "")),
+        action_payload=ConsentActionPayload(
+            service=service,
+            scope=scope,
+            agent_id=agent_id,
+            intent=intent,
+            resource=str(context_data.get("resource", SERVICE_RESOURCE_LABELS.get(service, ""))),
+        ),
     )
+
+
+async def _distill_session_memory(state: BriefingGraphState) -> None:
+    """Distill working memory into episodic lessons at session end."""
+    settings = get_settings()
+    if not settings.enable_episodic_memory:
+        return
+
+    user_id = state.get("user_id", "")
+    if not user_id:
+        return
+
+    working_context = state.get("working_memory_context", [])
+    if not isinstance(working_context, list) or not working_context:
+        return
+
+    session_id = state.get("request_id") or state.get("trace_id", "")
+    if not session_id:
+        return
+
+    try:
+        await distill_working_to_episodic(
+            user_id=user_id,
+            session_id=session_id,
+            working_context=working_context,
+        )
+    except Exception as exc:
+        logger.warning(
+            "session_memory_distillation_failed",
+            trace_id=state.get("trace_id", "0" * 32),
+            user_id=user_id,
+            session_id=session_id,
+            error=str(exc),
+        )
+
+
+async def human_escalation_node(state: BriefingGraphState) -> dict[str, Any]:
+    """Pause briefing generation when consensus detects major disagreement."""
+    trace_id = state.get("trace_id", "0" * 32)
+    consensus = state.get("consensus_result") or {}
+    logger.warning(
+        "human_escalation_required",
+        trace_id=trace_id,
+        major_concerns=consensus.get("major_concerns", 0),
+        agreement_level=consensus.get("agreement_level"),
+    )
+    return {
+        "status": "awaiting_human_review",
+        "current_agent": "human_escalation",
+        "final_briefing": None,
+    }
 
 
 async def orchestrator_route_node(state: BriefingGraphState) -> dict[str, Any]:
     """Initialize routing phase and detect early consent requirements."""
     trace_id = state.get("trace_id", "0" * 32)
     logger.info("orchestrator_route_started", trace_id=trace_id)
+    working = WorkingMemoryManager()
     return {
         "current_agent": "orchestrator_route",
         "status": "pending",
         "revision_count": state.get("revision_count", 0),
+        **working.initialize_state(state),
     }
 
 
@@ -172,7 +246,8 @@ async def orchestrator_present_node(state: BriefingGraphState) -> dict[str, Any]
         tasks = task_payload.get("tasks", [])
         if isinstance(tasks, list) and tasks:
             items = "".join(
-                f"<li>{task.get('title', 'Task')} ({task.get('priority', 'medium')})</li>"
+                f"<li>{mask_pii(str(task.get('title', 'Task')))} "
+                f"({task.get('priority', 'medium')})</li>"
                 for task in tasks
                 if isinstance(task, dict)
             )
@@ -183,7 +258,8 @@ async def orchestrator_present_node(state: BriefingGraphState) -> dict[str, Any]
         events = calendar_payload.get("events", [])
         if isinstance(events, list) and events:
             items = "".join(
-                f"<li>{event.get('summary', 'Event')} — {event.get('start', '')}</li>"
+                f"<li>{mask_pii(str(event.get('summary', 'Event')))} — "
+                f"{event.get('start', '')}</li>"
                 for event in events
                 if isinstance(event, dict)
             )
@@ -209,11 +285,18 @@ async def orchestrator_present_node(state: BriefingGraphState) -> dict[str, Any]
     raw_markdown = "".join(sections)
     briefing = sanitize_markdown(raw_markdown)
 
+    consensus_without_critic = state.get("consensus_result") is not None and not isinstance(
+        state.get("critic_result"),
+        AgentResultEnvelope,
+    )
+
     status: Literal["success", "failure", "degraded", "awaiting_consent"]
     if non_consent_escalations and briefing:
         status = "degraded"
     elif non_consent_escalations:
         status = "failure"
+    elif consensus_without_critic and briefing:
+        status = "degraded"
     else:
         status = "success"
 
@@ -232,6 +315,7 @@ async def orchestrator_present_node(state: BriefingGraphState) -> dict[str, Any]
             data_classification="confidential",
         ),
     )
+    await _distill_session_memory(state)
     return {
         "final_briefing": briefing,
         "status": status,

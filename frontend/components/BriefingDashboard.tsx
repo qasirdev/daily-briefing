@@ -5,11 +5,15 @@ import { useMemo } from "react";
 
 import { ObservabilityBadge } from "@/components/ObservabilityBadge";
 import type { ObservabilityData } from "@/lib/briefing-schema";
+import type { AccountUsage } from "@/lib/account-usage";
+import type { VisitUsageStats } from "@/lib/cost-tracking";
 
 type BriefingDashboardProps = {
   briefing: string;
   status: ObservabilityData["status"];
   observability: ObservabilityData;
+  visitStats?: VisitUsageStats | null;
+  accountUsage?: AccountUsage | null;
   loading?: boolean;
   onRetry?: () => void;
 };
@@ -18,6 +22,8 @@ export function BriefingDashboard({
   briefing,
   status,
   observability,
+  visitStats = null,
+  accountUsage = null,
   loading = false,
   onRetry,
 }: BriefingDashboardProps) {
@@ -73,7 +79,11 @@ export function BriefingDashboard({
         )}
       </article>
 
-      <ObservabilityBadge data={observability} />
+      <ObservabilityBadge
+        data={observability}
+        visitStats={visitStats}
+        accountUsage={accountUsage}
+      />
     </section>
   );
 }

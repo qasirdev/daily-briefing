@@ -7,24 +7,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
-PII_PATTERNS: tuple[tuple[str, re.Pattern[str], str], ...] = (
-    (
-        "email",
-        re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b"),
-        "[REDACTED_EMAIL]",
-    ),
-    (
-        "phone",
-        re.compile(r"\b(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b"),
-        "[REDACTED_PHONE]",
-    ),
-    ("ssn", re.compile(r"\b\d{3}-\d{2}-\d{4}\b"), "[REDACTED_SSN]"),
-    (
-        "credit_card",
-        re.compile(r"\b(?:\d[ -]*?){13,16}\b"),
-        "[REDACTED_CARD]",
-    ),
-)
+from backend.security.pii_patterns import PII_PATTERNS
 
 
 class PIIMatch(BaseModel):

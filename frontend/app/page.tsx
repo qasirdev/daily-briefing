@@ -1,23 +1,34 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { BriefingDashboard } from "@/components/BriefingDashboard";
 import { ConsentPromptModal } from "@/components/ConsentPromptModal";
+import { ReasoningTrace } from "@/components/ReasoningTrace";
 import {
   briefingResponseSchema,
   toObservabilityData,
   type BriefingResponse,
+  type ObservabilityData,
 } from "@/lib/briefing-schema";
+import { fetchAccountUsage, type AccountUsage } from "@/lib/account-usage";
 import { DEFAULT_USER_ID, getApiBase } from "@/lib/api";
 import type { ConsentPromptRequest } from "@/lib/consent-schema";
+import {
+  computeVisitStats,
+  readUsageTracking,
+  recordBriefingUsage,
+  type UsageTracking,
+  type VisitUsageStats,
+} from "@/lib/cost-tracking";
 
-const emptyObservability = {
+const emptyObservability: ObservabilityData = {
   executionMs: 0,
   tokensUsed: 0,
+  totalCostUsd: 0,
   modelUsed: "none",
-  status: "failure" as const,
+  status: "failure",
   agentBreakdown: [],
 };
 
@@ -28,6 +39,21 @@ export default function Home() {
   const [consentPrompt, setConsentPrompt] = useState<ConsentPromptRequest | null>(null);
   const [consentLoading, setConsentLoading] = useState(false);
   const [oauthError, setOauthError] = useState<string | null>(null);
+  const [visitStats, setVisitStats] = useState<VisitUsageStats | null>(null);
+  const [accountUsage, setAccountUsage] = useState<AccountUsage | null>(null);
+  const visitBaselineRef = useRef<UsageTracking | null>(null);
+
+  const refreshAccountUsage = useCallback(async () => {
+    const usage = await fetchAccountUsage();
+    setAccountUsage(usage);
+  }, []);
+
+  useEffect(() => {
+    visitBaselineRef.current = readUsageTracking();
+    const baseline = visitBaselineRef.current;
+    setVisitStats(computeVisitStats(baseline, baseline));
+    void refreshAccountUsage();
+  }, [refreshAccountUsage]);
 
   const generateBriefing = useCallback(async () => {
     setLoading(true);
@@ -42,6 +68,13 @@ export default function Home() {
       const payload: unknown = await res.json();
       const parsed = briefingResponseSchema.parse(payload);
       setResponse(parsed);
+      const tracking = recordBriefingUsage(
+        parsed.metadata.total_cost_usd,
+        parsed.metadata.total_tokens,
+      );
+      const baseline = visitBaselineRef.current ?? readUsageTracking();
+      setVisitStats(computeVisitStats(baseline, tracking));
+      void refreshAccountUsage();
       if (parsed.status === "awaiting_consent" && parsed.consent_request) {
         setConsentPrompt(parsed.consent_request);
       }
@@ -50,7 +83,7 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [refreshAccountUsage]);
 
   const handleGrantConsent = useCallback(
     async (ttlHours: number) => {
@@ -142,8 +175,15 @@ export default function Home() {
         briefing={response?.briefing ?? ""}
         status={response?.status ?? "failure"}
         observability={observability}
+        visitStats={visitStats}
+        accountUsage={accountUsage}
         loading={loading && !response}
         onRetry={generateBriefing}
+      />
+
+      <ReasoningTrace
+        trace={response?.reasoning_trace ?? null}
+        briefingId={response?.metadata.trace_id}
       />
 
       {consentPrompt ? (
