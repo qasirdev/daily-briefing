@@ -118,6 +118,97 @@ def test_revision_loop_session_tokens_do_not_abort_to_dlq() -> None:
     assert should_route_to_dlq(state, settings) is False
 
 
+@pytest.mark.asyncio
+async def test_critic_revision_routes_to_dlq_when_token_budget_exceeded(
+    mock_mcp: MockMCPBundle,
+) -> None:
+    """Critic revision must not loop when per-agent token budget is exceeded (v2.0.0)."""
+    mcp = mock_mcp.as_clients()
+    trace_id = "d" * 32
+    metadata = ExecutionMetadata(
+        execution_ms=1,
+        tokens_used=25_000,
+        model_used="test",
+        prompt_version="v2.0.0",
+        trace_id=trace_id,
+        data_classification="internal",
+    )
+
+    async def focus_over_budget(state: BriefingGraphState, llm: object) -> dict[str, object]:
+        return {
+            "focus_result": AgentResultEnvelope(
+                agent_id="focus",
+                canonical_role="planner",
+                status="success",
+                result={"plan": {"summary": "Work", "time_blocks": []}},
+                metadata=metadata,
+            ),
+            "current_agent": "focus",
+            "total_tokens": 25_000,
+        }
+
+    async def critic_requests_revision(state: BriefingGraphState, llm: object) -> dict[str, object]:
+        return {
+            "critic_result": AgentResultEnvelope(
+                agent_id="critic",
+                canonical_role="critic",
+                status="success",
+                result={
+                    "approved": False,
+                    "revision_required": True,
+                    "issues": ["Plan needs more detail"],
+                    "review_cycle": 1,
+                },
+                metadata=ExecutionMetadata(
+                    execution_ms=1,
+                    tokens_used=100,
+                    model_used="test",
+                    prompt_version="v2.0.0",
+                    trace_id=trace_id,
+                    data_classification="internal",
+                ),
+            ),
+            "current_agent": "critic",
+            "revision_count": 1,
+        }
+
+    with (
+        patch("backend.graph.builder.focus_agent_node", side_effect=focus_over_budget),
+        patch("backend.graph.builder.critic_agent_node", side_effect=critic_requests_revision),
+        patch("backend.agents.calendar.node.consent_store.has_valid_consent", return_value=True),
+    ):
+        settings = Settings(enable_consensus_workflow=False)
+        graph = build_briefing_graph(mcp, llm=AsyncMock(), settings=settings)
+        initial_state: BriefingGraphState = {
+            "user_id": "user-1",
+            "request_id": "req-budget",
+            "trace_id": trace_id,
+            "requested_at": datetime.now(UTC),
+            "target_date": date.today(),
+            "current_agent": "",
+            "revision_count": 0,
+            "total_tokens": 25_000,
+            "graph_started_at": time.perf_counter(),
+            "status": "pending",
+            "final_briefing": None,
+            "consent_required": False,
+            "consent_context": None,
+            "consent_request": None,
+            "dlq_events": [],
+            "orchestrator_result": None,
+            "task_result": None,
+            "calendar_result": None,
+            "focus_result": None,
+            "critic_result": None,
+        }
+        result = await graph.ainvoke(initial_state)
+
+    await mcp.close()
+    assert result["status"] == "failure"
+    assert result.get("failure_reason") == "token_budget_exceeded"
+    assert result.get("dlq_events")
+
+
 def test_route_consensus_major_disagreement() -> None:
     """Verify 2+ major concerns route to human escalation path."""
     state: BriefingGraphState = {

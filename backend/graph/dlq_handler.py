@@ -17,6 +17,9 @@ from backend.settings import get_settings
 
 logger = structlog.get_logger()
 
+_MAX_VERIFICATION_RETRIES = 1
+_MAX_ADVERSARIAL_REGENERATIONS = 1
+
 
 def _resolve_reason(state: BriefingGraphState) -> str:
     existing = state.get("failure_reason")
@@ -27,6 +30,18 @@ def _resolve_reason(state: BriefingGraphState) -> str:
     settings = get_settings()
     if is_session_token_exceeded(state, configured_max=settings.token_budget_max):
         return "token_budget_exceeded"
+    verification = state.get("verification_result")
+    if isinstance(verification, AgentResultEnvelope) and verification.status == "escalated":
+        escalation = verification.escalation
+        if escalation and escalation.reason == "verification_failed":
+            if state.get("verification_retry_count", 0) >= _MAX_VERIFICATION_RETRIES:
+                return "max_retries_exceeded"
+    adversarial = state.get("adversarial_result")
+    if isinstance(adversarial, AgentResultEnvelope) and adversarial.status == "escalated":
+        escalation = adversarial.escalation
+        if escalation and escalation.reason == "adversarial_concerns":
+            if state.get("adversarial_retry_count", 0) >= _MAX_ADVERSARIAL_REGENERATIONS:
+                return "max_retries_exceeded"
     for key in (
         "input_security_result",
         "task_result",

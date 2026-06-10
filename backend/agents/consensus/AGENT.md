@@ -23,7 +23,7 @@ The Consensus Evaluator is a deterministic graph node (not an LLM agent). It cou
 State update with `consensus_result`:
 
 - `major_concerns`, `moderate_concerns`, `minor_concerns`
-- `agreement_level` — `full_agreement`, `minor_disagreement`, `major_disagreement`
+- `agreement_level` — `agreement`, `minor_disagreement`, `major_disagreement`
 - `status` — routing hint for the graph builder
 
 ## Security Constraints

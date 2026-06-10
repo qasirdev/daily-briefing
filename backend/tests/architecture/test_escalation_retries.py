@@ -136,6 +136,7 @@ def test_builder_retry_limits_match_spec() -> None:
 async def test_verification_retry_routes_back_to_focus_once() -> None:
     trace_id = "g" * 32
     focus_calls = 0
+    verification_calls = 0
 
     async def counting_focus(state: BriefingGraphState, llm: object) -> dict[str, Any]:
         nonlocal focus_calls
@@ -151,35 +152,55 @@ async def test_verification_retry_routes_back_to_focus_once() -> None:
             "current_agent": "focus",
         }
 
-    verification_return = {
-        "verification_result": AgentResultEnvelope(
-            agent_id="verification",
-            canonical_role="verifier",
-            status="escalated",
-            result={
-                "status": "discrepancies_found",
-                "flagged_claims": [
-                    {
-                        "claim": "Task count",
-                        "issue": "Mismatch",
-                        "source_truth": "3 tasks",
-                        "severity": "critical",
+    def verification_return() -> dict[str, Any]:
+        nonlocal verification_calls
+        verification_calls += 1
+        if verification_calls > 1:
+            return {
+                "verification_result": AgentResultEnvelope(
+                    agent_id="verification",
+                    canonical_role="verifier",
+                    status="success",
+                    result={
+                        "status": "verified",
+                        "flagged_claims": [],
+                        "verified_claims": ["Retry plan"],
+                        "confidence": 0.95,
                     },
-                ],
-                "verified_claims": [],
-                "confidence": 0.4,
-            },
-            escalation=EscalationPayload(
-                reason="verification_failed",
-                target_agent="focus",
-                context=json.dumps({"flagged_claims": []}),
-                retry_allowed=True,
+                    metadata=_metadata(),
+                ),
+                "current_agent": "verification",
+            }
+        return {
+            "verification_result": AgentResultEnvelope(
+                agent_id="verification",
+                canonical_role="verifier",
+                status="escalated",
+                result={
+                    "status": "discrepancies_found",
+                    "flagged_claims": [
+                        {
+                            "claim": "Task count",
+                            "issue": "Mismatch",
+                            "source_truth": "3 tasks",
+                            "severity": "critical",
+                        },
+                    ],
+                    "verified_claims": [],
+                    "confidence": 0.4,
+                },
+                escalation=EscalationPayload(
+                    reason="verification_failed",
+                    target_agent="focus",
+                    context=json.dumps({"flagged_claims": []}),
+                    retry_allowed=True,
+                ),
+                metadata=_metadata(),
             ),
-            metadata=_metadata(),
-        ),
-        "current_agent": "verification",
-        "regeneration_constraints": json.dumps({"flagged_claims": []}),
-    }
+            "current_agent": "verification",
+            "regeneration_constraints": json.dumps({"flagged_claims": []}),
+        }
+
     adversarial_return = {
         "adversarial_result": AgentResultEnvelope(
             agent_id="adversarial",
@@ -240,6 +261,284 @@ async def test_verification_retry_routes_back_to_focus_once() -> None:
         patch("backend.graph.builder.critic_agent_node", side_effect=mock_critic),
         patch(
             "backend.graph.builder.verification_agent_node",
+            AsyncMock(side_effect=lambda *_a, **_k: verification_return()),
+        ),
+        patch(
+            "backend.graph.builder.adversarial_agent_node",
+            AsyncMock(return_value=adversarial_return),
+        ),
+    ):
+        graph = build_briefing_graph(mcp, llm=AsyncMock(), settings=settings)
+        result = await graph.ainvoke(_base_state(trace_id=trace_id))
+
+    assert focus_calls == 2
+    assert verification_calls == 2
+    assert result.get("verification_retry_count", 0) >= 1
+    assert result.get("critic_result") is not None
+
+
+@pytest.mark.asyncio
+async def test_focus_escalation_routes_to_dlq() -> None:
+    trace_id = "h" * 32
+
+    async def escalated_focus(state: BriefingGraphState, llm: object) -> dict[str, Any]:
+        return {
+            "focus_result": AgentResultEnvelope(
+                agent_id="focus",
+                canonical_role="planner",
+                status="escalated",
+                escalation=EscalationPayload(
+                    reason="max_retries_exceeded",
+                    target_agent="orchestrator",
+                    context='{"stage":"parse_or_validate","errors":["invalid"]}',
+                ),
+                metadata=_metadata(),
+            ),
+            "current_agent": "focus",
+        }
+
+    mcp = MCPClients(
+        postgres=PostgresMCPClient(host="localhost", port=5443),
+        calendar=CalendarMCPClient(host="localhost", port=5444),
+    )
+    settings = Settings(enable_consensus_workflow=True)
+
+    async def mock_task(state: BriefingGraphState, postgres: object) -> dict[str, Any]:
+        return {
+            "task_result": AgentResultEnvelope(
+                agent_id="task",
+                canonical_role="doer",
+                status="success",
+                result={"tasks": []},
+                metadata=_metadata(),
+            ),
+            "current_agent": "task",
+        }
+
+    async def mock_calendar(state: BriefingGraphState, calendar: object) -> dict[str, Any]:
+        return {
+            "calendar_result": AgentResultEnvelope(
+                agent_id="calendar",
+                canonical_role="tool_operator",
+                status="success",
+                result={"events": []},
+                metadata=_metadata(),
+            ),
+            "current_agent": "calendar",
+        }
+
+    with (
+        patch("backend.graph.builder.task_agent_node", side_effect=mock_task),
+        patch("backend.graph.builder.calendar_agent_node", side_effect=mock_calendar),
+        patch("backend.graph.builder.focus_agent_node", side_effect=escalated_focus),
+    ):
+        graph = build_briefing_graph(mcp, llm=AsyncMock(), settings=settings)
+        result = await graph.ainvoke(_base_state(trace_id=trace_id))
+
+    assert result["status"] == "failure"
+    assert result.get("failure_reason") == "max_retries_exceeded"
+    assert result.get("dlq_events")
+    assert result.get("critic_result") is None
+
+
+@pytest.mark.asyncio
+async def test_verification_exhausted_retries_route_to_dlq() -> None:
+    trace_id = "i" * 32
+    focus_calls = 0
+
+    async def counting_focus(state: BriefingGraphState, llm: object) -> dict[str, Any]:
+        nonlocal focus_calls
+        focus_calls += 1
+        return {
+            "focus_result": AgentResultEnvelope(
+                agent_id="focus",
+                canonical_role="planner",
+                status="success",
+                result={"plan": {"summary": "Retry plan", "time_blocks": []}},
+                metadata=_metadata(),
+            ),
+            "current_agent": "focus",
+        }
+
+    verification_return = {
+        "verification_result": AgentResultEnvelope(
+            agent_id="verification",
+            canonical_role="verifier",
+            status="escalated",
+            result={
+                "status": "discrepancies_found",
+                "flagged_claims": [
+                    {
+                        "claim": "Task count",
+                        "issue": "Mismatch",
+                        "source_truth": "3 tasks",
+                        "severity": "critical",
+                    },
+                ],
+                "verified_claims": [],
+                "confidence": 0.4,
+            },
+            escalation=EscalationPayload(
+                reason="verification_failed",
+                target_agent="focus",
+                context=json.dumps({"flagged_claims": []}),
+                retry_allowed=True,
+            ),
+            metadata=_metadata(),
+        ),
+        "current_agent": "verification",
+        "regeneration_constraints": json.dumps({"flagged_claims": []}),
+    }
+
+    mcp = MCPClients(
+        postgres=PostgresMCPClient(host="localhost", port=5443),
+        calendar=CalendarMCPClient(host="localhost", port=5444),
+    )
+    settings = Settings(enable_consensus_workflow=True)
+
+    async def mock_task(state: BriefingGraphState, postgres: object) -> dict[str, Any]:
+        return {
+            "task_result": AgentResultEnvelope(
+                agent_id="task",
+                canonical_role="doer",
+                status="success",
+                result={"tasks": []},
+                metadata=_metadata(),
+            ),
+            "current_agent": "task",
+        }
+
+    async def mock_calendar(state: BriefingGraphState, calendar: object) -> dict[str, Any]:
+        return {
+            "calendar_result": AgentResultEnvelope(
+                agent_id="calendar",
+                canonical_role="tool_operator",
+                status="success",
+                result={"events": []},
+                metadata=_metadata(),
+            ),
+            "current_agent": "calendar",
+        }
+
+    with (
+        patch("backend.graph.builder.task_agent_node", side_effect=mock_task),
+        patch("backend.graph.builder.calendar_agent_node", side_effect=mock_calendar),
+        patch("backend.graph.builder.focus_agent_node", side_effect=counting_focus),
+        patch(
+            "backend.graph.builder.verification_agent_node",
+            AsyncMock(return_value=verification_return),
+        ),
+    ):
+        graph = build_briefing_graph(mcp, llm=AsyncMock(), settings=settings)
+        result = await graph.ainvoke(_base_state(trace_id=trace_id))
+
+    assert focus_calls == 2
+    assert result["status"] == "failure"
+    assert result.get("failure_reason") == "max_retries_exceeded"
+    assert result.get("dlq_events")
+    assert result.get("critic_result") is None
+
+
+@pytest.mark.asyncio
+async def test_adversarial_exhausted_retries_route_to_dlq() -> None:
+    trace_id = "j" * 32
+    focus_calls = 0
+
+    async def counting_focus(state: BriefingGraphState, llm: object) -> dict[str, Any]:
+        nonlocal focus_calls
+        focus_calls += 1
+        return {
+            "focus_result": AgentResultEnvelope(
+                agent_id="focus",
+                canonical_role="planner",
+                status="success",
+                result={"plan": {"summary": "Retry plan", "time_blocks": []}},
+                metadata=_metadata(),
+            ),
+            "current_agent": "focus",
+        }
+
+    verification_return = {
+        "verification_result": AgentResultEnvelope(
+            agent_id="verification",
+            canonical_role="verifier",
+            status="success",
+            result={
+                "status": "verified",
+                "flagged_claims": [],
+                "verified_claims": ["Retry plan"],
+                "confidence": 0.95,
+            },
+            metadata=_metadata(),
+        ),
+        "current_agent": "verification",
+    }
+
+    adversarial_return = {
+        "adversarial_result": AgentResultEnvelope(
+            agent_id="adversarial",
+            canonical_role="adversarial",
+            status="escalated",
+            result={
+                "challenges": [
+                    {
+                        "target": "Schedule density",
+                        "concern": "No buffer between meetings",
+                        "alternative": "Add 15-minute gaps",
+                        "severity": "severe",
+                    },
+                ],
+                "risk_level": "high",
+                "recommended_action": "reject",
+            },
+            escalation=EscalationPayload(
+                reason="adversarial_concerns",
+                target_agent="focus",
+                context=json.dumps({"challenges": []}),
+                retry_allowed=True,
+            ),
+            metadata=_metadata(),
+        ),
+        "current_agent": "adversarial",
+        "regeneration_constraints": json.dumps({"challenges": []}),
+    }
+
+    mcp = MCPClients(
+        postgres=PostgresMCPClient(host="localhost", port=5443),
+        calendar=CalendarMCPClient(host="localhost", port=5444),
+    )
+    settings = Settings(enable_consensus_workflow=True)
+
+    async def mock_task(state: BriefingGraphState, postgres: object) -> dict[str, Any]:
+        return {
+            "task_result": AgentResultEnvelope(
+                agent_id="task",
+                canonical_role="doer",
+                status="success",
+                result={"tasks": []},
+                metadata=_metadata(),
+            ),
+            "current_agent": "task",
+        }
+
+    async def mock_calendar(state: BriefingGraphState, calendar: object) -> dict[str, Any]:
+        return {
+            "calendar_result": AgentResultEnvelope(
+                agent_id="calendar",
+                canonical_role="tool_operator",
+                status="success",
+                result={"events": []},
+                metadata=_metadata(),
+            ),
+            "current_agent": "calendar",
+        }
+
+    with (
+        patch("backend.graph.builder.task_agent_node", side_effect=mock_task),
+        patch("backend.graph.builder.calendar_agent_node", side_effect=mock_calendar),
+        patch("backend.graph.builder.focus_agent_node", side_effect=counting_focus),
+        patch(
+            "backend.graph.builder.verification_agent_node",
             AsyncMock(return_value=verification_return),
         ),
         patch(
@@ -250,6 +549,8 @@ async def test_verification_retry_routes_back_to_focus_once() -> None:
         graph = build_briefing_graph(mcp, llm=AsyncMock(), settings=settings)
         result = await graph.ainvoke(_base_state(trace_id=trace_id))
 
-    assert focus_calls >= 2
-    assert result.get("verification_retry_count", 0) >= 1
-    assert result.get("critic_result") is not None
+    assert focus_calls == 2
+    assert result["status"] == "failure"
+    assert result.get("failure_reason") == "max_retries_exceeded"
+    assert result.get("dlq_events")
+    assert result.get("critic_result") is None

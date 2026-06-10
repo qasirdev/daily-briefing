@@ -45,6 +45,26 @@ _kernel_scheduler = Scheduler()
 
 ConsensusRoute = Literal["agreement", "minor_disagreement", "major_disagreement"]
 
+DLQ_ESCALATION_REASONS = frozenset(
+    {
+        "max_retries_exceeded",
+        "token_budget_exceeded",
+        "unexpected_error",
+        "mcp_timeout",
+        "security_violation_detected",
+    },
+)
+
+
+def _escalated_envelope(
+    state: BriefingGraphState,
+    key: str,
+) -> AgentResultEnvelope | None:
+    envelope = state.get(key)
+    if isinstance(envelope, AgentResultEnvelope) and envelope.status == "escalated":
+        return envelope
+    return None
+
 
 def _is_graph_timeout(state: BriefingGraphState, settings: Settings) -> bool:
     started = state.get("graph_started_at")
@@ -158,6 +178,11 @@ def build_briefing_graph(
     ) -> Literal["dlq_handler", "critic_agent", "verification_agent"]:
         if should_route_to_dlq(state, resolved_settings):
             return "dlq_handler"
+        focus = _escalated_envelope(state, "focus_result")
+        if focus is not None:
+            reason = focus.escalation.reason if focus.escalation else ""
+            if reason in DLQ_ESCALATION_REASONS:
+                return "dlq_handler"
         if consensus_enabled:
             return "verification_agent"
         return "critic_agent"
@@ -165,27 +190,29 @@ def build_briefing_graph(
     def route_after_verification(
         state: BriefingGraphState,
     ) -> Literal["dlq_handler", "focus_agent", "adversarial_agent"]:
-        verification = state.get("verification_result")
         if should_route_to_dlq(state, resolved_settings):
             return "dlq_handler"
-        if isinstance(verification, AgentResultEnvelope) and verification.status == "escalated":
-            escalation = verification.escalation
-            if escalation and escalation.reason == "verification_failed":
-                if state.get("verification_retry_count", 0) < MAX_VERIFICATION_RETRIES:
+        verification = _escalated_envelope(state, "verification_result")
+        if verification is not None and verification.escalation:
+            if verification.escalation.reason == "verification_failed":
+                retry_count = state.get("verification_retry_count", 0)
+                if retry_count < MAX_VERIFICATION_RETRIES:
                     return "focus_agent"
+                return "dlq_handler"
         return "adversarial_agent"
 
     def route_after_adversarial(
         state: BriefingGraphState,
     ) -> Literal["dlq_handler", "critic_agent", "focus_agent"]:
-        adversarial = state.get("adversarial_result")
         if should_route_to_dlq(state, resolved_settings):
             return "dlq_handler"
-        if isinstance(adversarial, AgentResultEnvelope) and adversarial.status == "escalated":
-            escalation = adversarial.escalation
-            if escalation and escalation.reason == "adversarial_concerns":
-                if state.get("adversarial_retry_count", 0) < MAX_ADVERSARIAL_REGENERATIONS:
+        adversarial = _escalated_envelope(state, "adversarial_result")
+        if adversarial is not None and adversarial.escalation:
+            if adversarial.escalation.reason == "adversarial_concerns":
+                retry_count = state.get("adversarial_retry_count", 0)
+                if retry_count < MAX_ADVERSARIAL_REGENERATIONS:
                     return "focus_agent"
+                return "dlq_handler"
         return "critic_agent"
 
     def route_after_consensus(
@@ -207,6 +234,8 @@ def build_briefing_graph(
     def route_after_critic(
         state: BriefingGraphState,
     ) -> Literal["dlq_handler", "focus_agent", "consensus_evaluator", "orchestrator_present"]:
+        if should_route_to_dlq(state, resolved_settings):
+            return "dlq_handler"
         critic = state.get("critic_result")
         if isinstance(critic, AgentResultEnvelope) and critic.status == "escalated":
             return "dlq_handler"

@@ -76,7 +76,15 @@ def _success_result(envelope: AgentResultEnvelope | None) -> dict[str, object] |
 
 def _collect_escalations(state: BriefingGraphState) -> list[AgentResultEnvelope]:
     escalated: list[AgentResultEnvelope] = []
-    for key in ("task_result", "calendar_result", "focus_result", "critic_result"):
+    for key in (
+        "input_security_result",
+        "task_result",
+        "calendar_result",
+        "focus_result",
+        "verification_result",
+        "adversarial_result",
+        "critic_result",
+    ):
         envelope = state.get(key)
         if isinstance(envelope, AgentResultEnvelope) and envelope.status == "escalated":
             escalated.append(envelope)

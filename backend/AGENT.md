@@ -1,6 +1,6 @@
 # Backend AGENT.md — AI Daily Briefing Assistant
 
-**Version:** 1.5.0 | **Last Updated:** May 2026
+**Version:** 1.6.0 | **Last Updated:** June 2026
 
 ---
 
@@ -46,34 +46,25 @@ backend/
 ├── agents/
 │   ├── __init__.py
 │   ├── AGENT.md                # Multi-agent rules
-│   ├── orchestrator/
-│   │   ├── AGENT.md
-│   │   ├── __init__.py
-│   │   └── node.py
-│   ├── task/
-│   │   ├── AGENT.md
-│   │   ├── __init__.py
-│   │   └── node.py
-│   ├── calendar/
-│   │   ├── AGENT.md
-│   │   ├── __init__.py
-│   │   └── node.py
-│   ├── focus/
-│   │   ├── AGENT.md
-│   │   ├── __init__.py
-│   │   └── node.py
-│   └── critic/
-│       ├── AGENT.md
-│       ├── __init__.py
-│       └── node.py
+│   ├── orchestrator/           # Supervisor + presenter
+│   ├── task/                   # Doer (PostgreSQL MCP)
+│   ├── calendar/               # Tool operator (Google Calendar MCP)
+│   ├── focus/                  # Planner (LLM)
+│   ├── verification/           # Verifier (IBM pattern)
+│   ├── adversarial/            # Red-team challenger
+│   ├── critic/                 # Safety + quality gate
+│   └── consensus/              # Consensus evaluator
 ├── graph/
 │   ├── AGENT.md                # Graph kernel nodes (input security gate)
 │   ├── __init__.py
 │   ├── state.py                # BriefingGraphState definition
-│   ├── builder.py              # Graph construction
+│   ├── builder.py              # Graph construction (generator → verify → adversarial → critic → consensus)
 │   ├── input_security_gate.py  # Pre-focus MCP injection scan (kernel)
-│   ├── dlq_handler.py            # Dead letter queue terminal node
-│   └── nodes.py                # Node registry placeholders
+│   ├── dlq_handler.py          # Dead letter queue terminal node
+│   └── consensus.py            # Consensus routing re-exports (v2.0.0 spec path)
+├── kernel/                     # Agent OS kernel (scheduler, tool/identity/security managers)
+├── memory/                     # CoALA 4-layer memory (working · semantic · procedural · episodic)
+├── observability/              # Metrics, reasoning traces, drift detection
 ├── mcp/
 │   ├── __init__.py
 │   ├── client.py               # MCP client base
@@ -92,15 +83,26 @@ backend/
 │   ├── __init__.py
 │   ├── injection_patterns.py   # Regex signatures (OWASP corpus)
 │   ├── injection.py            # Prompt injection detector + normalisation
+│   ├── input_scanner.py        # Unified 3-layer InputSecurityScanner
+│   ├── constitutional.py       # Constitutional policy classifier (rules.yaml)
 │   ├── prompt_guard.py         # LlamaFirewall PromptGuard 2 ML layer
 │   ├── spotlighting.py         # EXTERNAL_CONTENT markers (Gap #114)
 │   └── sanitization.py         # Output sanitization
 └── tests/
     ├── conftest.py
-    ├── unit/
+    ├── agents/
+    ├── architecture/
+    ├── e2e/
     ├── integration/
-    └── security/
+    ├── kernel/
+    ├── llm/
+    ├── memory/
+    ├── observability/
+    ├── security/
+    └── unit/
 ```
+
+**Memory & credentials (v2.0.0):** Working memory is session-scoped via LangGraph state (`memory/working.py`, Gap #8). Semantic, procedural, and episodic layers persist in PostgreSQL. Short-lived credential TTL caching uses in-memory broker by default (`security/vault.py`, `VAULT_MODE=env`); Redis/Vault backends are the documented production upgrade path (`docs/adr/ADR-supply-chain-week5.md`).
 
 ---
 
@@ -186,13 +188,17 @@ class EscalationPayload(BaseModel):
     
     reason: Literal[
         "security_violation_detected",
-        "max_retries_exceeded", 
+        "verification_failed",
+        "adversarial_concerns",
+        "max_retries_exceeded",
         "token_budget_exceeded",
         "mcp_timeout",
         "consent_required",
+        "unexpected_error",
     ]
     target_agent: str = "orchestrator"
     context: str = ""
+    retry_allowed: bool = True
 
 
 class AgentResultEnvelope(BaseModel):
@@ -201,7 +207,10 @@ class AgentResultEnvelope(BaseModel):
     model_config = ConfigDict(strict=True, frozen=True, extra="forbid")
     
     agent_id: str = Field(..., min_length=1, max_length=50, pattern=r"^[a-z_]+$")
-    canonical_role: Literal["doer", "planner", "critic", "tool_operator", "supervisor"]
+    canonical_role: Literal[
+        "doer", "planner", "critic", "tool_operator", "supervisor",
+        "verifier", "adversarial",
+    ]
     status: Literal["success", "failure", "escalated"]
     result: dict | None = None
     metadata: ExecutionMetadata
@@ -230,11 +239,18 @@ class BriefingGraphState(TypedDict):
     calendar_result: AgentResultEnvelope | None
     input_security_result: AgentResultEnvelope | None
     focus_result: AgentResultEnvelope | None
+    verification_result: AgentResultEnvelope | None
+    adversarial_result: AgentResultEnvelope | None
+    consensus_result: dict | None
     critic_result: AgentResultEnvelope | None
+    orchestrator_result: AgentResultEnvelope | None
     
     # Execution tracking
     current_agent: str
     revision_count: int
+    verification_retry_count: int
+    adversarial_retry_count: int
+    regeneration_constraints: str | None
     total_tokens: int
     
     # Final output
@@ -466,9 +482,9 @@ Regression corpus: **285** payloads in `backend/tests/security/test_injection_pa
 
 ## Testing Requirements
 
-<!-- test-inventory:total=1193 -->
+<!-- test-inventory:total=1199 -->
 
-**Suite size:** **1193** pytest cases under `backend/tests/` (unit · security · integration · E2E). When adding or removing tests, update the `test-inventory` marker in `README.md`, `docs/SECURITY.md`, `AGENT.md`, `backend/AGENT.md`, and `007-01-ai-daily-briefing-assistant-v2.0.0.md`, then run `uv run pytest backend/tests/test_suite_inventory.py`.
+**Suite size:** **1199** pytest cases under `backend/tests/` (unit · security · integration · E2E). When adding or removing tests, update the `test-inventory` marker in `README.md`, `docs/SECURITY.md`, `AGENT.md`, `backend/AGENT.md`, and `007-01-ai-daily-briefing-assistant-v2.0.0.md`, then run `uv run pytest backend/tests/test_suite_inventory.py`.
 
 ### Unit Tests
 
@@ -551,4 +567,4 @@ async def handle_agent_escalation(envelope: AgentResultEnvelope):
 
 ---
 
-*Backend AGENT.md — Version 1.5.0 — May 2026*
+*Backend AGENT.md — Version 1.6.0 — June 2026*

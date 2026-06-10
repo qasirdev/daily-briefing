@@ -51,12 +51,13 @@ This specification integrates **all gap remediation requirements** from the comp
 
 | Milestone | Scope Summary | Gap Coverage | Status |
 |---|---|---|---|
-| **MVP 1** | Next.js UI, FastAPI backend, LangGraph, MCP integration, Memory foundation, **Prompt caching** ⭐ | Gaps #8-13, #27-29, #86-87, Token optimization | Planned |
-| **MVP 2** | All 6 agents (Task, Calendar, Focus, Critic, Verification, Adversarial), Consensus workflow, **Cache warming** ⭐ | Gaps #1-7, #136 | Planned |
-| **MVP 3** | Spotlighting, Tool Poisoning Defense, DLQ, Observability (Dwell Time SLO) | Gaps #62, #99, #114, #117 | Planned |
-| **MVP 4** | Agentic Consent, JIT Credentials, Confused Deputy Prevention, Local LLM fallback | Gaps #18-22, #118 | Planned |
-| **MVP 5** | Supply Chain Security (AI-BOM, OpenSSF), RAG Poisoning Defense, NHI Crypto | Gaps #115-116, #120, #125 | Planned |
-| **MVP 6** | Advanced Observability (MITRE ATT&CK), Governance, Emergency Procedures, Production | Gaps #88, #126, #133 | Planned |
+| **MVP 1** | Next.js UI, FastAPI backend, LangGraph, MCP integration, Memory foundation, **Prompt caching** ⭐ | Gaps #8-13, #27-29, #86-87, Token optimization | ✅ Done |
+| **MVP 2** | All 6 agents (Task, Calendar, Focus, Critic, Verification, Adversarial), Consensus workflow, **Cache warming** ⭐ | Gaps #1-7, #136 | ✅ Done |
+| **MVP 3** | Spotlighting, Tool Poisoning Defense, DLQ, Observability (Dwell Time SLO) | Gaps #62, #99, #114, #117 | ✅ Done |
+| **MVP 4** | Agentic Consent, JIT Credentials, Confused Deputy Prevention, Local LLM fallback | Gaps #18-22, #118 | ✅ Done |
+| **MVP 5** | Supply Chain Security (AI-BOM, OpenSSF), RAG Poisoning Defense, NHI Crypto | Gaps #115-116, #120, #125 | ✅ Done |
+| **MVP 6** | Advanced Observability (MITRE ATT&CK), Governance, Emergency Procedures, Production | Gaps #88, #126, #133 | ✅ Done |
+| **Option 1** | Supabase + stdio MCP + Alembic + Docker E2E (DB-E7, DB-053–057) | — | ✅ Done |
 
 **Total Gap Coverage:** 121 gaps across 6 MVPs
 
@@ -137,16 +138,21 @@ This specification integrates **all gap remediation requirements** from the comp
 | **Verification Agent** | Verifier | Validates agent outputs for correctness | LLM only | Schema compliance, logic checks | #1-3 |
 | **Adversarial Agent** | Red Team | Challenges outputs, finds flaws | LLM only | Contrarian perspective, edge case testing | #4-5 |
 | **Critic Agent** | Critic (Safety+Quality) | Reviews for coherence and safety violations | LLM only | Final Safety Gatekeeper, never bypassed | #6-7 |
-| **Orchestrator** | Supervisor + Presenter | Consensus evaluation, final synthesis | — | Composes `AgentResultEnvelope` | #4, #27 |
+| **Orchestrator** | Supervisor + Presenter | Final synthesis and user-facing markdown | — | Composes `AgentResultEnvelope` | #4, #27 |
+| **Consensus Evaluator** | Deterministic router | Aggregates Verification, Adversarial, and Critic concerns | — | Routes agreement / human escalation | #3-5 |
 
 ### Multi-Agent Verification Workflow (IBM Pattern)
 
 ```
 User Request
     ↓
-Orchestrator
+Orchestrator (route)
     ↓
-[Task Agent] → [Calendar Agent] → [Focus Agent]  (Generator Phase)
+[Task Agent ∥ Calendar Agent]  (parallel MCP, Generator Phase)
+    ↓
+Input Security Gate  (regex → PromptGuard 2 → constitutional)
+    ↓
+Focus Agent
     ↓
 Verification Agent  (Validates schema, logic, completeness)
     ↓
@@ -154,13 +160,15 @@ Adversarial Agent   (Challenges assumptions, finds edge cases)
     ↓
 Critic Agent        (Safety & quality review)
     ↓
-Orchestrator        (Consensus evaluation + synthesis)
+Consensus Evaluator (Counts concerns; optional human escalation)
+    ↓
+Orchestrator (present + synthesis)
     ↓
 User Response
 ```
 
 **Consensus Criteria:**
-- Generator + Verification + Adversarial all produce valid outputs → **Consensus**
+- Verification + Adversarial + Critic produce no major concerns → **Agreement**
 - Any agent disagrees → **Escalation** to Orchestrator with reason
 - Critic flags safety violation → **Immediate rejection**, never retried
 
@@ -356,7 +364,7 @@ class CalendarEventSchema(BaseModel):
 
 **Three-layer pipeline** (`InputSecurityScanner` in `backend/security/input_scanner.py`):
 
-<!-- test-inventory:total=1193 -->
+<!-- test-inventory:total=1199 -->
 <!-- corpus-inventory:payloads=285,patterns=277 -->
 
 | Layer | Module | Role |

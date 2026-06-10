@@ -10,64 +10,38 @@ compact currect context so that context usage will be reduce % wise, currently i
 
 # To iterate 3 times to
 
-## <prompt>
+References:
+- @AGENT.md
+- @007-01-ai-daily-briefing-assistant-v2.0.0.md
+- @.cursor
 
-<references>
-@AGENT.md
-@007-01-ai-daily-briefing-assistant-v2.0.0.md
-@.cursor
-</references>
+Goal:
+Ensure the implementation fully complies with all referenced requirements and agent-testing rules.
 
-<objective>
-Validate and enforce full compliance with all referenced requirements and agent-testing rules.
-</objective>
+Audit Cycle (max 3):
 
-<audit_cycle max="3">
+1. Audit implementation.
+2. Report:
+   - Status: YES / NO
+   - Gaps
+   - Risks
+3. If NO:
+   - Implement fixes.
+   - Re-audit.
 
-Evaluate:
+Per cycle include:
+- Findings
+- Changes applied
+- Reasoning for changes
 
-- implementation compliance
-- specification compliance
-- agent-test coverage
+Success Criteria:
+- All requirements satisfied.
+- Agent-testing requirements satisfied.
+- No unresolved gaps remain.
 
-Output:
-
-Status: YES | NO
-
-Findings:
-
-- ...
-
-Gaps:
-
-- ...
-
-Changes:
-
-- ...
-
-Reasons:
-
-- ...
-
-If Status = NO:
-
-- implement all gaps
-- re-audit
-
-Stop on:
-
-- first YES
-- or cycle 3
-
-</audit_cycle>
-
-<success_criteria>
-
-- all requirements satisfied
-- all mandatory tests executed
-- no unresolved gaps
-  </success_criteria>
+Stop:
+- First YES
+- Or after 3 cycles.
 
 ---
 

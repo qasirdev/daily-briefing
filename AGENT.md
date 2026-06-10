@@ -10,7 +10,7 @@ co-located AGENT.md files alongside the code they govern.
 **Deployment:** Single Docker Container (Option 1 Enterprise Hybrid)  
 **Version:** 1.6.0 | May 2026
 
-<!-- test-inventory:total=1193 -->
+<!-- test-inventory:total=1199 -->
 
 > **Option 1 implemented:** stdio MCP (`@modelcontextprotocol/server-postgres`, `@franciscpd/calendar-mcp-server`), Supabase persistence (Alembic/SQLAlchemy), Docker on **8088**. Setup: [docs/guidence/docker-setup.md](docs/guidence/docker-setup.md).
 
