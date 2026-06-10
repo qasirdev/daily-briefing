@@ -84,6 +84,9 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            INSTALL_PROMPTGUARD=true
+            HF_TOKEN=${{ secrets.HF_TOKEN }}
 
       - name: Install Cosign
         uses: sigstore/cosign-installer@v3

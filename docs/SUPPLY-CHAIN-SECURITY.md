@@ -58,7 +58,7 @@ ossf-scorecard --repo=github.com/qasirdev/daily-briefing --format=json \
 
 CI runs `uv run pip-audit --desc on --ignore-vuln GHSA-rrmf-rvhw-rf47` on every PR. Blocks on **critical** and **high** severity CVEs in production dependencies.
 
-**Pinned upgrades (2026-06):** `transformers>=5.0.0rc3` and `huggingface-hub>=1.5.0` resolve GHSA-69w3-r845-3855 and PYSEC-2025-217 (transitive via `llamafirewall`).
+**Pinned upgrades (2026-06):** `transformers>=5.0.0rc3` and `huggingface-hub>=1.5.0` resolve GHSA-69w3-r845-3855 and PYSEC-2025-217 (transitive via optional `promptguard` extra / `llamafirewall`).
 
 **Documented exception — `GHSA-rrmf-rvhw-rf47` (`torch`):** Local-only `torch.jit.script` issue with no fixed PyPI release ≤2.12.0. Ignored in CI because PromptGuard inference does not use JIT scripting or untrusted checkpoint loads. Tracked in `infrastructure/ai-bom.yaml` with expiry **2026-12-31**.
 

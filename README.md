@@ -576,7 +576,8 @@ curl http://127.0.0.1:8010/health/ready  # readiness
 ### Docker — full stack on port 8088
 
 ```bash
-docker compose up --build -d
+# Fast local image (no torch); PromptGuard: --profile promptguard app-promptguard
+docker compose up --build -d app
 curl http://localhost:8088/health
 ```
 

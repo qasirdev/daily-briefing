@@ -599,9 +599,7 @@ dependencies = [
     { name = "asyncpg" },
     { name = "fastapi" },
     { name = "httpx" },
-    { name = "huggingface-hub" },
     { name = "langgraph" },
-    { name = "llamafirewall" },
     { name = "mcp" },
     { name = "nh3" },
     { name = "openai" },
@@ -618,7 +616,6 @@ dependencies = [
     { name = "sqlalchemy", extra = ["asyncio"] },
     { name = "structlog" },
     { name = "tenacity" },
-    { name = "transformers" },
     { name = "uvicorn", extra = ["standard"] },
 ]
 
@@ -633,6 +630,11 @@ dev = [
     { name = "ruff" },
     { name = "types-pyyaml" },
 ]
+promptguard = [
+    { name = "huggingface-hub" },
+    { name = "llamafirewall" },
+    { name = "transformers" },
+]
 
 [package.dev-dependencies]
 dev = [
@@ -646,9 +648,9 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.115.0" },
     { name = "httpx", specifier = ">=0.28.0" },
     { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.28.0" },
-    { name = "huggingface-hub", specifier = ">=1.5.0,<2.0" },
+    { name = "huggingface-hub", marker = "extra == 'promptguard'", specifier = ">=1.5.0,<2.0" },
     { name = "langgraph", specifier = ">=0.4.0" },
-    { name = "llamafirewall", specifier = ">=1.0.3" },
+    { name = "llamafirewall", marker = "extra == 'promptguard'", specifier = ">=1.0.3" },
     { name = "mcp", specifier = ">=1.27.2" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.13.0" },
     { name = "nh3", specifier = ">=0.2.14" },
@@ -671,11 +673,11 @@ requires-dist = [
     { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.0" },
     { name = "structlog", specifier = ">=24.4.0" },
     { name = "tenacity", specifier = ">=9.0.0" },
-    { name = "transformers", specifier = ">=5.0.0rc3" },
+    { name = "transformers", marker = "extra == 'promptguard'", specifier = ">=5.0.0rc3" },
     { name = "types-pyyaml", marker = "extra == 'dev'", specifier = ">=6.0.12" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.32.0" },
 ]
-provides-extras = ["dev"]
+provides-extras = ["promptguard", "dev"]
 
 [package.metadata.requires-dev]
 dev = [{ name = "pytest-cov", specifier = ">=7.1.0" }]

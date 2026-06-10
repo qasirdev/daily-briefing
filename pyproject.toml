@@ -27,12 +27,14 @@ dependencies = [
     "pgvector>=0.4.2",
     "pyyaml>=6.0.2",
     "rapidfuzz>=3.10.0",
+]
+
+[project.optional-dependencies]
+promptguard = [
     "llamafirewall>=1.0.3",
     "huggingface-hub>=1.5.0,<2.0",
     "transformers>=5.0.0rc3",
 ]
-
-[project.optional-dependencies]
 dev = [
     "pytest>=8.3.0",
     "pytest-asyncio>=0.24.0",
