@@ -13,3 +13,10 @@ The Agent OS Kernel provides foundational services for all briefing agents. Impl
 | Security Monitor | `kernel/security_monitor.py` | Drift detection and dwell-time tracking |
 
 MCP ingress validation and spotlighting are applied in `backend/mcp/ingress.py` and agent nodes before LLM processing.
+
+Graph integration (`backend/graph/builder.py`):
+- `Scheduler` — logs canonical pipeline phases at graph build time
+- `IdentityManager` — calendar agent delegation via `backend/agents/calendar/node.py`
+- `MemoryManager` — orchestrator route init and focus working-memory updates
+- `SecurityMonitor` — input security gate violation recording
+- `ToolManager` — MCP allowlists and response validation via `backend/mcp/ingress.py`

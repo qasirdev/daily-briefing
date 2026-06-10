@@ -118,6 +118,19 @@ PROMPT_CACHE_HIT_TOTAL = Counter(
     ["agent_id", "model"],
 )
 
+CACHED_TOKENS_SAVED_TOTAL = Counter(
+    "cached_tokens_saved_total",
+    "Total tokens saved via prompt caching",
+    ["agent_id", "model"],
+)
+
+TOKEN_COST_PER_REQUEST = Histogram(
+    "token_cost_per_request",
+    "Estimated USD cost per LLM request",
+    ["agent_id", "model"],
+    buckets=[0.0001, 0.001, 0.005, 0.01, 0.02, 0.05, 0.1],
+)
+
 CACHE_SIZE_BYTES = Gauge(
     "llm_cache_size_bytes",
     "Current cache size in bytes",
@@ -363,6 +376,7 @@ def record_llm_cache_usage(
     if agent_id:
         if cached_tokens > 0:
             PROMPT_CACHE_HIT_TOTAL.labels(agent_id=agent_id, model=model).inc()
+            CACHED_TOKENS_SAVED_TOTAL.labels(agent_id=agent_id, model=model).inc(cached_tokens)
         else:
             PROMPT_CACHE_MISS_TOTAL.labels(agent_id=agent_id, model=model).inc()
         agent_hits = PROMPT_CACHE_HIT_TOTAL.labels(agent_id=agent_id, model=model)._value.get()
@@ -372,6 +386,13 @@ def record_llm_cache_usage(
             PROMPT_CACHE_HIT_RATE.labels(agent_id=agent_id, model=model).set(
                 agent_hits / agent_total * 100.0,
             )
+
+
+def record_token_cost(*, agent_id: str, model: str, cost_usd: float) -> None:
+    """Record estimated USD cost for an LLM request."""
+    if cost_usd <= 0:
+        return
+    TOKEN_COST_PER_REQUEST.labels(agent_id=agent_id, model=model).observe(cost_usd)
 
 
 def set_cache_size_bytes(*, provider: str, size_bytes: int) -> None:

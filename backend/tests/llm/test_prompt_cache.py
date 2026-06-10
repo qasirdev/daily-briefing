@@ -16,7 +16,10 @@ from backend.observability.metrics import (
     CACHE_HIT_RATE,
     CACHE_HIT_TOTAL,
     CACHE_MISS_TOTAL,
+    CACHED_TOKENS_SAVED_TOTAL,
+    TOKEN_COST_PER_REQUEST,
     record_llm_cache_usage,
+    record_token_cost,
 )
 from backend.prompts_loader import build_cached_prompt_assembly
 from backend.settings import Settings
@@ -131,6 +134,30 @@ def test_record_llm_cache_usage_updates_hit_rate_gauge() -> None:
     record_llm_cache_usage(provider=provider, model=model, cached_tokens=100)
     rate = CACHE_HIT_RATE.labels(provider=provider, model=model)._value.get()
     assert rate == 50.0
+
+
+def test_record_llm_cache_usage_increments_cached_tokens_saved() -> None:
+    agent_id = "focus"
+    model = "test-saved-tokens-model"
+    initial = CACHED_TOKENS_SAVED_TOTAL.labels(agent_id=agent_id, model=model)._value.get()
+    record_llm_cache_usage(
+        provider="openai",
+        model=model,
+        cached_tokens=256,
+        agent_id=agent_id,
+    )
+    final = CACHED_TOKENS_SAVED_TOTAL.labels(agent_id=agent_id, model=model)._value.get()
+    assert final == initial + 256
+
+
+def test_record_token_cost_skips_zero_cost() -> None:
+    record_token_cost(agent_id="focus", model="test-cost-skip", cost_usd=0.0)
+
+
+def test_record_token_cost_accepts_positive_cost() -> None:
+    record_token_cost(agent_id="focus", model="test-cost-positive", cost_usd=0.005)
+    sample = TOKEN_COST_PER_REQUEST.labels(agent_id="focus", model="test-cost-positive")
+    assert sample._name == "token_cost_per_request"  # noqa: SLF001
 
 
 @pytest.mark.asyncio

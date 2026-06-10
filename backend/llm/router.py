@@ -17,12 +17,20 @@ from backend.llm.usage import (
     extract_cost_usd,
     extract_prompt_tokens,
 )
-from backend.metrics import record_llm_cache_usage, record_llm_fallback, record_llm_tokens
+from backend.metrics import (
+    record_constitutional_violation,
+    record_llm_cache_usage,
+    record_llm_fallback,
+    record_llm_tokens,
+    record_token_cost,
+)
+from backend.security.input_scanner import InputSecurityScanner
 from backend.security.pii import mask_pii
 from backend.settings import Settings
 from backend.telemetry import start_async_span
 
 logger = structlog.get_logger()
+_input_scanner = InputSecurityScanner()
 
 DEFAULT_INPUT_BUDGET = 8_000
 DEFAULT_OUTPUT_BUDGET = 2_000
@@ -38,6 +46,67 @@ DataClassification = Literal[
 
 class LLMError(Exception):
     """Both LLM providers failed."""
+
+
+def _message_text(content: Any) -> str:
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts: list[str] = []
+        for block in content:
+            if isinstance(block, dict) and block.get("type") == "text":
+                parts.append(str(block.get("text", "")))
+        return "\n".join(parts)
+    return ""
+
+
+def _scan_llm_input(
+    messages: list[dict[str, Any]],
+    *,
+    trace_id: str,
+    agent_id: str,
+) -> None:
+    """Constitutional + regex scan on user-role LLM inputs."""
+    for index, message in enumerate(messages):
+        if message.get("role") != "user":
+            continue
+        text = _message_text(message.get("content", ""))
+        if not text.strip():
+            continue
+        result = _input_scanner.scan(text, trace_id=trace_id, source=f"{agent_id}:user:{index}")
+        if result.is_blocked:
+            if result.layer == "constitutional" and result.constitutional_rule:
+                record_constitutional_violation(
+                    rule_id=result.constitutional_rule,
+                    severity="high",
+                )
+            msg = f"LLM input blocked by {result.layer or 'security'} scanner"
+            raise LLMError(msg)
+
+
+def _sanitize_llm_output(
+    content: str,
+    *,
+    trace_id: str,
+    agent_id: str,
+) -> str:
+    """Scan LLM output; scrub and log when constitutional rules trigger."""
+    result = _input_scanner.scan(content, trace_id=trace_id, source=f"{agent_id}:output")
+    if not result.is_blocked:
+        return content
+    if result.layer == "constitutional" and result.constitutional_rule:
+        record_constitutional_violation(
+            rule_id=result.constitutional_rule,
+            severity="high",
+        )
+    logger.warning(
+        "llm_output_scrubbed",
+        trace_id=trace_id,
+        agent_id=agent_id,
+        layer=result.layer,
+        rule=result.constitutional_rule,
+    )
+    return '{"error":"output_blocked_by_constitutional_classifier"}'
 
 
 def _is_rate_limited(exc: BaseException) -> bool:
@@ -94,6 +163,8 @@ class LLMRouter:
         if estimated_input > input_budget * 2:
             msg = "Token budget exceeded for input"
             raise LLMError(msg)
+
+        _scan_llm_input(messages, trace_id=trace_id, agent_id=agent_id)
 
         use_local = force_local or (
             data_classification == "confidential_pii" and self._fallback is not None
@@ -365,6 +436,7 @@ class LLMRouter:
                 model_used = completion.model or model
                 msg = f"Empty response from model {model_used}"
                 raise LLMError(msg)
+            choice = _sanitize_llm_output(choice, trace_id=trace_id, agent_id=agent_id)
             usage = completion.usage
             model_used = completion.model or model
             tokens_used = usage.total_tokens if usage else len(choice) // 4
@@ -380,6 +452,7 @@ class LLMRouter:
                     cached_tokens=cached_tokens,
                     agent_id=agent_id,
                 )
+            record_token_cost(agent_id=agent_id, model=model_used, cost_usd=cost_usd)
 
             logger.info(
                 "llm_generation_complete",

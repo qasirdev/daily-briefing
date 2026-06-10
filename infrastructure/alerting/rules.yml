@@ -39,6 +39,15 @@ groups:
           summary: DLQ events growing quickly
           runbook: infrastructure/AGENT.md#dlqgrowing
 
+      - alert: PromptCacheHitRateLow
+        expr: daily_briefing:prompt_cache_hit_rate:5m < 0.70
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Prompt cache hit rate below 70%
+          runbook: infrastructure/AGENT.md#promptcachehitratelow
+
   - name: daily-briefing-info
     rules:
       - alert: LocalLLMFallback

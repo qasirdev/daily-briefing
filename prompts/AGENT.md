@@ -1,6 +1,6 @@
 # Prompts AGENT.md — AI Daily Briefing Assistant
 
-**Version:** 1.5.0 | **Last Updated:** May 2026
+**Version:** 2.0.0 | **Last Updated:** June 2026
 
 ---
 

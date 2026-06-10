@@ -21,5 +21,8 @@ async def test_metrics_endpoint_includes_cache_and_memory_metrics(client: AsyncC
     assert "llm_cache_hit_rate" in body
     assert "llm_cache_hit_total" in body
     assert "llm_cache_miss_total" in body
+    assert "prompt_cache_hits_total" in body
+    assert "cached_tokens_saved_total" in body
+    assert "token_cost_per_request" in body
     assert "working_memory_utilization" in body
     assert "memory_reads_total" in body
