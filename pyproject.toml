@@ -3,6 +3,7 @@ name = "daily-briefing"
 version = "0.1.0"
 description = "AI Daily Briefing Assistant — multi-agent orchestration with LangGraph"
 readme = "README.md"
+license = "MIT"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115.0",

@@ -54,7 +54,7 @@ _One intelligent multi-agent pipeline — your tasks, calendar, and priorities u
 [![Security](https://img.shields.io/badge/Dwell%20Time-<1hr-00C853?style=flat-square)](docs/SECURITY.md)
 
 [![CI](https://img.shields.io/github/actions/workflow/status/qasirdev/daily-briefing/ci.yml?branch=epic%2Fautonomus-implementation&label=CI&style=flat-square)](https://github.com/qasirdev/daily-briefing/actions)
-[![License](https://img.shields.io/badge/License-Private-red?style=flat-square)]()
+[![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 
 </div>
 
@@ -1049,7 +1049,25 @@ uv run pytest backend/tests/security/  # OWASP GenAI boundary tests
 
 ## 📄 License
 
-**Private** — Internal use only. All rights reserved.
+This project is licensed under the [MIT License](LICENSE).
+
+Copyright (c) 2026 Qasir Mehmood
+
+---
+
+## GitHub billing notes
+
+This repository is **public**. Licensing (MIT) and GitHub billing are separate — MIT does not affect hosting or Actions costs.
+
+| Resource | Public repo (this project) |
+|----------|----------------------------|
+| Actions minutes (`ubuntu-latest`) | Free — unlimited standard runners |
+| Public GitHub Packages (GHCR) | Free |
+| Actions cache | 10 GB per repository included |
+
+GitHub may show a **gross amount** on the usage page (theoretical list-price cost of CI runs). For public repos with standard Linux runners, the **billed amount** is typically **$0**.
+
+To avoid unexpected charges elsewhere on your account: keep this repo public, use standard runners only (no larger runners), and set a **$0 spending limit** under GitHub → Settings → Billing.
 
 ---
 
