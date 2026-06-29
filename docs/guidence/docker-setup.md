@@ -151,20 +151,22 @@ Expected: **200** with an `access_token`.
 
 From the repo root:
 
+### Local (fast — default)
+
+Skips **torch / LlamaFirewall** (~1 GB). Regex + constitutional injection layers remain active; set `LLAMAFIREWALL_ENABLED=false` in `.env` (default in `.env.example`).
+
 ```bash
-# build app and build image
 docker compose build app && docker compose up -d
-docker compose build app && docker compose up -d && git checkout main
 
 # Build image + start (foreground — logs in terminal)
-docker compose up --build
+docker compose up --build app
 
 # Build + start in background
-docker compose up --build -d
+docker compose up --build -d app
 
 # Force full rebuild (after Dockerfile or code changes)
-docker compose build --no-cache
-docker compose up -d
+docker compose build --no-cache app
+docker compose up -d app
 
 # Follow logs
 docker compose logs -f app
@@ -172,6 +174,24 @@ docker compose logs -f app
 # Stop and remove
 docker compose down
 ```
+
+### Production / PromptGuard testing (`promptguard` profile)
+
+Installs **LlamaFirewall + transformers + torch**. First build is slow (~10–15 min). Set `LLAMAFIREWALL_ENABLED=true` and `HF_TOKEN` in `.env` for runtime ML scanning.
+
+```bash
+# Stop the fast local container if it is using port 8088
+docker compose down
+
+# Build with ML stack; HF_TOKEN preloads the model into the image when set
+export HF_TOKEN=hf_xxx   # optional but recommended for production
+docker compose --profile promptguard build app-promptguard
+docker compose --profile promptguard up -d app-promptguard
+
+docker compose --profile promptguard logs -f app-promptguard
+```
+
+CI/GHCR images are built with `INSTALL_PROMPTGUARD=true` automatically (see `.github/workflows/docker-publish.yml`).
 
 ---
 

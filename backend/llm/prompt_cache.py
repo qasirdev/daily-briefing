@@ -75,6 +75,36 @@ def build_llm_messages(
     ]
 
 
+def _content_char_length(content: Any) -> int:
+    if isinstance(content, str):
+        return len(content)
+    if isinstance(content, list):
+        total = 0
+        for block in content:
+            if isinstance(block, dict) and block.get("type") == "text":
+                total += len(str(block.get("text", "")))
+        return total
+    return 0
+
+
+def estimate_input_tokens(
+    messages: list[dict[str, Any]],
+    *,
+    dynamic_only: bool = False,
+) -> int:
+    """Estimate input tokens.
+
+    When dynamic_only is True, count user messages only (cached system excluded).
+    """
+    total_chars = 0
+    for message in messages:
+        role = message.get("role")
+        if dynamic_only and role != "user":
+            continue
+        total_chars += _content_char_length(message.get("content", ""))
+    return max(total_chars // 4, 1)
+
+
 class PromptCacheWarmer:
     """Warm provider prompt caches for frequently-used agents."""
 

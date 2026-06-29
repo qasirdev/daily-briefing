@@ -106,7 +106,7 @@ async def test_verification_node_uses_llm_with_cached_prompt() -> None:
     assert envelope.result is not None
     assert envelope.result["status"] == "verified"
     assert envelope.metadata.tokens_used == 120
-    assert envelope.metadata.prompt_version == "v1.1.0"
+    assert envelope.metadata.prompt_version == "v2.0.0"
 
     call_kwargs = llm.generate.await_args.kwargs
     messages = call_kwargs["messages"]

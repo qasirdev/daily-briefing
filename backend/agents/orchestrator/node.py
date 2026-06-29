@@ -10,9 +10,10 @@ import structlog
 
 from backend.datetime_format import format_time_range
 from backend.graph.state import BriefingGraphState
-from backend.memory.consolidation import distill_working_to_episodic
-from backend.memory.working import WorkingMemoryManager
+from backend.kernel.memory_manager import MemoryManager
+from backend.mcp.ingress import reset_mcp_tool_session
 from backend.metrics import record_consent_request
+from backend.prompt_version import resolve_prompt_version
 from backend.schemas.consent import (
     DEFAULT_TTL_HOURS,
     ConsentActionPayload,
@@ -25,6 +26,8 @@ from backend.security.sanitization import sanitize_markdown
 from backend.settings import get_settings
 
 logger = structlog.get_logger()
+
+_memory_manager = MemoryManager()
 
 SERVICE_RESOURCE_LABELS: dict[str, str] = {
     "google_calendar": "primary calendar events",
@@ -73,7 +76,15 @@ def _success_result(envelope: AgentResultEnvelope | None) -> dict[str, object] |
 
 def _collect_escalations(state: BriefingGraphState) -> list[AgentResultEnvelope]:
     escalated: list[AgentResultEnvelope] = []
-    for key in ("task_result", "calendar_result", "focus_result", "critic_result"):
+    for key in (
+        "input_security_result",
+        "task_result",
+        "calendar_result",
+        "focus_result",
+        "verification_result",
+        "adversarial_result",
+        "critic_result",
+    ):
         envelope = state.get(key)
         if isinstance(envelope, AgentResultEnvelope) and envelope.status == "escalated":
             escalated.append(envelope)
@@ -153,7 +164,7 @@ async def _distill_session_memory(state: BriefingGraphState) -> None:
         return
 
     try:
-        await distill_working_to_episodic(
+        await _memory_manager.distill_session(
             user_id=user_id,
             session_id=session_id,
             working_context=working_context,
@@ -188,13 +199,14 @@ async def human_escalation_node(state: BriefingGraphState) -> dict[str, Any]:
 async def orchestrator_route_node(state: BriefingGraphState) -> dict[str, Any]:
     """Initialize routing phase and detect early consent requirements."""
     trace_id = state.get("trace_id", "0" * 32)
+    request_id = state.get("request_id", trace_id)
+    reset_mcp_tool_session(request_id)
     logger.info("orchestrator_route_started", trace_id=trace_id)
-    working = WorkingMemoryManager()
     return {
         "current_agent": "orchestrator_route",
         "status": "pending",
         "revision_count": state.get("revision_count", 0),
-        **working.initialize_state(state),
+        **_memory_manager.working.initialize_state(state),
     }
 
 
@@ -232,7 +244,7 @@ async def orchestrator_present_node(state: BriefingGraphState) -> dict[str, Any]
                     execution_ms=execution_ms,
                     tokens_used=state.get("total_tokens", 0),
                     model_used="none",
-                    prompt_version="v1.5.0",
+                    prompt_version=resolve_prompt_version("orchestrator"),
                     trace_id=trace_id,
                     data_classification="internal",
                 ),
@@ -310,7 +322,7 @@ async def orchestrator_present_node(state: BriefingGraphState) -> dict[str, Any]
             execution_ms=execution_ms,
             tokens_used=state.get("total_tokens", 0),
             model_used="none",
-            prompt_version="v1.5.0",
+            prompt_version=resolve_prompt_version("orchestrator"),
             trace_id=trace_id,
             data_classification="confidential",
         ),

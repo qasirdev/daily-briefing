@@ -10,6 +10,8 @@ co-located AGENT.md files alongside the code they govern.
 **Deployment:** Single Docker Container (Option 1 Enterprise Hybrid)  
 **Version:** 1.6.0 | May 2026
 
+<!-- test-inventory:total=1200 -->
+
 > **Option 1 implemented:** stdio MCP (`@modelcontextprotocol/server-postgres`, `@franciscpd/calendar-mcp-server`), Supabase persistence (Alembic/SQLAlchemy), Docker on **8088**. Setup: [docs/guidence/docker-setup.md](docs/guidence/docker-setup.md).
 
 ---
@@ -30,7 +32,9 @@ co-located AGENT.md files alongside the code they govern.
 | Backend verification gate | Before marking any backend task done, run: `uv run ruff check backend && uv run ruff format backend && uv run mypy backend && uv run pytest` (see `backend/AGENT.md`) |
 | Elegance check | For non-trivial changes: pause and ask "is there a more elegant way?" |
 | Bug reports | Fix autonomously — point at logs/errors and resolve without hand-holding |
-| Security First | Check `docs/SECURITY.md` before modifying agent inputs/outputs |
+| Security First | Check `docs/SECURITY.md` before modifying agent inputs/outputs; injection pipeline is regex → PromptGuard 2 → constitutional via `InputSecurityScanner` |
+| Injection corpus sync | When extending `INJECTION_PAYLOADS`, update `injection_patterns.py` and corpus counts in tracked docs (`test_corpus_inventory.py` must pass) |
+| Test suite inventory sync | When adding/removing pytest cases, update `test-inventory` markers and prose counts in tracked docs (`test_suite_inventory.py` must pass) |
 | Local LLM | Respect `docs/LOCAL-LLM.md` fallback rules for privacy-sensitive tasks |
 | Agent Envelope | All agents MUST return `AgentResultEnvelope` (see `backend/schemas/`) |
 | DLQ Handling | Failed agents or unrecoverable MCP timeouts MUST route to the DLQ |
@@ -56,7 +60,7 @@ co-located AGENT.md files alongside the code they govern.
 | **MVP 2** | PostgreSQL MCP, Task Agent, Calendar Agent, Focus Agent implementation | ✅ Done |
 | **MVP 3** | Critic Agent, DLQ routing, observability baseline, OpenTelemetry integration | ✅ Done |
 | **MVP 4** | Agentic Consent modal, Local LLM fallback, learner feedback loops | ✅ Done |
-| **MVP 5** | Comprehensive OWASP GenAI Security Hardening, Prompt Injection Defense | ✅ Done |
+| **MVP 5** | Comprehensive OWASP GenAI Security Hardening, Prompt Injection Defense (regex + LlamaFirewall PromptGuard 2 + constitutional) | ✅ Done |
 | **MVP 6** | Orchestrator-as-Presenter finalization, production deployment, Docker signing | ✅ Done |
 | **Option 1** | Supabase + stdio MCP + Alembic + Docker E2E (DB-E7, DB-053–057) | ✅ Done |
 

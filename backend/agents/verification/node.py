@@ -230,9 +230,13 @@ def _envelope_from_verification(
             execution_ms=execution_ms,
             escalation=(
                 EscalationPayload(
-                    reason="unexpected_error",
-                    target_agent="orchestrator",
-                    context=f"Verification found {critical_count} major/critical discrepancies",
+                    reason="verification_failed",
+                    target_agent="focus",
+                    context=json.dumps(
+                        {"flagged_claims": flagged_list, "critical_count": critical_count},
+                        ensure_ascii=True,
+                    ),
+                    retry_allowed=True,
                 )
                 if critical_count > 0
                 else None
@@ -276,6 +280,9 @@ async def verification_agent_node(
         "verification_result": envelope,
         "current_agent": "verification",
     }
+    if envelope.status == "escalated" and envelope.escalation:
+        if envelope.escalation.reason == "verification_failed":
+            update["regeneration_constraints"] = envelope.escalation.context
     if llm_response is not None:
         update["total_tokens"] = state.get("total_tokens", 0) + llm_response.tokens_used
 

@@ -10,10 +10,11 @@
 ### Multi-Layer Input Scanning
 
 Replaced single-regex Critic scan with `InputSecurityScanner`:
-1. **Regex layer** — fast known-signature detection (`PromptInjectionDetector`)
-2. **Constitutional layer** — policy rules from `rules.yaml` (DAN mode, exfiltration, privilege escalation)
+1. **Regex layer** — fast known-signature detection (`PromptInjectionDetector`) with NFKC/base64/hex normalisation and `rapidfuzz` fuzzy matching; **285** payloads in `tests/security/test_injection_payloads.py`, **277** patterns in `security/injection_patterns.py` (inventory synced via `test_corpus_inventory.py`)
+2. **ML layer** — Meta LlamaFirewall **PromptGuard 2** (`PromptGuardService`) for semantic jailbreak detection
+3. **Constitutional layer** — policy rules from `rules.yaml` (DAN mode, exfiltration, privilege escalation)
 
-Short-circuit: regex hit skips constitutional evaluation for latency.
+Short-circuit: regex hit skips PromptGuard and constitutional evaluation for latency.
 
 ### OWASP Agent vs GenAI
 

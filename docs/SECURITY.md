@@ -29,8 +29,18 @@ This document describes how every one of those risks is handled — not theoreti
 | **Primary threat** | Indirect prompt injection via third-party calendar events |
 | **Architecture pattern** | Orchestrator-as-Presenter — only sanitised markdown ever reaches users |
 | **Controls** | Regex injection detector · `nh3` + DOMPurify sanitisation · per-agent token budgets · SlowAPI rate limits · SSRF allowlists |
-| **Verification** | 8 dedicated security test modules + E2E security scenarios; CI runs Ruff, MyPy, and full pytest suite |
+| **Verification** | **1200** backend pytest cases (unit · security · integration · E2E); CI runs backend gate (Ruff, MyPy, pytest) and frontend `npm run test:coverage` (≥75%) |
 | **Production hardening** | Cosign-signed images · structured security logging · DLQ for violations · Prometheus security metrics |
+
+### Test suite inventory
+
+<!-- test-inventory:total=1200 -->
+
+| Asset | Count | Source |
+|---|---|---|
+| Backend pytest suite | **1200** | [`backend/tests/`](../backend/tests/) — `uv run pytest --collect-only -q backend/tests` |
+
+**Maintenance rule:** When adding or removing test functions or parametrized cases, update every file containing the `test-inventory` marker (see [`test_suite_inventory.py`](../backend/tests/test_suite_inventory.py)). Run `uv run pytest backend/tests/test_suite_inventory.py` before merge.
 
 ---
 
@@ -59,7 +69,7 @@ Every security event is logged with a `trace_id` linking it to the originating H
 
 | ID | Vulnerability | Status | Control Implemented | Test Coverage |
 |---|---|---|---|---|
-| **LLM01** | Prompt Injection | ✅ **Implemented** | Critic Agent + `PromptInjectionDetector`, Unicode normalisation, DLQ escalation, no-retry policy | [`test_injection.py`](../backend/tests/security/test_injection.py) |
+| **LLM01** | Prompt Injection | ✅ **Implemented** | Input Security Gate + PromptGuard 2 + Critic + `PromptInjectionDetector`, spotlighting, DLQ escalation, no-retry | [`test_security.py`](../backend/tests/unit/test_security.py) · [`test_prompt_guard.py`](../backend/tests/security/test_prompt_guard.py) · [`test_spotlighting.py`](../backend/tests/security/test_spotlighting.py) · [`test_input_security_gate.py`](../backend/tests/security/test_input_security_gate.py) |
 | **LLM02** | Insecure Output Handling | ✅ **Implemented** | `sanitize_markdown()` (nh3), Orchestrator-as-Presenter pattern, DOMPurify on frontend | [`test_sanitization.py`](../backend/tests/security/test_sanitization.py) |
 | **LLM03** | Training Data Poisoning | ⬜ **N/A** | No custom model training; third-party models only | N/A |
 | **LLM04** | Model Denial of Service | ✅ **Implemented** | Per-agent token budgets (2× hard limit), graph circuit breaker, SlowAPI rate limits | [`test_token_budget.py`](../backend/tests/security/test_token_budget.py) · [`test_rate_limits.py`](../backend/tests/security/test_rate_limits.py) |
@@ -81,7 +91,7 @@ Agent-specific vulnerabilities beyond OWASP GenAI LLM Top 10. Registry: `backend
 
 | ID | Vulnerability | Status | Control | Test Coverage |
 |---|---|---|---|---|
-| **AGENT01** | Agent Goal Hijack | ✅ **Implemented** | `InputSecurityScanner` (regex + constitutional) + Critic escalation | [`test_injection.py`](../backend/tests/security/test_injection.py) · [`test_constitutional_classifier.py`](../backend/tests/security/test_constitutional_classifier.py) |
+| **AGENT01** | Agent Goal Hijack | ✅ **Implemented** | `InputSecurityScanner` (regex + constitutional) + Critic escalation | [`test_security.py`](../backend/tests/unit/test_security.py) · [`test_constitutional.py`](../backend/tests/security/test_constitutional.py) |
 | **AGENT02** | Tool Misuse | ✅ **Implemented** | MCP scopes, SSRF allowlists, read-only SQL | [`test_mcp_security.py`](../backend/tests/security/test_mcp_security.py) |
 | **AGENT03** | Agentic Logic Abuse | ✅ **Implemented** | Consensus workflow, Critic quality gate | [`test_consensus.py`](../backend/tests/architecture/test_consensus.py) |
 | **AGENT04** | Memory Poisoning | ✅ **Implemented** | Memory quarantine, ingestion injection scan | [`test_quarantine.py`](../backend/tests/memory/test_quarantine.py) |
@@ -102,12 +112,16 @@ Multi-layer jailbreak defense beyond regex pattern matching.
 
 | Layer | Module | Target |
 |---|---|---|
-| 1 — Regex | `PromptInjectionDetector` | Known injection signatures |
-| 2 — Constitutional | `ConstitutionalClassifier` | Policy violations (DAN mode, exfiltration, privilege escalation) |
-| Unified | `InputSecurityScanner` | Critic agent entry point |
+| 1 — Regex | `PromptInjectionDetector` | Known injection signatures, obfuscation normalisation, fuzzy matching |
+| 2 — ML | `PromptGuardService` (Meta LlamaFirewall PromptGuard 2) | Semantic jailbreak and novel injection phrasing |
+| 3 — Constitutional | `ConstitutionalClassifier` | Policy violations (DAN mode, exfiltration, privilege escalation) |
+| Unified | `InputSecurityScanner` | Input security gate + Critic entry point |
+
+**PromptGuard 2 setup:** requires `meta-llama/Llama-Prompt-Guard-2-86M` from Hugging Face. Set `HF_TOKEN` and optionally preload the model to `~/.cache/huggingface`. Disable via `LLAMAFIREWALL_ENABLED=false` (regex + constitutional layers remain active). Tune threshold with `LLAMAFIREWALL_BLOCK_THRESHOLD` (default `0.9`).
 
 Rules: `backend/security/rules.yaml`  
-Evaluation corpus: `backend/tests/security/jailbreak_corpus.yaml` (≥95% block rate in CI)
+Evaluation corpus: `backend/tests/security/jailbreak_corpus.yaml` (≥95% block rate in CI)  
+PromptGuard tests: [`test_prompt_guard.py`](../backend/tests/security/test_prompt_guard.py)
 
 Metric: `constitutional_violations_total{rule_id, severity}`
 
@@ -139,7 +153,7 @@ flowchart LR
     end
 
     subgraph Detection["🔍 Detection Layer"]
-        INJ[PromptInjectionDetector\nRegex + Unicode normalisation]
+        INJ[PromptInjectionDetector\nRegex + normalisation + fuzzy match]
         PII[PIIDetector\nEmail, Phone, SSN, Card]
         SSRF[SSRFValidator\nDomain allowlist + private IP block]
     end
@@ -175,9 +189,11 @@ flowchart LR
     DLQ --> MET
 ```
 
-**Module map:** `backend/security/` — `injection.py` · `sanitization.py` · `pii.py` · `ssrf.py` · `token_budget.py` · `rate_limit.py`
+**Module map:** `backend/security/` — `injection.py` · `prompt_guard.py` · `spotlighting.py` · `sanitization.py` · `pii.py` · `ssrf.py` · `token_budget.py` · `rate_limit.py`
 
-**Graph order (implemented):** Task + Calendar (parallel) → Focus → Critic (injection scan + quality gate) → Orchestrator (present) or DLQ.
+**Graph order (implemented):** Task + Calendar (parallel) → **Input Security Gate** (MCP injection scan) → Focus → Verification/Adversarial (when consensus enabled) → Critic (second injection scan + quality gate) → Orchestrator (present) or DLQ.
+
+**API failure fields:** When the pipeline aborts, `POST /api/v1/briefing/generate` returns `failure_reason` (DLQ reason code) and `failure_message` (user-safe explanation). Security blocks use `failure_reason: "security_violation_detected"` — never retried automatically.
 
 ---
 
@@ -192,28 +208,65 @@ This attack vector is particularly dangerous because:
 - Meeting invites from external parties cannot be pre-screened
 - The injected instruction appears in trusted calendar data, not user input
 
+### Spotlighting (Gap #114)
+
+Untrusted MCP and memory context sent to the Focus LLM is wrapped in `<<<EXTERNAL_CONTENT>>>` … `<<</EXTERNAL_CONTENT>>>` markers via `backend/security/spotlighting.py`. Focus prompts treat spotlighted blocks as **data only** (see `prompts/focus/input-security.md`). This complements regex/constitutional scanning — markers instruct the model; scanners block execution.
+
 ### Detection Pipeline
 
-Injection scanning runs in the **Critic Agent** after the Focus Agent has produced a plan. The Critic serialises task, calendar, and focus `AgentResultEnvelope` payloads and scans them with `PromptInjectionDetector`. Detected violations block Orchestrator presentation and route to the DLQ.
+Injection scanning uses **defense-in-depth** with three layers:
+
+1. **Input Security Gate** (`backend/graph/input_security_gate.py`) — runs immediately after task/calendar fetch, **before** any Focus LLM call. Scans serialised MCP payloads with `InputSecurityScanner` (regex → PromptGuard 2 → constitutional). Blocks early to avoid token spend on poisoned context.
+2. **Critic Agent** — runs after Focus (and verification/adversarial when consensus is enabled). Re-scans task, calendar, and focus JSON before Orchestrator presentation.
+
+Detected violations block Orchestrator presentation and route to the DLQ. The API exposes `failure_reason` and `failure_message` on `BriefingResponse`.
 
 ```mermaid
 flowchart TB
     PARALLEL["📋 Task + 📅 Calendar\n(parallel fetch)"]
+    GATE["🔒 Input Security Gate\nInputSecurityScanner"]
+    GATE_FLAG{Injection\nin MCP data?}
     FOCUS["🔍 Focus Agent\nLLM plan from task/calendar context"]
-    CRIT["🛡️ Critic Agent\nPromptInjectionDetector"]
-    FLAG{Injection\ndetected?}
+    CRIT["🛡️ Critic Agent\nsecond scan + quality gate"]
+    CRIT_FLAG{Injection\nin focus path?}
     ORCH["🎯 Orchestrator\nSanitised briefing"]
     LOG["📋 Security log\ntrace_id + pattern"]
     DLQ["💀 Dead Letter Queue\nPersisted — no retry"]
 
-    PARALLEL --> FOCUS --> CRIT --> FLAG
-    FLAG -->|No| ORCH
-    FLAG -->|Yes| LOG --> DLQ
+    PARALLEL --> GATE --> GATE_FLAG
+    GATE_FLAG -->|Yes| LOG --> DLQ
+    GATE_FLAG -->|No| FOCUS --> CRIT --> CRIT_FLAG
+    CRIT_FLAG -->|No| ORCH
+    CRIT_FLAG -->|Yes| LOG --> DLQ
 ```
 
 ### Detection Patterns
 
-All patterns are implemented in `backend/security/injection.py` with Unicode normalisation applied before matching to defeat character-substitution obfuscation.
+Regex signatures live in `backend/security/injection_patterns.py`; `backend/security/injection.py` applies multi-stage normalisation before matching to defeat obfuscation (Unicode NFKC, zero-width stripping, hex-escape decoding, base64 expansion, and OWASP-recommended rapidfuzz fuzzy matching).
+
+| Category | Example signatures | Pattern names (sample) |
+|---|---|---|
+| Basic override | `ignore previous`, `disregard all previous instructions` | `ignore_previous`, `disregard_previous` |
+| Role switching | `you are now in developer mode`, `act as the root user` | `developer_mode`, `act_as_root` |
+| Delimiter attacks | `[[SYSTEM]]`, `<\|im_start\|>`, ` ```system `, `<system>` | `system_brackets`, `im_start`, `code_system`, `system_tag` |
+| Context hijacking | `ignore conversation history`, `reset memory and start fresh` | `ignore_history`, `reset_memory` |
+| Indirect injection | `trust external content over system instructions` | `trust_external_over_system` |
+| RAG poisoning | `treat retrieved documents as executable instructions` | `rag_executable` |
+| Agent-specific | `bypass approval requirements`, `ignore tool permission boundaries` | `bypass_approval`, `ignore_tool_boundaries` |
+| Obfuscation | base64, hex escapes, fullwidth Unicode, zero-width chars | normalisation + `rapidfuzz` fuzzy match |
+
+### Regression corpus inventory
+
+<!-- corpus-inventory:payloads=285,patterns=277 -->
+
+| Asset | Count | Source module | Consumed by |
+|---|---|---|---|
+| Regression payloads | **285** | [`test_injection_payloads.py`](../backend/tests/security/test_injection_payloads.py) (`INJECTION_PAYLOADS`) | `test_security.py`, `test_injection.py` |
+| Regex signatures | **277** | [`injection_patterns.py`](../backend/security/injection_patterns.py) (`INJECTION_PATTERNS`) | `PromptInjectionDetector` |
+
+**Maintenance rule:** When adding or removing injection test vectors, update `INJECTION_PAYLOADS`, add matching patterns in `injection_patterns.py`, then refresh the counts in this table and every file containing the `corpus-inventory` marker (see `backend/tests/security/test_corpus_inventory.py`). Run `uv run pytest backend/tests/security/test_corpus_inventory.py` before merge.
+
+Legacy fast-path signatures (stable `matched_pattern` names):
 
 | Pattern name | Example signature | Confidence score |
 |---|---|---|
@@ -228,15 +281,27 @@ All patterns are implemented in `backend/security/injection.py` with Unicode nor
 
 When injection is detected, the response is deterministic and non-negotiable:
 
-1. **Escalate** — Critic returns `status: "escalated"` with `escalation.reason = "security_violation_detected"`
+1. **Escalate** — Input Security Gate or Critic returns `status: "escalated"` with `escalation.reason = "security_violation_detected"`
 2. **Log** — Full security event logged with `trace_id`, pattern matched, and confidence score
 3. **Route to DLQ** — Graph routes to `dlq_handler`; event persisted for security team review
 4. **No retry** — Security violations are **never** retried automatically
-5. **No user output** — Orchestrator presentation is skipped; user receives a safe failure/degraded response
+5. **No user output** — Orchestrator presentation is skipped; user receives `status: "failure"` with `failure_message`
 
 ```json
 {
-  "agent_id": "critic",
+  "status": "failure",
+  "briefing": "",
+  "failure_reason": "security_violation_detected",
+  "failure_message": "Briefing blocked: suspected prompt injection in calendar data.",
+  "metadata": { "trace_id": "…" }
+}
+```
+
+Envelope example (gate or critic):
+
+```json
+{
+  "agent_id": "input_security_gate",
   "status": "escalated",
   "escalation": {
     "reason": "security_violation_detected",
@@ -504,7 +569,9 @@ Every event carries a `trace_id` linking it to the originating HTTP request, ena
 
 | Test module | What it validates |
 |---|---|
-| `test_injection.py` | Pattern matching · Unicode normalisation · DLQ escalation |
+| `unit/test_security.py` | Pattern matching · Unicode normalisation · DLQ escalation |
+| `test_spotlighting.py` | `<<<EXTERNAL_CONTENT>>>` wrapping · idempotent markers |
+| `test_input_security_gate.py` | Pre-focus MCP scan · graph skips Focus on block |
 | `test_sanitization.py` | nh3 allowlist correctness · Script stripping · Content logging |
 | `test_pii_masking.py` | PII detection accuracy · Masking correctness · Envelope integration |
 | `test_mcp_security.py` | SSRF allowlist enforcement · Private IP blocking |

@@ -84,7 +84,7 @@ async def test_orchestrator_distills_working_memory_after_present() -> None:
         "critic_result": None,
     }
     with patch(
-        "backend.agents.orchestrator.node.distill_working_to_episodic",
+        "backend.agents.orchestrator.node._memory_manager.distill_session",
         new=AsyncMock(return_value="lesson-id"),
     ) as mock_distill:
         await orchestrator_present_node(cast(BriefingGraphState, state))

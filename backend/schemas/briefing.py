@@ -6,6 +6,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 from backend.schemas.consent import ConsentPromptRequest
+from backend.schemas.dlq import DLQReason
 from backend.schemas.reasoning_trace import ReasoningTraceResponse
 
 
@@ -56,3 +57,5 @@ class BriefingResponse(BaseModel):
     consent_context: str | None = None
     consent_request: ConsentPromptRequest | None = None
     reasoning_trace: ReasoningTraceResponse | None = None
+    failure_reason: DLQReason | None = None
+    failure_message: str | None = None

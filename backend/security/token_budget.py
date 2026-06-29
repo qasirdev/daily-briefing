@@ -11,7 +11,7 @@ from backend.schemas.envelope import AgentResultEnvelope
 AGENT_TOKEN_BUDGETS: dict[str, int] = {
     "task": 3_000,
     "calendar": 3_000,
-    "focus": 10_000,
+    "focus": 15_000,
     "verification": 4_000,
     "adversarial": 4_000,
     "critic": 5_000,

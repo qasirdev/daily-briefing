@@ -41,19 +41,20 @@ frontend/
 │   └── globals.css             # Global styles
 ├── components/
 │   ├── BriefingDashboard.tsx   # Primary briefing view
+│   ├── BriefingErrorBoundary.tsx  # Render error recovery
 │   ├── ObservabilityBadge.tsx  # Execution metrics display
 │   ├── ConsentPromptModal.tsx  # JIT consent modal
-│   ├── TaskList.tsx            # Task rendering component
-│   └── ui/                     # Shared UI primitives
+│   ├── ReasoningTrace.tsx      # Agent reasoning trace (HITL)
+│   └── ReasoningFeedback.tsx   # Per-step reasoning feedback
 ├── hooks/
-│   ├── useBriefing.ts          # Briefing data fetching
-│   ├── useConsents.ts          # Consent management
-│   └── useObservability.ts     # Metrics tracking
+│   └── useBriefing.ts          # Briefing data fetching
 ├── lib/
 │   ├── api.ts                  # API client
+│   ├── briefing-schema.ts      # Zod schemas + alert helpers
 │   ├── sanitize.ts             # HTML sanitization utilities
-│   └── schemas.ts              # Zod schemas for API responses
-└── __tests__/                  # Vitest test files
+│   ├── cost-tracking.ts        # Visit/lifetime cost stats (localStorage)
+│   └── account-usage.ts        # OpenRouter account usage
+└── __tests__/                  # Vitest tests (see Testing Requirements)
 ```
 
 ---
@@ -81,17 +82,25 @@ frontend/
 **Props:**
 ```typescript
 interface BriefingDashboardProps {
-  briefing: string;          // Sanitized HTML content
-  status: 'success' | 'degraded' | 'failure';
-  metadata: ExecutionMetadata;
-  onRetry?: () => void;      // Retry handler for degraded state
+  briefing: string;
+  status: 'success' | 'degraded' | 'failure' | 'awaiting_consent' | 'awaiting_human_review';
+  observability: ObservabilityData;
+  visitStats?: VisitUsageStats | null;
+  accountUsage?: AccountUsage | null;
+  loading?: boolean;
+  onRetry?: () => void;
+  failureReason?: string | null;   // e.g. security_violation_detected
+  failureMessage?: string | null;    // user-safe API copy
 }
 ```
 
 **Security Requirements:**
-- MUST use `sanitizeHtml()` before rendering any content from API
-- MUST display warning badge for degraded state
+- MUST use DOMPurify before rendering any content from API
+- MUST show red `role="alert"` for `failureReason === 'security_violation_detected'` (no Retry)
+- MUST show amber alert for degraded/generic failure (Retry allowed when `onRetry` set)
 - MUST NOT render raw markdown without sanitization
+
+**Tests:** `frontend/__tests__/components/BriefingDashboard.test.tsx` · `frontend/__tests__/lib/briefing-schema.test.ts`
 
 **Example:**
 ```typescript
@@ -124,6 +133,8 @@ export function BriefingDashboard({ briefing, status, metadata, onRetry }: Brief
 
 **Purpose:** Displays execution metrics for transparency.
 
+**Tests:** `frontend/__tests__/components/ObservabilityBadge.test.tsx`
+
 **Props:**
 ```typescript
 interface ObservabilityBadgeProps {
@@ -145,6 +156,8 @@ interface ObservabilityBadgeProps {
 ### ConsentPromptModal.tsx
 
 **Purpose:** Handles JIT (Just-In-Time) authorization for external services.
+
+**Tests:** `frontend/__tests__/components/ConsentPromptModal.test.tsx`
 
 **Props:**
 ```typescript
@@ -321,6 +334,28 @@ Tailwind 4 uses `@import "tailwindcss"` and `@theme` in `app/globals.css` instea
 ---
 
 ## Testing Requirements
+
+Run from `frontend/`:
+
+```bash
+npm test              # unit/component tests
+npm run test:coverage # enforces ≥75% line coverage (`.cursor/rules/testing.mdc`)
+```
+
+CI runs `npm run test:coverage` before build (`.github/workflows/ci.yml`).
+
+| Area | Test file |
+|---|---|
+| BriefingDashboard | `__tests__/components/BriefingDashboard.test.tsx` |
+| BriefingErrorBoundary | `__tests__/components/BriefingErrorBoundary.test.tsx` |
+| ObservabilityBadge | `__tests__/components/ObservabilityBadge.test.tsx` |
+| ConsentPromptModal | `__tests__/components/ConsentPromptModal.test.tsx` |
+| ReasoningTrace | `__tests__/components/ReasoningTrace.test.tsx` |
+| useBriefing | `__tests__/hooks/useBriefing.test.ts` |
+| API + schemas | `__tests__/lib/api.test.ts`, `briefing-schema.test.ts` |
+| Sanitization | `__tests__/lib/sanitize.test.ts` |
+| Cost tracking | `__tests__/lib/cost-tracking.test.ts` |
+| Account usage | `__tests__/lib/account-usage.test.ts` |
 
 ### Component Tests (Vitest)
 

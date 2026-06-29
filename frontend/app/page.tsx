@@ -1,19 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 
 import { BriefingDashboard } from "@/components/BriefingDashboard";
+import { BriefingErrorBoundary } from "@/components/BriefingErrorBoundary";
 import { ConsentPromptModal } from "@/components/ConsentPromptModal";
 import { ReasoningTrace } from "@/components/ReasoningTrace";
+import { useBriefing } from "@/hooks/useBriefing";
+import { fetchAccountUsage, type AccountUsage } from "@/lib/account-usage";
+import { DEFAULT_USER_ID, getApiBase } from "@/lib/api";
 import {
-  briefingResponseSchema,
   toObservabilityData,
   type BriefingResponse,
   type ObservabilityData,
 } from "@/lib/briefing-schema";
-import { fetchAccountUsage, type AccountUsage } from "@/lib/account-usage";
-import { DEFAULT_USER_ID, getApiBase } from "@/lib/api";
 import type { ConsentPromptRequest } from "@/lib/consent-schema";
 import {
   computeVisitStats,
@@ -33,41 +34,20 @@ const emptyObservability: ObservabilityData = {
 };
 
 export default function Home() {
-  const [loading, setLoading] = useState(false);
-  const [response, setResponse] = useState<BriefingResponse | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [consentPrompt, setConsentPrompt] = useState<ConsentPromptRequest | null>(null);
   const [consentLoading, setConsentLoading] = useState(false);
   const [oauthError, setOauthError] = useState<string | null>(null);
   const [visitStats, setVisitStats] = useState<VisitUsageStats | null>(null);
   const [accountUsage, setAccountUsage] = useState<AccountUsage | null>(null);
   const visitBaselineRef = useRef<UsageTracking | null>(null);
+  const [isPending, startTransition] = useTransition();
 
   const refreshAccountUsage = useCallback(async () => {
     const usage = await fetchAccountUsage();
     setAccountUsage(usage);
   }, []);
 
-  useEffect(() => {
-    visitBaselineRef.current = readUsageTracking();
-    const baseline = visitBaselineRef.current;
-    setVisitStats(computeVisitStats(baseline, baseline));
-    void refreshAccountUsage();
-  }, [refreshAccountUsage]);
-
-  const generateBriefing = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    setConsentPrompt(null);
-    try {
-      const res = await fetch(`${getApiBase()}/api/v1/briefing/generate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: DEFAULT_USER_ID }),
-      });
-      const payload: unknown = await res.json();
-      const parsed = briefingResponseSchema.parse(payload);
-      setResponse(parsed);
+  const handleBriefingSuccess = useCallback((parsed: BriefingResponse) => {
       const tracking = recordBriefingUsage(
         parsed.metadata.total_cost_usd,
         parsed.metadata.total_tokens,
@@ -78,12 +58,25 @@ export default function Home() {
       if (parsed.status === "awaiting_consent" && parsed.consent_request) {
         setConsentPrompt(parsed.consent_request);
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to generate briefing");
-    } finally {
-      setLoading(false);
-    }
   }, [refreshAccountUsage]);
+
+  const { data: response, isLoading: loading, error, refetch } = useBriefing({
+    onSuccess: handleBriefingSuccess,
+  });
+
+  useEffect(() => {
+    visitBaselineRef.current = readUsageTracking();
+    const baseline = visitBaselineRef.current;
+    setVisitStats(computeVisitStats(baseline, baseline));
+    void refreshAccountUsage();
+  }, [refreshAccountUsage]);
+
+  const generateBriefing = useCallback(() => {
+    setConsentPrompt(null);
+    startTransition(() => {
+      void refetch();
+    });
+  }, [refetch]);
 
   const handleGrantConsent = useCallback(
     async (ttlHours: number) => {
@@ -157,10 +150,12 @@ export default function Home() {
           <button
             type="button"
             onClick={generateBriefing}
-            disabled={loading || consentLoading}
+            disabled={loading || isPending || consentLoading}
+            aria-label="Generate daily briefing"
+            aria-busy={loading || isPending}
             className="rounded-lg bg-briefing-primary px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
           >
-            {loading ? "Generating…" : "Generate briefing"}
+            {loading || isPending ? "Generating…" : "Generate briefing"}
           </button>
         </div>
       </header>
@@ -171,20 +166,24 @@ export default function Home() {
         </p>
       ) : null}
 
-      <BriefingDashboard
-        briefing={response?.briefing ?? ""}
-        status={response?.status ?? "failure"}
-        observability={observability}
-        visitStats={visitStats}
-        accountUsage={accountUsage}
-        loading={loading && !response}
-        onRetry={generateBriefing}
-      />
+      <BriefingErrorBoundary onReset={generateBriefing}>
+        <BriefingDashboard
+          briefing={response?.briefing ?? ""}
+          status={response?.status ?? "failure"}
+          observability={observability}
+          visitStats={visitStats}
+          accountUsage={accountUsage}
+          loading={loading && !response}
+          onRetry={generateBriefing}
+          failureReason={response?.failure_reason}
+          failureMessage={response?.failure_message}
+        />
 
-      <ReasoningTrace
-        trace={response?.reasoning_trace ?? null}
-        briefingId={response?.metadata.trace_id}
-      />
+        <ReasoningTrace
+          trace={response?.reasoning_trace ?? null}
+          briefingId={response?.metadata.trace_id}
+        />
+      </BriefingErrorBoundary>
 
       {consentPrompt ? (
         <ConsentPromptModal

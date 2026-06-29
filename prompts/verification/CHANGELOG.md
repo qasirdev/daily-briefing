@@ -1,5 +1,10 @@
 # Verification Agent Changelog
 
+## [1.1.1] - 2026-06-10
+
+### Added
+- `input-security.md` — MCP-grounded verification with spotlighting and bypass resistance
+
 ## [1.1.0] - 2026-06-06
 
 ### Changed

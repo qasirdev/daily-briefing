@@ -1,4 +1,4 @@
-"""MCP client tests."""
+"""MCP server integration tests."""
 
 import httpx
 import pytest
@@ -9,8 +9,16 @@ from backend.mcp.postgres import PostgresMCPClient
 
 
 @pytest.mark.asyncio
+async def test_mock_postgresql_mcp_fixture_returns_rows(
+    mock_postgresql_mcp: PostgresMCPClient,
+) -> None:
+    result = await mock_postgresql_mcp.query(sql="SELECT 1", user_id="user-1")
+    assert result == {"rows": []}
+
+
+@pytest.mark.asyncio
 async def test_postgres_list_tables(httpx_mock: HTTPXMock) -> None:
-    client = PostgresMCPClient(host="localhost", port=5443)  # default 5433
+    client = PostgresMCPClient(host="localhost", port=5443)
     httpx_mock.add_response(json={"tables": [{"name": "tasks"}]})
     result = await client.list_tables()
     assert result["tables"][0]["name"] == "tasks"

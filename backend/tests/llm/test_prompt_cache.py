@@ -7,6 +7,7 @@ import pytest
 from backend.llm.prompt_cache import (
     OPENAI_AUTO_CACHE_MIN_TOKENS,
     build_llm_messages,
+    estimate_input_tokens,
     is_claude_model,
     openai_cache_eligible,
 )
@@ -15,7 +16,10 @@ from backend.observability.metrics import (
     CACHE_HIT_RATE,
     CACHE_HIT_TOTAL,
     CACHE_MISS_TOTAL,
+    CACHED_TOKENS_SAVED_TOTAL,
+    TOKEN_COST_PER_REQUEST,
     record_llm_cache_usage,
+    record_token_cost,
 )
 from backend.prompts_loader import build_cached_prompt_assembly
 from backend.settings import Settings
@@ -42,7 +46,10 @@ def test_critic_cached_prompt_has_v2_structure() -> None:
     block_names = {block.name for block in assembly.blocks}
     assert "instructions" in block_names
     assert "examples" in block_names
-    assert len(assembly.blocks) >= 7
+    assert "output-schema" in block_names
+    assert "quality-checklist" in block_names
+    assert "input-security" in block_names
+    assert len(assembly.blocks) >= 10
 
 
 def test_focus_cached_prompt_exceeds_openai_threshold() -> None:
@@ -62,6 +69,20 @@ def test_claude_system_blocks_include_cache_control() -> None:
     assert blocks
     assert all("cache_control" in block for block in blocks)
     assert all(block["cache_control"] == {"type": "ephemeral"} for block in blocks)
+
+
+def test_estimate_input_tokens_excludes_cached_system_when_dynamic_only() -> None:
+    messages = build_llm_messages(
+        "focus",
+        "small dynamic payload",
+        model="openai/gpt-4o-mini",
+        enable_caching=True,
+    )
+    full_estimate = estimate_input_tokens(messages, dynamic_only=False)
+    dynamic_estimate = estimate_input_tokens(messages, dynamic_only=True)
+    assert full_estimate > OPENAI_AUTO_CACHE_MIN_TOKENS
+    assert dynamic_estimate < full_estimate
+    assert dynamic_estimate == max(len("small dynamic payload") // 4, 1)
 
 
 def test_build_llm_messages_places_user_content_last() -> None:
@@ -113,6 +134,30 @@ def test_record_llm_cache_usage_updates_hit_rate_gauge() -> None:
     record_llm_cache_usage(provider=provider, model=model, cached_tokens=100)
     rate = CACHE_HIT_RATE.labels(provider=provider, model=model)._value.get()
     assert rate == 50.0
+
+
+def test_record_llm_cache_usage_increments_cached_tokens_saved() -> None:
+    agent_id = "focus"
+    model = "test-saved-tokens-model"
+    initial = CACHED_TOKENS_SAVED_TOTAL.labels(agent_id=agent_id, model=model)._value.get()
+    record_llm_cache_usage(
+        provider="openai",
+        model=model,
+        cached_tokens=256,
+        agent_id=agent_id,
+    )
+    final = CACHED_TOKENS_SAVED_TOTAL.labels(agent_id=agent_id, model=model)._value.get()
+    assert final == initial + 256
+
+
+def test_record_token_cost_skips_zero_cost() -> None:
+    record_token_cost(agent_id="focus", model="test-cost-skip", cost_usd=0.0)
+
+
+def test_record_token_cost_accepts_positive_cost() -> None:
+    record_token_cost(agent_id="focus", model="test-cost-positive", cost_usd=0.005)
+    sample = TOKEN_COST_PER_REQUEST.labels(agent_id="focus", model="test-cost-positive")
+    assert sample._name == "token_cost_per_request"  # noqa: SLF001
 
 
 @pytest.mark.asyncio

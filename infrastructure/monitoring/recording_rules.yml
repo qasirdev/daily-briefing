@@ -19,3 +19,12 @@ groups:
           sum(rate(briefing_generation_duration_seconds_count{status="failure"}[5m]))
           /
           clamp_min(sum(rate(briefing_generation_duration_seconds_count[5m])), 1)
+
+      - record: daily_briefing:prompt_cache_hit_rate:5m
+        expr: |
+          sum(rate(prompt_cache_hits_total[5m]))
+          /
+          clamp_min(
+            sum(rate(prompt_cache_hits_total[5m])) + sum(rate(prompt_cache_misses_total[5m])),
+            1
+          )

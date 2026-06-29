@@ -7,6 +7,14 @@ metadata:
     pip_audit_block_severity:
       - critical
       - high
+    pip_audit_ignored_vulns:
+      - id: GHSA-rrmf-rvhw-rf47
+        package: torch
+        reason: >-
+          Local-only torch.jit.script memory corruption; no PyPI fix as of torch
+          2.12.0. PromptGuard inference does not invoke JIT scripting or load
+          untrusted checkpoints. Re-audit when torch>2.12.0 ships.
+        expires: "2026-12-31"
     scorecard_manual_command: >-
       ossf-scorecard --repo=github.com/qasirdev/daily-briefing --format=json
       > scorecard-results/scorecard.json

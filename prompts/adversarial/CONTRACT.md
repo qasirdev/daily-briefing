@@ -1,7 +1,7 @@
 # Adversarial Agent Contract
 
 ## Version
-v1.1.0
+v2.0.0
 
 ## Canonical Role
 Adversarial (Red Team)

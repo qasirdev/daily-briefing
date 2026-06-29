@@ -12,16 +12,25 @@ RUN npm run build
 # Stage 2: Install Python dependencies
 FROM python:3.12-slim AS backend-builder
 
+ARG INSTALL_PROMPTGUARD=false
+
 WORKDIR /app
 
 RUN pip install --no-cache-dir uv
 
 COPY pyproject.toml uv.lock README.md alembic.ini ./
 COPY backend/ ./backend/
-RUN uv sync --frozen --no-dev
+RUN if [ "$INSTALL_PROMPTGUARD" = "true" ]; then \
+      uv sync --frozen --no-dev --extra promptguard; \
+    else \
+      uv sync --frozen --no-dev; \
+    fi
 
 # Stage 3: Production runtime
 FROM python:3.12-slim AS production
+
+ARG INSTALL_PROMPTGUARD=false
+ARG HF_TOKEN=""
 
 WORKDIR /app
 
@@ -39,6 +48,12 @@ COPY pyproject.toml uv.lock README.md alembic.ini ./
 COPY backend/ ./backend/
 COPY prompts/ ./prompts/
 COPY --from=backend-builder /app/.venv /app/.venv
+
+# Preload PromptGuard 2 model when building with the promptguard profile + HF_TOKEN.
+RUN if [ "$INSTALL_PROMPTGUARD" = "true" ] && [ -n "$HF_TOKEN" ]; then \
+    export HF_TOKEN="$HF_TOKEN" TOKENIZERS_PARALLELISM=true && \
+    python -c "from llamafirewall.scanners.promptguard_utils import PromptGuard; PromptGuard()"; \
+    fi
 
 COPY --from=frontend-builder /app/frontend/.next/standalone ./frontend/.next/standalone
 COPY --from=frontend-builder /app/frontend/.next/static ./frontend/.next/standalone/.next/static

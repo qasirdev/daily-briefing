@@ -29,3 +29,11 @@ We aim to acknowledge reports within 48 hours.
 ## Security Documentation
 
 Full architecture and controls: [`docs/SECURITY.md`](docs/SECURITY.md)
+
+When extending the OWASP injection regression corpus, update payload/pattern counts in all
+tracked docs (see **Regression corpus inventory** in `docs/SECURITY.md` and
+`backend/tests/security/test_corpus_inventory.py`).
+
+When adding or removing pytest cases, update total test counts in all tracked docs
+(see **Test suite inventory** in `docs/SECURITY.md` and
+`backend/tests/test_suite_inventory.py`).

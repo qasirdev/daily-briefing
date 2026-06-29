@@ -13,12 +13,18 @@ from backend.consent.store import consent_store
 from backend.datetime_format import format_event_time_london
 from backend.dependencies import CalendarMCPProtocol
 from backend.graph.state import BriefingGraphState
+from backend.kernel.identity_manager import IdentityManager
 from backend.mcp.client import MCPConsentRequired, MCPError, MCPTimeoutError
+from backend.mcp.ingress import authorize_mcp_tool, validate_calendar_response
 from backend.metrics import record_consent_request
+from backend.prompt_version import resolve_prompt_version
 from backend.schemas.consent import DEFAULT_TTL_HOURS
 from backend.schemas.envelope import AgentResultEnvelope, EscalationPayload, ExecutionMetadata
+from backend.security.failure_messages import failure_message_for
 
 logger = structlog.get_logger()
+
+_identity_manager = IdentityManager()
 
 
 def _consent_escalation_payload(message: str) -> str:
@@ -60,7 +66,7 @@ async def calendar_agent_node(
         record_consent_request(mcp_server="google_calendar", outcome="requested")
         envelope = AgentResultEnvelope(
             agent_id="calendar",
-            canonical_role="doer",
+            canonical_role="tool_operator",
             status="escalated",
             escalation=EscalationPayload(
                 reason="consent_required",
@@ -71,7 +77,7 @@ async def calendar_agent_node(
                 execution_ms=execution_ms,
                 tokens_used=0,
                 model_used="none",
-                prompt_version="v1.5.0",
+                prompt_version=resolve_prompt_version("calendar"),
                 trace_id=trace_id,
                 data_classification="internal",
             ),
@@ -84,6 +90,20 @@ async def calendar_agent_node(
         }
 
     try:
+        delegation = _identity_manager.create_delegation(
+            user_id=user_id,
+            session_id=state.get("request_id", trace_id),
+            agent_id="calendar",
+            intent="read_events",
+            permissions=("calendar:read",),
+            parent_trace_id=trace_id,
+        )
+        _identity_manager.assert_delegation(delegation, required_intent="read_events")
+        authorize_mcp_tool(
+            agent_id="calendar_agent",
+            tool="calendar.read_events",
+            session_id=state.get("request_id", trace_id),
+        )
         events = await calendar.get_events(user_id=user_id, target_date=target_date)
         consent_store.record_usage(user_id, "google_calendar")
         serialized = []
@@ -100,19 +120,59 @@ async def calendar_agent_node(
                 },
             )
 
+        try:
+            validated = validate_calendar_response({"events": serialized})
+            serialized = validated.get("events", serialized)
+        except ValueError as exc:
+            execution_ms = int((time.perf_counter() - start) * 1000)
+            logger.warning(
+                "calendar_agent_poisoned_response",
+                trace_id=trace_id,
+                error=str(exc),
+            )
+            envelope = AgentResultEnvelope(
+                agent_id="calendar",
+                canonical_role="tool_operator",
+                status="escalated",
+                escalation=EscalationPayload(
+                    reason="security_violation_detected",
+                    target_agent="dlq_handler",
+                    context=str(exc)[:200],
+                    retry_allowed=False,
+                ),
+                metadata=ExecutionMetadata(
+                    execution_ms=execution_ms,
+                    tokens_used=0,
+                    model_used="none",
+                    prompt_version=resolve_prompt_version("calendar"),
+                    trace_id=trace_id,
+                    data_classification="internal",
+                ),
+            )
+            return {
+                "calendar_result": envelope,
+                "current_agent": "calendar",
+                "failure_reason": "security_violation_detected",
+                "failure_message": failure_message_for(
+                    "security_violation_detected",
+                    source="calendar",
+                ),
+            }
+
         execution_ms = int((time.perf_counter() - start) * 1000)
         envelope = AgentResultEnvelope(
             agent_id="calendar",
-            canonical_role="doer",
+            canonical_role="tool_operator",
             status="success",
             result={"events": serialized},
             metadata=ExecutionMetadata(
                 execution_ms=execution_ms,
                 tokens_used=0,
                 model_used="none",
-                prompt_version="v1.5.0",
+                prompt_version=resolve_prompt_version("calendar"),
                 trace_id=trace_id,
                 data_classification="confidential",
+                spotlighting_applied=True,
             ),
         )
         return {"calendar_result": envelope, "current_agent": "calendar"}
@@ -123,7 +183,7 @@ async def calendar_agent_node(
         record_consent_request(mcp_server="google_calendar", outcome="requested")
         envelope = AgentResultEnvelope(
             agent_id="calendar",
-            canonical_role="doer",
+            canonical_role="tool_operator",
             status="escalated",
             escalation=EscalationPayload(
                 reason="consent_required",
@@ -134,7 +194,7 @@ async def calendar_agent_node(
                 execution_ms=execution_ms,
                 tokens_used=0,
                 model_used="none",
-                prompt_version="v1.5.0",
+                prompt_version=resolve_prompt_version("calendar"),
                 trace_id=trace_id,
                 data_classification="internal",
             ),
@@ -151,7 +211,7 @@ async def calendar_agent_node(
         logger.warning("calendar_agent_mcp_timeout", trace_id=trace_id, error=str(exc))
         envelope = AgentResultEnvelope(
             agent_id="calendar",
-            canonical_role="doer",
+            canonical_role="tool_operator",
             status="escalated",
             escalation=EscalationPayload(
                 reason="mcp_timeout",
@@ -162,7 +222,7 @@ async def calendar_agent_node(
                 execution_ms=execution_ms,
                 tokens_used=0,
                 model_used="none",
-                prompt_version="v1.5.0",
+                prompt_version=resolve_prompt_version("calendar"),
                 trace_id=trace_id,
                 data_classification="internal",
             ),
@@ -174,7 +234,7 @@ async def calendar_agent_node(
         logger.warning("calendar_agent_mcp_error", trace_id=trace_id, error=str(exc))
         envelope = AgentResultEnvelope(
             agent_id="calendar",
-            canonical_role="doer",
+            canonical_role="tool_operator",
             status="escalated",
             escalation=EscalationPayload(
                 reason="unexpected_error",
@@ -185,7 +245,7 @@ async def calendar_agent_node(
                 execution_ms=execution_ms,
                 tokens_used=0,
                 model_used="none",
-                prompt_version="v1.5.0",
+                prompt_version=resolve_prompt_version("calendar"),
                 trace_id=trace_id,
                 data_classification="internal",
             ),

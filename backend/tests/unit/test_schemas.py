@@ -1,9 +1,9 @@
-"""AgentResultEnvelope schema tests."""
+"""Pydantic schema validation tests."""
 
 import pytest
 from pydantic import ValidationError
 
-from backend.schemas.envelope import AgentResultEnvelope, ExecutionMetadata
+from backend.schemas.envelope import AgentResultEnvelope, EscalationPayload, ExecutionMetadata
 
 
 def _metadata(**overrides: object) -> ExecutionMetadata:
@@ -11,7 +11,7 @@ def _metadata(**overrides: object) -> ExecutionMetadata:
         "execution_ms": 10,
         "tokens_used": 0,
         "model_used": "none",
-        "prompt_version": "v1.5.0",
+        "prompt_version": "v2.0.0",
         "trace_id": "a" * 32,
         "data_classification": "internal",
     }
@@ -51,6 +51,20 @@ def test_envelope_rejects_missing_result_on_success() -> None:
             result=None,
             metadata=_metadata(),
         )
+
+
+def test_escalation_security_violation_disallows_retry() -> None:
+    payload = EscalationPayload(
+        reason="security_violation_detected",
+        target_agent="dlq_handler",
+        context="injection_detected",
+    )
+    assert payload.retry_allowed is False
+
+
+def test_execution_metadata_spotlighting_defaults_false() -> None:
+    metadata = _metadata()
+    assert metadata.spotlighting_applied is False
 
 
 def test_envelope_is_frozen() -> None:

@@ -26,6 +26,16 @@ export const agentExecutionSummarySchema = z.object({
   status: z.enum(["success", "failure", "escalated"]),
 });
 
+export const dlqReasonSchema = z.enum([
+  "security_violation_detected",
+  "max_retries_exceeded",
+  "token_budget_exceeded",
+  "mcp_timeout",
+  "consent_expired",
+  "circuit_breaker",
+  "unexpected_error",
+]);
+
 export const briefingMetadataSchema = z.object({
   trace_id: z.string(),
   total_tokens: z.number().int().nonnegative(),
@@ -43,6 +53,8 @@ export const briefingResponseSchema = z.object({
   consent_context: z.string().nullable().optional(),
   consent_request: consentPromptSchema.nullable().optional(),
   reasoning_trace: reasoningTraceSchema.nullable().optional(),
+  failure_reason: dlqReasonSchema.nullable().optional(),
+  failure_message: z.string().nullable().optional(),
 });
 
 export type ReasoningTraceEntry = z.infer<typeof reasoningTraceEntrySchema>;
@@ -50,6 +62,7 @@ export type ReasoningTrace = z.infer<typeof reasoningTraceSchema>;
 export type AgentExecutionSummary = z.infer<typeof agentExecutionSummarySchema>;
 export type BriefingMetadata = z.infer<typeof briefingMetadataSchema>;
 export type BriefingResponse = z.infer<typeof briefingResponseSchema>;
+export type DlqReason = z.infer<typeof dlqReasonSchema>;
 
 export const ORCHESTRATOR_AGENT_ID = "orchestrator";
 
@@ -77,6 +90,36 @@ export function formatCostUsd(costUsd: number): string {
     return `$${costUsd.toFixed(3)}`;
   }
   return `$${costUsd.toFixed(2)}`;
+}
+
+export function resolveBriefingAlertMessage(
+  status: BriefingResponse["status"],
+  failureReason?: string | null,
+  failureMessage?: string | null,
+): string {
+  if (failureMessage) {
+    return failureMessage;
+  }
+  if (status === "awaiting_consent") {
+    return "Calendar access requires consent before a full briefing can be generated.";
+  }
+  if (status === "awaiting_human_review") {
+    return "Briefing paused: human review is required before results can be presented.";
+  }
+  if (failureReason === "security_violation_detected") {
+    return "Briefing blocked: suspected prompt injection in external data.";
+  }
+  if (status === "degraded") {
+    return "Some briefing components were degraded. Review the observability details below.";
+  }
+  if (status === "failure") {
+    return "Briefing generation failed. Review the observability details below.";
+  }
+  return "Some briefing components were degraded. Review the observability details below.";
+}
+
+export function isSecurityBlockedBriefing(failureReason?: string | null): boolean {
+  return failureReason === "security_violation_detected";
 }
 
 export function toObservabilityData(metadata: BriefingMetadata, status: BriefingResponse["status"]): ObservabilityData {

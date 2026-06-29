@@ -27,6 +27,24 @@
           "legendFormat": "errors"
         }
       ]
+    },
+    {
+      "title": "Prompt cache hit rate (%)",
+      "targets": [
+        {
+          "expr": "daily_briefing:prompt_cache_hit_rate:5m * 100",
+          "legendFormat": "cache hit %"
+        }
+      ]
+    },
+    {
+      "title": "Cached tokens saved per hour",
+      "targets": [
+        {
+          "expr": "sum(rate(cached_tokens_saved_total[1h]))",
+          "legendFormat": "tokens saved"
+        }
+      ]
     }
   ]
 }

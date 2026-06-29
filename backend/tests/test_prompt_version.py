@@ -19,7 +19,7 @@ def _reset_version_state() -> Generator[None, None, None]:
 
 def test_parse_contract_version_reads_contract_md() -> None:
     version = prompt_version.parse_contract_version("verification")
-    assert version == "v1.1.0"
+    assert version == "v2.0.0"
 
 
 def test_parse_contract_version_reads_critic_v2() -> None:
@@ -36,6 +36,7 @@ def test_resolve_prompt_version_is_cached() -> None:
     first = prompt_version.resolve_prompt_version("focus")
     second = prompt_version.resolve_prompt_version("focus")
     assert first == second
+    assert first == "v2.0.0"
 
 
 def test_detect_version_changes_after_snapshot_update(monkeypatch: pytest.MonkeyPatch) -> None:

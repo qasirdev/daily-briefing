@@ -51,7 +51,7 @@ class Settings(BaseSettings):
 
     token_budget_max: int = 16_000
     graph_timeout_seconds: int = 60
-    enable_consensus_workflow: bool = False
+    enable_consensus_workflow: bool = True
     consensus_human_escalation: bool = True
 
     enable_prompt_caching: bool = True
@@ -78,6 +78,10 @@ class Settings(BaseSettings):
     context_compression_max_chars: int = 6_000
     enumeration_probe_threshold: int = 10
     enumeration_window_seconds: int = 60
+
+    llamafirewall_enabled: bool = True
+    llamafirewall_block_threshold: float = Field(default=0.9, ge=0.0, le=1.0)
+    llamafirewall_model: str = "meta-llama/Llama-Prompt-Guard-2-86M"
 
     otel_exporter_otlp_endpoint: str = "http://localhost:4317"
     admin_api_key: str = ""

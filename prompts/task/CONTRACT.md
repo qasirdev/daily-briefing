@@ -1,7 +1,7 @@
 # Task Agent Contract
 
 ## Version
-v1.5.0
+v2.0.0
 
 ## Canonical Role
 Doer

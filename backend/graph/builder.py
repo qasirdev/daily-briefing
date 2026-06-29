@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import asyncio
 import time
-from typing import Any, Literal
+from collections.abc import Hashable
+from typing import Any, Literal, cast
 
 import structlog
 from langgraph.graph import END, START, StateGraph
@@ -24,10 +25,13 @@ from backend.agents.task.node import task_agent_node
 from backend.agents.verification.node import verification_agent_node
 from backend.dependencies import MCPClients, build_llm_router
 from backend.graph.dlq_handler import dlq_handler_node
+from backend.graph.input_security_gate import input_security_gate_node
 from backend.graph.state import BriefingGraphState
+from backend.kernel.scheduler import Scheduler
 from backend.llm.router import LLMRouter
 from backend.schemas.envelope import AgentResultEnvelope
 from backend.security.token_budget import (
+    MAX_CRITIC_REVISION_CYCLES,
     evaluate_token_budget,
     has_presentable_results,
     is_session_token_exceeded,
@@ -36,7 +40,31 @@ from backend.settings import Settings, get_settings
 
 logger = structlog.get_logger()
 
+MAX_VERIFICATION_RETRIES = 1
+MAX_ADVERSARIAL_REGENERATIONS = 1
+_kernel_scheduler = Scheduler()
+
 ConsensusRoute = Literal["agreement", "minor_disagreement", "major_disagreement"]
+
+DLQ_ESCALATION_REASONS = frozenset(
+    {
+        "max_retries_exceeded",
+        "token_budget_exceeded",
+        "unexpected_error",
+        "mcp_timeout",
+        "security_violation_detected",
+    },
+)
+
+
+def _escalated_envelope(
+    state: BriefingGraphState,
+    key: str,
+) -> AgentResultEnvelope | None:
+    envelope = state.get(key)
+    if isinstance(envelope, AgentResultEnvelope) and envelope.status == "escalated":
+        return envelope
+    return None
 
 
 def _is_graph_timeout(state: BriefingGraphState, settings: Settings) -> bool:
@@ -89,6 +117,8 @@ def build_briefing_graph(
     resolved_settings = settings or get_settings()
     resolved_llm = llm or build_llm_router(resolved_settings)
     consensus_enabled = resolved_settings.enable_consensus_workflow
+    pipeline = _kernel_scheduler.pipeline(consensus_enabled=consensus_enabled)
+    logger.debug("briefing_pipeline", phases=list(pipeline))
 
     async def parallel_task_calendar_node(state: BriefingGraphState) -> dict[str, Any]:
         task_update, calendar_update = await asyncio.gather(
@@ -102,7 +132,15 @@ def build_briefing_graph(
         return merged
 
     async def focus_wrapper(state: BriefingGraphState) -> dict[str, Any]:
-        return await focus_agent_node(state, resolved_llm)
+        update = await focus_agent_node(state, resolved_llm)
+        prior_agent = state.get("current_agent")
+        if prior_agent == "verification":
+            update["verification_retry_count"] = state.get("verification_retry_count", 0) + 1
+            update["regeneration_constraints"] = None
+        elif prior_agent == "adversarial":
+            update["adversarial_retry_count"] = state.get("adversarial_retry_count", 0) + 1
+            update["regeneration_constraints"] = None
+        return update
 
     async def critic_wrapper(state: BriefingGraphState) -> dict[str, Any]:
         return await critic_agent_node(state, resolved_llm)
@@ -116,9 +154,11 @@ def build_briefing_graph(
     async def dlq_wrapper(state: BriefingGraphState) -> dict[str, Any]:
         return await dlq_handler_node(state, postgres=mcp.postgres)
 
-    def route_after_parallel(
+    def route_after_input_security_gate(
         state: BriefingGraphState,
     ) -> Literal["dlq_handler", "focus_agent", "orchestrator_present"]:
+        if state.get("failure_reason"):
+            return "dlq_handler"
         if should_route_to_dlq(state, resolved_settings):
             return "dlq_handler"
         if state.get("consent_required"):
@@ -136,18 +176,49 @@ def build_briefing_graph(
 
     def route_after_focus(
         state: BriefingGraphState,
-    ) -> Literal["dlq_handler", "critic_agent", "verification_agent", "orchestrator_present"]:
+    ) -> Literal["dlq_handler", "critic_agent", "verification_agent"]:
         if should_route_to_dlq(state, resolved_settings):
             return "dlq_handler"
-        if should_circuit_break(state, resolved_settings) and has_presentable_results(state):
-            return "orchestrator_present"
+        focus = _escalated_envelope(state, "focus_result")
+        if focus is not None:
+            reason = focus.escalation.reason if focus.escalation else ""
+            if reason in DLQ_ESCALATION_REASONS:
+                return "dlq_handler"
         if consensus_enabled:
             return "verification_agent"
         return "critic_agent"
 
+    def route_after_verification(
+        state: BriefingGraphState,
+    ) -> Literal["dlq_handler", "focus_agent", "adversarial_agent"]:
+        if should_route_to_dlq(state, resolved_settings):
+            return "dlq_handler"
+        verification = _escalated_envelope(state, "verification_result")
+        if verification is not None and verification.escalation:
+            if verification.escalation.reason == "verification_failed":
+                retry_count = state.get("verification_retry_count", 0)
+                if retry_count < MAX_VERIFICATION_RETRIES:
+                    return "focus_agent"
+                return "dlq_handler"
+        return "adversarial_agent"
+
+    def route_after_adversarial(
+        state: BriefingGraphState,
+    ) -> Literal["dlq_handler", "critic_agent", "focus_agent"]:
+        if should_route_to_dlq(state, resolved_settings):
+            return "dlq_handler"
+        adversarial = _escalated_envelope(state, "adversarial_result")
+        if adversarial is not None and adversarial.escalation:
+            if adversarial.escalation.reason == "adversarial_concerns":
+                retry_count = state.get("adversarial_retry_count", 0)
+                if retry_count < MAX_ADVERSARIAL_REGENERATIONS:
+                    return "focus_agent"
+                return "dlq_handler"
+        return "critic_agent"
+
     def route_after_consensus(
         state: BriefingGraphState,
-    ) -> Literal["dlq_handler", "critic_agent", "human_escalation", "orchestrator_present"]:
+    ) -> Literal["dlq_handler", "human_escalation", "orchestrator_present"]:
         if (
             _is_graph_timeout(state, resolved_settings)
             and has_presentable_results(state)
@@ -157,26 +228,31 @@ def build_briefing_graph(
         if should_route_to_dlq(state, resolved_settings):
             return "dlq_handler"
         decision = route_consensus(state)
-        if decision == "major_disagreement":
-            if resolved_settings.consensus_human_escalation:
-                return "human_escalation"
-            return "critic_agent"
-        return "critic_agent"
+        if decision == "major_disagreement" and resolved_settings.consensus_human_escalation:
+            return "human_escalation"
+        return "orchestrator_present"
 
     def route_after_critic(
         state: BriefingGraphState,
-    ) -> Literal["dlq_handler", "focus_agent", "orchestrator_present"]:
+    ) -> Literal["dlq_handler", "focus_agent", "consensus_evaluator", "orchestrator_present"]:
+        if should_route_to_dlq(state, resolved_settings):
+            return "dlq_handler"
         critic = state.get("critic_result")
         if isinstance(critic, AgentResultEnvelope) and critic.status == "escalated":
             return "dlq_handler"
         if isinstance(critic, AgentResultEnvelope) and critic.result:
             if critic.result.get("revision_required") is True:
-                return "focus_agent"
+                revision_count = state.get("revision_count", 0)
+                if revision_count < MAX_CRITIC_REVISION_CYCLES:
+                    return "focus_agent"
+        if consensus_enabled:
+            return "consensus_evaluator"
         return "orchestrator_present"
 
     graph = StateGraph(BriefingGraphState)
     graph.add_node("orchestrator_route", orchestrator_route_node)
     graph.add_node("parallel_task_calendar", parallel_task_calendar_node)
+    graph.add_node("input_security_gate", input_security_gate_node)
     graph.add_node("focus_agent", focus_wrapper)
     graph.add_node("critic_agent", critic_wrapper)
     graph.add_node("orchestrator_present", orchestrator_present_node)
@@ -190,9 +266,10 @@ def build_briefing_graph(
 
     graph.add_edge(START, "orchestrator_route")
     graph.add_edge("orchestrator_route", "parallel_task_calendar")
+    graph.add_edge("parallel_task_calendar", "input_security_gate")
     graph.add_conditional_edges(
-        "parallel_task_calendar",
-        route_after_parallel,
+        "input_security_gate",
+        route_after_input_security_gate,
         {
             "focus_agent": "focus_agent",
             "orchestrator_present": "orchestrator_present",
@@ -207,17 +284,31 @@ def build_briefing_graph(
             {
                 "verification_agent": "verification_agent",
                 "critic_agent": "critic_agent",
-                "orchestrator_present": "orchestrator_present",
                 "dlq_handler": "dlq_handler",
             },
         )
-        graph.add_edge("verification_agent", "adversarial_agent")
-        graph.add_edge("adversarial_agent", "consensus_evaluator")
+        graph.add_conditional_edges(
+            "verification_agent",
+            route_after_verification,
+            {
+                "focus_agent": "focus_agent",
+                "adversarial_agent": "adversarial_agent",
+                "dlq_handler": "dlq_handler",
+            },
+        )
+        graph.add_conditional_edges(
+            "adversarial_agent",
+            route_after_adversarial,
+            {
+                "critic_agent": "critic_agent",
+                "focus_agent": "focus_agent",
+                "dlq_handler": "dlq_handler",
+            },
+        )
         graph.add_conditional_edges(
             "consensus_evaluator",
             route_after_consensus,
             {
-                "critic_agent": "critic_agent",
                 "human_escalation": "human_escalation",
                 "orchestrator_present": "orchestrator_present",
                 "dlq_handler": "dlq_handler",
@@ -230,19 +321,21 @@ def build_briefing_graph(
             route_after_focus,
             {
                 "critic_agent": "critic_agent",
-                "orchestrator_present": "orchestrator_present",
                 "dlq_handler": "dlq_handler",
             },
         )
 
+    critic_routes: dict[str, str] = {
+        "focus_agent": "focus_agent",
+        "orchestrator_present": "orchestrator_present",
+        "dlq_handler": "dlq_handler",
+    }
+    if consensus_enabled:
+        critic_routes["consensus_evaluator"] = "consensus_evaluator"
     graph.add_conditional_edges(
         "critic_agent",
         route_after_critic,
-        {
-            "focus_agent": "focus_agent",
-            "orchestrator_present": "orchestrator_present",
-            "dlq_handler": "dlq_handler",
-        },
+        cast(dict[Hashable, str], critic_routes),
     )
     graph.add_edge("orchestrator_present", END)
     graph.add_edge("dlq_handler", END)

@@ -1,4 +1,35 @@
-# Week 8 Implementation — Production Optimization & Agentic RAG
+# Active Tasks — AI Daily Briefing Assistant
+
+## Input security + compliance (2026-06-10) — complete
+
+**Scope:** Pre-focus injection gate, API failure fields, UI security alerts, spotlighting (Gap #114), `.cursor` test coverage.
+
+- [x] `input_security_gate` graph kernel + `input_security_result` envelope
+- [x] `failure_reason` / `failure_message` on `BriefingResponse`
+- [x] Red security alert in `BriefingDashboard` (no retry on injection)
+- [x] `backend/security/spotlighting.py` wired into Focus LLM user context
+- [x] `input-security.md` on all agent prompt packs; loader includes block in cached assembly
+- [x] Docs: `docs/SECURITY.md`, `backend/graph/AGENT.md`, `frontend/AGENT.md`
+- [x] Backend tests: gate, E2E API, reasoning trace, spotlighting
+- [x] Frontend tests: BriefingDashboard, briefing-schema, ObservabilityBadge, ConsentPromptModal
+
+### Verification
+
+```bash
+uv run ruff check backend && uv run ruff format backend && uv run mypy backend && uv run pytest
+cd frontend && npm run test:coverage
+```
+
+### Compliance audit (2026-06-10, 3-pass)
+
+- [x] CI runs frontend Vitest with coverage gate (`.cursor/rules/testing.mdc`)
+- [x] `@vitest/coverage-v8` + 75% thresholds in `vitest.config.ts`
+- [x] Tests for cost-tracking, account-usage, ReasoningTrace, expanded API/consent coverage
+- [x] `frontend/AGENT.md` architecture + test matrix aligned with code
+
+---
+
+## Week 8 Implementation — Production Optimization & Agentic RAG
 
 **Epic:** DB-E15  
 **Branch:** `epic/week8-gap-remediation`  
@@ -38,17 +69,10 @@
 - [x] Write tests: `test_enumeration_detector.py`, `test_deployment_gates.py`
 
 ### Day 5: Integration Tests & Proof (DB-140)
-- [x] Create `backend/tests/memory/test_optimization_integration.py`
-- [x] Proof package in `proof/week8/`
-- [x] `docs/learning/week8-production-optimization.md`
-- [x] Updated `docs/PLAN.md`
+- [x] Integration tests and proof artifacts
 
----
-
-## Verification Gates
+## Verification Gates (historical)
 
 ```bash
 uv run ruff check backend && uv run ruff format backend && uv run mypy backend && uv run pytest
 ```
-
-**Result:** 436 passed, 3 skipped

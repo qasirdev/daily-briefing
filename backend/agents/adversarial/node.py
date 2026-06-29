@@ -14,7 +14,7 @@ from backend.llm.models import LLMResponse
 from backend.llm.prompt_cache import build_llm_messages, resolve_model_name
 from backend.llm.router import LLMError, LLMRouter
 from backend.prompt_version import resolve_prompt_version
-from backend.schemas.envelope import AgentResultEnvelope, ExecutionMetadata
+from backend.schemas.envelope import AgentResultEnvelope, EscalationPayload, ExecutionMetadata
 from backend.settings import get_settings
 
 logger = structlog.get_logger()
@@ -26,16 +26,19 @@ ADVERSARIAL_OUTPUT_BUDGET = 2_500
 def _build_envelope(
     *,
     state: BriefingGraphState,
+    status: Literal["success", "failure", "escalated"],
     result: dict[str, object],
     execution_ms: int,
+    escalation: EscalationPayload | None = None,
     llm_response: LLMResponse | None = None,
 ) -> AgentResultEnvelope:
     trace_id = state.get("trace_id", "0" * 32)
     return AgentResultEnvelope(
         agent_id="adversarial",
         canonical_role="adversarial",
-        status="success",
+        status=status,
         result=result,
+        escalation=escalation,
         metadata=ExecutionMetadata(
             execution_ms=execution_ms,
             tokens_used=llm_response.tokens_used if llm_response else 0,
@@ -184,10 +187,28 @@ async def adversarial_agent_node(
         review = _review_outputs(state)
 
     execution_ms = int((time.perf_counter() - start) * 1000)
+    recommended = review.get("recommended_action")
+    risk_level = review.get("risk_level")
+    needs_regeneration = recommended in {"reject", "request_clarification"} or risk_level in {
+        "medium",
+        "high",
+    }
+    escalation = (
+        EscalationPayload(
+            reason="adversarial_concerns",
+            target_agent="focus",
+            context=json.dumps(review, ensure_ascii=True),
+            retry_allowed=True,
+        )
+        if needs_regeneration
+        else None
+    )
     envelope = _build_envelope(
         state=state,
+        status="escalated" if needs_regeneration else "success",
         result=review,
         execution_ms=execution_ms,
+        escalation=escalation,
         llm_response=llm_response,
     )
 
@@ -195,6 +216,8 @@ async def adversarial_agent_node(
         "adversarial_result": envelope,
         "current_agent": "adversarial",
     }
+    if needs_regeneration:
+        update["regeneration_constraints"] = json.dumps(review, ensure_ascii=True)
     if llm_response is not None:
         update["total_tokens"] = state.get("total_tokens", 0) + llm_response.tokens_used
 

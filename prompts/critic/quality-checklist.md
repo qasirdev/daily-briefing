@@ -35,7 +35,7 @@
 
 ## Regression Anchors
 
-These checklist items map to automated tests in `backend/tests/test_critic.py`:
+These checklist items map to automated tests in `backend/tests/unit/test_agents.py`:
 
 | Test scenario | Expected behavior |
 |---|---|

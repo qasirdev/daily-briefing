@@ -80,10 +80,40 @@ def _count_adversarial_concerns(
     return major, moderate, minor
 
 
+def _count_critic_concerns(
+    critic_result: AgentResultEnvelope | None,
+) -> tuple[int, int, int]:
+    """Count major, moderate, and minor concerns from critic quality review."""
+    major = 0
+    moderate = 0
+    minor = 0
+
+    if critic_result is None or critic_result.result is None:
+        return major, moderate, minor
+
+    if critic_result.status == "escalated":
+        major += 1
+        return major, moderate, minor
+
+    issues = critic_result.result.get("issues", [])
+    if not isinstance(issues, list) or not issues:
+        return major, moderate, minor
+
+    revision_required = critic_result.result.get("revision_required") is True
+    approved = critic_result.result.get("approved", True)
+    if revision_required or not approved:
+        moderate += len(issues)
+    else:
+        minor += len(issues)
+
+    return major, moderate, minor
+
+
 async def consensus_evaluator_node(state: BriefingGraphState) -> dict[str, Any]:
-    """Aggregate Verification and Adversarial outputs for routing decisions."""
+    """Aggregate Verification, Adversarial, and Critic outputs for routing decisions."""
     verification_result = state.get("verification_result")
     adversarial_result = state.get("adversarial_result")
+    critic_result = state.get("critic_result")
 
     v_major, v_moderate, v_minor = _count_verification_concerns(
         verification_result if isinstance(verification_result, AgentResultEnvelope) else None,
@@ -91,10 +121,13 @@ async def consensus_evaluator_node(state: BriefingGraphState) -> dict[str, Any]:
     a_major, a_moderate, a_minor = _count_adversarial_concerns(
         adversarial_result if isinstance(adversarial_result, AgentResultEnvelope) else None,
     )
+    c_major, c_moderate, c_minor = _count_critic_concerns(
+        critic_result if isinstance(critic_result, AgentResultEnvelope) else None,
+    )
 
-    major_concerns = v_major + a_major
-    moderate_concerns = v_moderate + a_moderate
-    minor_concerns = v_minor + a_minor
+    major_concerns = v_major + a_major + c_major
+    moderate_concerns = v_moderate + a_moderate + c_moderate
+    minor_concerns = v_minor + a_minor + c_minor
 
     if major_concerns == 0 and moderate_concerns == 0:
         agreement_level = "agreement"

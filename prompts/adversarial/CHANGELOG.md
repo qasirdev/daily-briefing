@@ -1,5 +1,10 @@
 # Adversarial Agent Changelog
 
+## [1.1.1] - 2026-06-10
+
+### Added
+- `input-security.md` — challenge assumptions without amplifying injection
+
 ## [1.1.0] - 2026-06-06
 
 ### Changed

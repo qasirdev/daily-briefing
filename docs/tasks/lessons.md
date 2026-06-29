@@ -28,6 +28,11 @@
 ### Testing
 - Never mark task complete without test evidence
 - Always include adversarial tests for security features
+- E2E briefing injection tests must set `mcp_transport="http"` when patching `CalendarMCPClient` (default settings use stdio)
+
+### Security (June 2026)
+- Pre-focus `input_security_gate` must return `input_security_result` `AgentResultEnvelope` and expose `failure_reason` / `failure_message` on `BriefingResponse` for UI clarity
+- Spotlighting (`<<<EXTERNAL_CONTENT>>>`) must wrap Focus LLM MCP/memory JSON via `spotlight_external_content()` — scanners block bad data; markers teach data-only treatment
 - Mock MCP servers in CI, don't hit real services
 
 ### Workflow

@@ -16,6 +16,7 @@ from backend.memory.audit import memory_audit_trail
 from backend.memory.retrieval import AgentMemoryContext
 from backend.memory.semantic import SemanticMemoryRecord, SemanticMemoryStore
 from backend.schemas.envelope import AgentResultEnvelope, ExecutionMetadata
+from backend.security.spotlighting import EXTERNAL_CONTENT_OPEN, extract_spotlighted_content
 
 TRACE_ID = "c" * 32
 
@@ -143,6 +144,7 @@ async def test_focus_includes_semantic_memory_in_llm_payload() -> None:
         update = await focus_agent_node(_base_state(), mock_llm, semantic_store=mock_store)
 
     assert update["focus_result"].status == "success"
+    assert update["focus_result"].metadata.spotlighting_applied is True
     assert update["working_memory_tokens"] == 150
     assert "Morning deep work" in update["working_memory_context"][-1]
     mock_store.store.assert_awaited_once()
@@ -150,7 +152,9 @@ async def test_focus_includes_semantic_memory_in_llm_payload() -> None:
     messages = captured_messages[0]
     assert isinstance(messages, list)
     user_message = messages[-1]["content"]
-    payload = json.loads(user_message.split("<user_data>\n", 1)[1].split("\n</user_data>", 1)[0])
+    user_data = user_message.split("<user_data>\n", 1)[1].split("\n</user_data>", 1)[0]
+    assert EXTERNAL_CONTENT_OPEN in user_data
+    payload = json.loads(extract_spotlighted_content(user_data))
     assert payload["semantic_memory"][0]["content"] == "Prior focus on Q2 report"
     assert any(entry.memory_layer == "working" for entry in memory_audit_trail.entries)
 

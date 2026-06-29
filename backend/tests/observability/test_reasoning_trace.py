@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from backend.graph.state import BriefingGraphState
 from backend.observability.reasoning_trace import collect_reasoning_traces
-from backend.schemas.envelope import AgentResultEnvelope, ExecutionMetadata
+from backend.schemas.envelope import AgentResultEnvelope, EscalationPayload, ExecutionMetadata
 
 
 def _envelope(agent_id: str, role: str) -> AgentResultEnvelope:
@@ -60,3 +60,37 @@ def test_empty_state_returns_empty_entries() -> None:
     state: BriefingGraphState = {"trace_id": "d" * 32}
     trace = collect_reasoning_traces(state)
     assert trace.entries == []
+
+
+def test_collect_input_security_gate_block_trace() -> None:
+    blocked = AgentResultEnvelope(
+        agent_id="input_security_gate",
+        canonical_role="supervisor",
+        status="escalated",
+        result={"blocked_source": "calendar", "matched_pattern": "ignore_previous"},
+        metadata=ExecutionMetadata(
+            execution_ms=3,
+            tokens_used=0,
+            model_used="none",
+            prompt_version="v2.0.0",
+            trace_id="e" * 32,
+            data_classification="internal",
+        ),
+        escalation=EscalationPayload(
+            reason="security_violation_detected",
+            target_agent="dlq_handler",
+            context="ignore_previous",
+        ),
+    )
+    state: BriefingGraphState = {
+        "trace_id": "e" * 32,
+        "task_result": _envelope("task", "doer"),
+        "calendar_result": _envelope("calendar", "doer"),
+        "input_security_result": blocked,
+        "failure_reason": "security_violation_detected",
+    }
+    trace = collect_reasoning_traces(state)
+    gate_entries = [entry for entry in trace.entries if entry.agent_id == "input_security_gate"]
+    assert len(gate_entries) == 1
+    assert gate_entries[0].status == "escalated"
+    assert "security_violation_detected" in gate_entries[0].summary

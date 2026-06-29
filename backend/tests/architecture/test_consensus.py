@@ -11,6 +11,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from backend.agents.consensus.node import _count_critic_concerns, consensus_evaluator_node
 from backend.dependencies import MCPClients
 from backend.graph.builder import build_briefing_graph
 from backend.graph.state import BriefingGraphState
@@ -73,7 +74,7 @@ def _task_envelope(trace_id: str) -> AgentResultEnvelope:
 def _calendar_envelope(trace_id: str) -> AgentResultEnvelope:
     return AgentResultEnvelope(
         agent_id="calendar",
-        canonical_role="doer",
+        canonical_role="tool_operator",
         status="success",
         result={"events": [{"summary": "Sprint Review", "start": "14:00"}]},
         metadata=_metadata(trace_id),
@@ -163,6 +164,65 @@ async def _consensus_graph_patches(
             yield graph
         finally:
             await mcp.close()
+
+
+def test_consensus_counts_critic_quality_issues() -> None:
+    critic = AgentResultEnvelope(
+        agent_id="critic",
+        canonical_role="critic",
+        status="success",
+        result={
+            "approved": False,
+            "revision_required": True,
+            "issues": ["Missing summary", "No time blocks"],
+            "review_cycle": 1,
+        },
+        metadata=_metadata(TRACE_MINOR),
+    )
+    major, moderate, minor = _count_critic_concerns(critic)
+    assert major == 0
+    assert moderate == 2
+    assert minor == 0
+
+
+@pytest.mark.asyncio
+async def test_consensus_evaluator_includes_critic_concerns() -> None:
+    state = _base_state(TRACE_MINOR)
+    state["verification_result"] = AgentResultEnvelope(
+        agent_id="verification",
+        canonical_role="verifier",
+        status="success",
+        result={
+            "status": "verified",
+            "flagged_claims": [],
+            "verified_claims": [],
+            "confidence": 1.0,
+        },
+        metadata=_metadata(TRACE_MINOR),
+    )
+    state["adversarial_result"] = AgentResultEnvelope(
+        agent_id="adversarial",
+        canonical_role="adversarial",
+        status="success",
+        result={"challenges": [], "risk_level": "low", "recommended_action": "approve"},
+        metadata=_metadata(TRACE_MINOR),
+    )
+    state["critic_result"] = AgentResultEnvelope(
+        agent_id="critic",
+        canonical_role="critic",
+        status="success",
+        result={
+            "approved": False,
+            "revision_required": True,
+            "issues": ["Weak prioritization"],
+            "review_cycle": 1,
+        },
+        metadata=_metadata(TRACE_MINOR),
+    )
+    update = await consensus_evaluator_node(state)
+    consensus = update["consensus_result"]
+    assert consensus["moderate_concerns"] >= 1
+    assert consensus["agreement_level"] == "minor_disagreement"
 
 
 @pytest.mark.asyncio
@@ -330,7 +390,7 @@ async def test_consensus_disagreement_escalation() -> None:
     assert result["consensus_result"] is not None
     assert result["consensus_result"]["major_concerns"] >= 2
     assert result["consensus_result"]["agreement_level"] == "major_disagreement"
-    assert result.get("critic_result") is None
+    assert result.get("critic_result") is not None
 
 
 @pytest.mark.asyncio
