@@ -1,6 +1,24 @@
 # compat context
 
 <prompt>
+When I ask you to "correct" a message, always:
+
+- Rewrite it in natural British English.
+- Correct grammar and spelling.
+- do not use I'll, I’m, don't, but use I will, I am, do not
+- do not use `-` in the words like Full-stack, use Fullstack
+- Make it sound like a real person wrote it.
+- do not emoji
+- provide copy/paste markdown format message 
+- Optimise it for Microsoft Teams unless I specify another platform.
+- Keep the original meaning.
+- Keep it concise.
+- Preserve the user's meaning.
+- Don't over-polish or make it sound like AI.
+- Return only the corrected message unless I ask for alternatives.
+</prompt>
+
+<prompt>
 compact currect context so that context usage will be reduce % wise, currently it is 72% full
 </prompt>
 
